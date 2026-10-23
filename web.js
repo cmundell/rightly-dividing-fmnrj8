@@ -3,7 +3,7 @@
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
 /* global tsk, state, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
    openProgress, openPaths, openStudyChooser, openFamily, openGospel, showMarksView, openReadingOptions, toggleTheme,
-   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew */
+   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32 */
 
 const isPhone = () => window.matchMedia('(max-width: 760px)').matches;
 document.documentElement.classList.add('web');
@@ -166,26 +166,40 @@ function openAbout() {
 }
 
 // ---------------------------------------------------------------- phone tweaks
-// the guided tour points at desktop buttons; on a phone show the quick start instead
+// the guided tour: on a phone, the same tour with steps for the phone's own buttons
+const PHONE_TOUR = [
+  { title: 'Welcome to Search the Scriptures', text: 'A quick tour of the app — about a minute. Tap Next, or Skip. You can take it again any time from Menu › Tutorial.', before: () => setView('read') },
+  { el: '#readerInner .verse', title: 'Read', text: 'Tap any verse to select it. Swipe left or right on the text to go to the next or previous chapter.', before: () => setView('read') },
+  { el: '#mStudyPill', title: 'Study a verse', text: 'After you tap a verse, this button appears. Tap it to study that verse.', before: () => {
+    const v = $('#readerInner .verse.sel') || $('#readerInner .verse');
+    const pill = $('#mStudyPill');
+    pill.textContent = `Study ${v ? $('.vn', v).textContent && `${$('#bookSel').selectedOptions[0].text} ${$('#chapSel').value}:${$('.vn', v).textContent}` : 'this verse'} ›`;
+    pill.hidden = false;
+  } },
+  { el: '.toolbar .group.nav', title: 'Choose a chapter', text: 'Pick a book and chapter here. The ‹ and › buttons also change chapters.', before: () => ($('#mStudyPill').hidden = true) },
+  { el: '#searchForm', title: 'Go to a verse, or search', text: 'Type a reference like John 3:16 to go straight there, or words to search the whole Bible.' },
+  { el: '#study .tabs', title: 'Study', text: 'Cross-references for the verse you selected. Slide the tabs along for Words (Hebrew and Greek), Commentary, Topics, Places and People.', before: () => { setView('study'); switchTab('refs'); } },
+  { el: '#mNav [data-mn="today"]', title: 'Today', text: 'Time with God, the devotional, family devotions, discipleship paths, study methods, your prayer list and badges.', before: () => setView('read') },
+  { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from the Menu now and then.' },
+  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: 'Everything else: reading plan, timeline, text size, dark mode, backing up your notes, and this tutorial.' },
+  { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },
+];
 if (isPhone()) {
-  window.startTour = () => {
-    state.settings.tourDone = true;
-    saveUser(['settings']);
-    openModal(`<div class="kicker">Welcome</div><h2 class="m-title">Search the Scriptures</h2>
-      <p class="wk-lead">The King James Bible with the Treasury of Scripture Knowledge and study tools — on your phone, and working offline.</p>
-      <ul class="wl-list">
-        <li><b>Read</b> — the Bible. Choose a book and chapter at the top, or type a reference or words in the search box.</li>
-        <li>Tap a verse, then <b>Study</b> — cross-references, Hebrew and Greek words, commentary, topics, places and people.</li>
-        <li><b>Today</b> — time with God, the devotional, family devotions, discipleship paths, prayer and more.</li>
-        <li><b>Notes</b> — your notes, prayer list, journal and memory verses. They stay on this phone; back them up from the Menu now and then.</li>
-        <li><b>Menu</b> — everything else, including text size and dark mode.</li>
-      </ul>
-      <div class="plan-foot"><button class="primary-btn" data-wm-close="1">Start reading</button></div>`, 'm-welcome');
+  TOUR.splice(0, TOUR.length, ...PHONE_TOUR);
+  const prevShow = window.showTourStep;
+  window.showTourStep = function () {
+    const step = TOUR[v32.tour];
+    if (step && step.before) step.before();
+    setTimeout(prevShow, step && step.before ? 120 : 0);
   };
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-wm-close]')) closeModal();
-  });
+  const prevEnd = window.endTour;
+  window.endTour = function () {
+    prevEnd();
+    $('#mStudyPill').hidden = true;
+    setView('read');
+  };
 }
+MENU[4][1].unshift(['Tutorial', () => startTour()]);
 // on a phone the Listen button and the reader's toolbar buttons live in the Menu
 window.addEventListener('resize', () => {
   if (!isPhone()) {

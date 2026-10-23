@@ -1166,3 +1166,26 @@ body.listening #readerInner { padding-bottom: 80px; }
 .modal.m-whatsnew .modal-card { width: min(900px, 100%); display: flex; flex-direction: column; height: calc(100vh - 48px); }
 .wn-frame { flex: 1; width: 100%; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); min-height: 0; }
 .modal.m-whatsnew #modalBody { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+/* ===================== 3.11 badges ===================== */
+.modal.m-badges .modal-card { width: min(820px, 100%); }
+.bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin: 6px 0 4px; }
+.bd-card { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--rule); border-radius: 12px; padding: 10px 12px; background: var(--paper); opacity: .72; }
+.bd-card.on { opacity: 1; border-color: var(--gold); }
+.bd-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bd-t b { font-size: 14px; color: var(--ink); }
+.bd-sub { font-size: 12px; color: var(--ink-soft); }
+.bd-v { font-family: var(--scripture); font-size: 13.5px; line-height: 1.45; color: var(--ink); margin-top: 3px; }
+.bd-v i { font-style: normal; font-family: var(--ui); font-size: 11.5px; color: var(--ink-soft); }
+.bd-medal { width: 44px; height: 52px; flex: 0 0 auto; }
+.bd-medal .rib { fill: var(--rule); }
+.bd-medal .disc { fill: var(--chip); stroke: var(--rule); stroke-width: 1.5; }
+.bd-medal .ring { fill: none; stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 2; }
+.bd-medal .lbl { font: 700 11px var(--ui); fill: var(--ink-soft); }
+.bd-medal.on .rib { fill: var(--accent); }
+.bd-medal.on .disc { fill: var(--gold); stroke: #8a6414; }
+.bd-medal.on .ring { stroke: #fff6d8; stroke-dasharray: none; }
+.bd-medal.on .lbl { fill: #2b1d00; }
+.bd-books { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+.bd-book { font-size: 11px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--rule); color: var(--ink-soft); background: var(--paper); }
+.bd-book.on { background: var(--gold); border-color: #8a6414; color: #2b1d00; font-weight: 600; }
