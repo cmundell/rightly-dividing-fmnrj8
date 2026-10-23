@@ -58,7 +58,15 @@
   .wk-steps li::before { font-size: 12px; }
   .wk-steps li.on { font-size: 12px; }
   .fm-head .m-title { font-size: 22px; }
-  .wordcard, .preview { max-width: calc(100vw - 20px) !important; }
+  .preview { max-width: calc(100vw - 20px) !important; }
+  /* double-tap a word: the word card slides up from the bottom; double-tap no longer zooms the text (pinch still does) */
+  #readerInner { touch-action: manipulation; }
+  .wordcard { left: 0 !important; right: 0 !important; top: auto !important; bottom: 0; width: 100% !important; max-width: none; box-sizing: border-box; max-height: 62vh;
+    border-radius: 16px 16px 0 0; border-bottom: 0; z-index: 65; padding: 14px 18px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 30px rgba(0,0,0,.18); animation: wcUp .2s ease-out; }
+  .wordcard .wc-head .x { font-size: 26px; padding: 0 4px; }
+  .wordcard .more { width: 100%; padding: 12px; font-size: 15px; }
+  .wm-word { background: var(--accent-soft); border-radius: 3px; }
 }
 
 #webGate { position: fixed; inset: 0; z-index: 210; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -66,3 +74,5 @@
 .wg-card input { height: 44px; font-size: 18px !important; text-align: center; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); }
 .wg-card .primary-btn { height: 44px; font-size: 16px; }
 .wg-msg { color: #b3261e; min-height: 1.2em; font-size: 14px; }
+
+@keyframes wcUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }

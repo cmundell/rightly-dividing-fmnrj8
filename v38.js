@@ -519,6 +519,7 @@ function openReminders() {
 }
 
 function checkReminder() {
+  if (!FEATURES.reminders) return;
   const r = state.walk.remind;
   if (!r.on) return;
   const now = new Date();

@@ -1189,3 +1189,16 @@ body.listening #readerInner { padding-bottom: 80px; }
 .bd-books { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
 .bd-book { font-size: 11px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--rule); color: var(--ink-soft); background: var(--paper); }
 .bd-book.on { background: var(--gold); border-color: #8a6414; color: #2b1d00; font-weight: 600; }
+
+/* v3.13 start screen: Open your Bible, and your name */
+.td-open { display: block; width: 100%; text-align: left; padding: 14px 18px; font-size: 18px; border-radius: 12px; margin: 0 0 8px;
+  border: 1.5px solid var(--accent); background: var(--paper); color: var(--accent); cursor: pointer; font-family: inherit; font-weight: 600; }
+.td-open:hover { background: var(--sel); }
+.td-open span { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-soft); margin-top: 3px; letter-spacing: .03em; }
+:root[data-theme='dark'] .td-open { color: var(--ink); }
+.modal.m-name .modal-card { width: min(480px, 100%); }
+.nm-form input { width: 100%; box-sizing: border-box; font-size: 18px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); color: var(--ink); margin: 6px 0 14px; }
+.nm-btns { display: flex; align-items: center; gap: 16px; }
+.nm-btns .primary-btn { font-size: 16px; padding: 9px 20px; }
+.nm-q { font-family: var(--scripture); font-size: 21px; margin: 6px 0 2px; color: var(--ink); }
+.nm-title { padding-right: 36px; margin-top: 8px; }

@@ -3,7 +3,7 @@
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
 /* global tsk, state, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
    openProgress, openPaths, openStudyChooser, openFamily, openGospel, showMarksView, openReadingOptions, toggleTheme,
-   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32 */
+   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES, beginWalk, openBadges */
 
 const isPhone = () => window.matchMedia('(max-width: 760px)').matches;
 document.documentElement.classList.add('web');
@@ -12,7 +12,7 @@ document.documentElement.classList.add('web');
 document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria-label="Main">
   <button data-mn="read" class="on"><span class="mi">&#128214;</span>Read</button>
   <button data-mn="study"><span class="mi">&#128269;</span>Study</button>
-  <button data-mn="today"><span class="mi">&#9728;</span>Today</button>
+  ${FEATURES.today === false ? '<button data-mn="search"><span class="mi">&#128270;</span>Search</button>' : '<button data-mn="today"><span class="mi">&#9728;</span>Today</button>'}
   <button data-mn="notes"><span class="mi">&#9998;</span>Notes</button>
   <button data-mn="menu"><span class="mi">&#9776;</span>Menu</button></nav>
   <button id="mStudyPill" class="m-pill" hidden></button>`);
@@ -59,6 +59,12 @@ $('#mNav').addEventListener('click', (e) => {
     return switchTab('marks');
   }
   if (k === 'today') return openToday();
+  if (k === 'search') {
+    setView('study');
+    switchTab('search');
+    $('#searchInput').focus();
+    return;
+  }
   if (k === 'menu') return openMenu();
 });
 $('#btnMenu').addEventListener('click', () => openMenu());
@@ -114,18 +120,19 @@ document.addEventListener('click', (e) => {
 // ---------------------------------------------------------------- Menu
 const MENU = [
   ['Your walk', [
-    ['Today', () => openToday()],
+    ...(FEATURES.today === false ? [['Time with God', () => beginWalk()]] : [['Today', () => openToday()]]),
     ['Devotional', () => openDaily(0, null)],
     ...(FEATURES.family ? [['Family devotions', () => openFamily()]] : []),
     ...(FEATURES.paths ? [['Discipleship paths', () => openPaths()]] : []),
     ['Study methods', () => openStudyChooser()],
+    ...(FEATURES.today === false ? [['Memory verses', () => showMarksView('memory')], ['Badges', () => openBadges()]] : []),
     ['The gospel', () => openGospel()],
   ]],
   ['Reading', [
     ['Reading plan', () => openPlan()],
     ['Reading progress', () => openProgress()],
     ['Timeline', () => openTimeline()],
-    ['Prayer list', () => showMarksView('prayer')],
+    ...(FEATURES.prayer === false ? [] : [['Prayer list', () => showMarksView('prayer')]]),
     ['Journal', () => showMarksView('journal')],
   ]],
   ['Settings', [
@@ -198,9 +205,11 @@ const PHONE_TOUR = [
   { el: '.toolbar .group.nav', title: 'Choose a chapter', text: 'Pick a book and chapter here. The ‹ and › buttons also change chapters.', before: () => ($('#mStudyPill').hidden = true) },
   { el: '#searchForm', title: 'Go to a verse, or search', text: 'Type a reference like John 3:16 to go straight there, or words to search the whole Bible.' },
   { el: '#study .tabs', title: 'Study', text: 'Cross-references for the verse you selected. Slide the tabs along for Words (Hebrew and Greek), Commentary, Topics, Places and People.', before: () => { setView('study'); switchTab('refs'); } },
-  { el: '#mNav [data-mn="today"]', title: 'Today', text: 'Time with God, the devotional, study methods, memory verses, your prayer list and badges.', before: () => setView('read') },
+  FEATURES.today === false
+    ? { el: '#mNav [data-mn="search"]', title: 'Search', text: 'Search the whole Bible for words or phrases, and see the results with a chart of where they occur.', before: () => setView('read') }
+    : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Time with God, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'} and badges.`, before: () => setView('read') },
   { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from the Menu now and then.' },
-  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: 'Everything else: reading plan, timeline, text size, dark mode, backing up your notes, and this tutorial.' },
+  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `Everything else: ${FEATURES.today === false ? 'Time with God, study methods, memory verses, badges, ' : ''}the devotional, the gospel, reading plan, timeline, text size, dark mode, backing up your notes, and this tutorial.` },
   { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },
 ];
 if (isPhone()) {
@@ -226,3 +235,62 @@ window.addEventListener('resize', () => {
     $('#mStudyPill').hidden = true;
   }
 });
+
+// ---------------------------------------------------------------- double-tap a word for its meaning (the phone's double-click)
+{
+  let last = null;
+  const wordAt = (x, y) => {
+    const r = document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null;
+    if (!r || r.startContainer.nodeType !== 3) return null;
+    const node = r.startContainer, t = node.textContent;
+    let a = r.startOffset, b = r.startOffset;
+    while (a > 0 && /[A-Za-z']/.test(t[a - 1])) a--;
+    while (b < t.length && /[A-Za-z']/.test(t[b])) b++;
+    const word = t.slice(a, b).replace(/^'+|'+$/g, '');
+    if (!/^[A-Za-z]/.test(word)) return null;
+    const range = document.createRange();
+    range.setStart(node, a);
+    range.setEnd(node, b);
+    return { word, node, range };
+  };
+  const unmark = () => $$('#readerInner .wm-word').forEach((m) => {
+    const p = m.parentNode;
+    m.replaceWith(...m.childNodes);
+    p.normalize();
+  });
+  $('#readerInner').addEventListener('touchend', (e) => {
+    if (!isPhone() || e.changedTouches.length !== 1) return;
+    const t = e.changedTouches[0];
+    const now = Date.now();
+    const again = last && now - last.t < 350 && Math.hypot(t.clientX - last.x, t.clientY - last.y) < 30;
+    last = again ? null : { t: now, x: t.clientX, y: t.clientY };
+    if (!again) return;
+    const v = e.target.closest('.verse');
+    const hit = v && wordAt(t.clientX, t.clientY);
+    if (!hit) return;
+    e.preventDefault(); // the second tap does not also act as a tap on the verse
+    const col = hit.node.parentElement.closest('.kjvcol, .bsbcol') || v;
+    // which occurrence of the word in the verse was tapped (so "the" in the middle finds the right original word)
+    const before = document.createRange();
+    before.setStart(col, 0);
+    before.setEnd(hit.range.startContainer, hit.range.startOffset);
+    const toks = (s) => s.match(/[A-Za-z][A-Za-z']*/g) || [];
+    const index = toks(before.toString()).length;
+    const count = toks(col.textContent).length;
+    unmark();
+    const rect = hit.range.getBoundingClientRect();
+    const mark = document.createElement('span');
+    mark.className = 'wm-word';
+    hit.range.surroundContents(mark);
+    showWordCard(hit.word, rect, Number(v.dataset.id), index, count);
+  }, { passive: false });
+  // "Open … word study" goes to the Study screen, where the word study opens
+  $('#wordcard').addEventListener('click', (e) => {
+    if (isPhone() && e.target.closest('[data-sn]')) setView('study');
+  });
+  // the highlight goes when the card closes
+  new MutationObserver(() => $('#wordcard').hidden && unmark()).observe($('#wordcard'), { attributes: true, attributeFilter: ['hidden'] });
+  document.addEventListener('touchstart', (e) => {
+    if (!$('#wordcard').hidden && !e.target.closest('#wordcard')) hideWordCard();
+  }, { passive: true });
+}
