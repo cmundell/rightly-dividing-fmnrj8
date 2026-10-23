@@ -3,7 +3,7 @@
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
 /* global tsk, state, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
    openProgress, openPaths, openStudyChooser, openFamily, openGospel, showMarksView, openReadingOptions, toggleTheme,
-   openQuickStart, openCmdk, setFocus, startTour, saveUser */
+   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew */
 
 const isPhone = () => window.matchMedia('(max-width: 760px)').matches;
 document.documentElement.classList.add('web');
@@ -120,7 +120,7 @@ const MENU = [
   ]],
   ['Help', [
     ['Quick start', () => openQuickStart()],
-    ["What's new", () => window.open('CHANGELOG.html', '_blank')],
+    ["What's new", () => openWhatsNew()],
     ['About', () => openAbout()],
   ]],
 ];
@@ -162,6 +162,7 @@ function openAbout() {
       <li>People and family links: BibleData by Brady Stephenson, CC BY 4.0.</li>
       <li>Parallel passages and quotations: UBS Parallel Passage Database, © 2023 United Bible Societies, CC BY-SA 4.0.</li>
       <li>Timeline: Theographic Bible Metadata by Robert Rouse, CC BY-SA 4.0.</li>
+      <li>Section headings: Berean Standard Bible, public domain (not part of the KJV text).</li>
     </ul>`, 'm-about');
 }
 

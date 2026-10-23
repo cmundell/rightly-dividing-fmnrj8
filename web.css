@@ -47,6 +47,7 @@
   .modal { padding: 0; align-items: stretch; }
   .modal-card { width: 100% !important; max-height: none; height: 100%; border-radius: 0; padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); box-sizing: border-box; }
   .modal-x { top: calc(8px + env(safe-area-inset-top)); font-size: 28px; }
+  .modal.m-whatsnew .modal-card { height: 100%; }
   .cmdk-card { width: 100% !important; border-radius: 0; margin-top: env(safe-area-inset-top); }
   .fm-text { font-size: 20px; }
   .modal.m-family.big .fm-text { font-size: 26px; }
