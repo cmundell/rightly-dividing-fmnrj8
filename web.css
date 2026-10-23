@@ -58,3 +58,9 @@
   .fm-head .m-title { font-size: 22px; }
   .wordcard, .preview { max-width: calc(100vw - 20px) !important; }
 }
+
+#webGate { position: fixed; inset: 0; z-index: 210; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.wg-card { max-width: 340px; width: 100%; text-align: center; display: flex; flex-direction: column; gap: 12px; }
+.wg-card input { height: 44px; font-size: 18px !important; text-align: center; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); }
+.wg-card .primary-btn { height: 44px; font-size: 16px; }
+.wg-msg { color: #b3261e; min-height: 1.2em; font-size: 14px; }
