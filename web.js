@@ -162,7 +162,6 @@ function openAbout() {
       <li>People and family links: BibleData by Brady Stephenson, CC BY 4.0.</li>
       <li>Parallel passages and quotations: UBS Parallel Passage Database, © 2023 United Bible Societies, CC BY-SA 4.0.</li>
       <li>Timeline: Theographic Bible Metadata by Robert Rouse, CC BY-SA 4.0.</li>
-      <li>Section headings: Berean Standard Bible, public domain (not part of the KJV text).</li>
     </ul>`, 'm-about');
 }
 

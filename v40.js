@@ -1,45 +1,7 @@
 'use strict';
-/* v3.10: section headings above the text, swipe left or right to change chapters, and What's New shown
+/* v3.10: swipe left or right to change chapters, and What's New shown
    inside the app (with a close button) on desktop and phone alike. Loaded after v39.js. */
-/* global tsk, state, $, $$, esc, openModal, closeModal, stepChapter, saveUser, openReadingOptions, COMMANDS */
-
-const v40 = { headings: null };
-
-// ===================================================================== section headings
-async function loadHeadings() {
-  if (!v40.headings) v40.headings = (await tsk.headings().catch(() => null)) || {};
-  return v40.headings;
-}
-async function paintHeadings() {
-  $$('#readerInner .sec-head').forEach((el) => el.remove());
-  if (state.settings.headings === 'off') return;
-  const h = await loadHeadings();
-  for (const v of $$('#readerInner .verse[data-id]')) {
-    const hs = h[v.dataset.id];
-    if (!hs) continue;
-    v.insertAdjacentHTML('beforebegin', hs.map((t, i) => `<div class="sec-head${i ? ' sub' : ''}" aria-hidden="false">${esc(t)}</div>`).join(''));
-  }
-}
-{
-  const prevAfter = window.v3AfterChapter;
-  window.v3AfterChapter = () => {
-    if (prevAfter) prevAfter();
-    paintHeadings();
-  };
-  const prevRO = window.openReadingOptions;
-  window.openReadingOptions = function () {
-    prevRO();
-    const box = $$('#modal input[data-ro="paras"]')[0];
-    if (box) box.closest('label').insertAdjacentHTML('afterend', `<label><input type="checkbox" data-ro40="headings" ${state.settings.headings !== 'off' ? 'checked' : ''}/> <span>Section headings <span class="hint">(not part of the KJV text)</span></span></label>`);
-  };
-  document.addEventListener('change', (e) => {
-    const c = e.target.closest('[data-ro40="headings"]');
-    if (!c) return;
-    state.settings.headings = c.checked ? 'on' : 'off';
-    saveUser(['settings']);
-    paintHeadings();
-  });
-}
+/* global tsk, $, openModal, stepChapter, COMMANDS */
 
 // ===================================================================== swipe to change chapters
 {

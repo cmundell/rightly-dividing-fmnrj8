@@ -1155,12 +1155,8 @@ body.listening #readerInner { padding-bottom: 80px; }
 .pt-together, .pt-action { font-size: 17px; padding: 10px 14px; background: var(--accent-soft); border-radius: 10px; color: var(--ink); }
 .pt-body button:not(.ls-inline):not(.primary-btn) { border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; padding: 6px 14px; cursor: pointer; color: var(--ink); }
 
-/* ===================== 3.10 headings, swipe, What's New ===================== */
-.sec-head { font-family: var(--scripture); font-weight: 700; font-size: calc(var(--fs) * 0.92); color: var(--accent); margin: 18px 0 4px 28px; letter-spacing: 0.01em; }
-.sec-head.sub { font-weight: 400; font-style: italic; margin-top: 2px; font-size: calc(var(--fs) * 0.82); }
-.sec-head:first-child, .chapter-head + .sec-head { margin-top: 4px; }
-:root[data-theme='dark'] .sec-head { color: #c8d6f2; }
-#readerInner { transition: transform .14s ease-in, opacity .14s ease-in; }
+/* ===================== 3.10 swipe, What's New ===================== */
+:root[data-theme='dark'] #readerInner { transition: transform .14s ease-in, opacity .14s ease-in; }
 #readerInner.swipe-out-left { transform: translateX(-40px); opacity: 0; }
 #readerInner.swipe-out-right { transform: translateX(40px); opacity: 0; }
 #readerInner.swipe-in-right { animation: swipeInR .26s ease-out; }

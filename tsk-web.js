@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '3.10.0';
+  const VERSION = '3.10.1';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -287,7 +287,6 @@
     family: () => loadJson('family.json', { stories: [] }),
     gospel: () => loadJson('gospel.json', { steps: [], next: [] }),
     paths: () => loadJson('paths.json', { paths: [] }),
-    headings: () => loadJson('headings.json', {}),
     // after an update reaches this phone, show What's New once (not on a first install)
     whatsNewPending: async () => {
       const u = (await kvGet('user')) || {};
