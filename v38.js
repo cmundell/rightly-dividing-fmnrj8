@@ -110,7 +110,7 @@ async function openToday() {
   const [ref, text] = inviteFor(today);
   const due = Object.values(state.memory || {}).filter((m) => m.due <= today).length;
   const open = state.prayers.filter((p) => !p.answered).length;
-  const fam = await loadFamily();
+  const fam = FEATURES.family ? await loadFamily() : { stories: [] };
   const st = fam.stories[(state.walk.family.cur || 1) - 1] || fam.stories[0];
   const done = !!state.walk.days[today];
   const hr = new Date().getHours();
@@ -122,7 +122,7 @@ async function openToday() {
     <blockquote class="td-invite">“${esc(text)}” <span>${esc(ref)}</span></blockquote>
     <button class="td-begin primary-btn" data-wk="begin">${done ? 'Spend more time with God' : 'Begin time with God'}<span>Pray · Read · Reflect · Pray · Remember</span></button>
     <div class="td-tiles">
-      <button data-td="family"><b>Family devotions</b><span>Story ${st.n} of 52: ${esc(st.title)}</span></button>
+      ${st ? `<button data-td="family"><b>Family devotions</b><span>Story ${st.n} of 52: ${esc(st.title)}</span></button>` : ''}
       <button data-td="prayers"><b>Prayer list</b><span>${open ? `${open} request${open === 1 ? '' : 's'} you are praying for` : 'Keep a list of what you are praying for'}</span></button>
       <button data-td="memory"><b>Memory verses</b><span>${due ? `${due} to practise today` : `${Object.keys(state.memory || {}).length || 'No'} verse${Object.keys(state.memory || {}).length === 1 ? '' : 's'} hidden in your heart`}</span></button>
       <button data-td="plan"><b>Reading plan</b><span>${planToday.length ? `Today: ${esc(planLabel(planToday))}` : ps && ps.finished ? 'Plan finished — well done' : 'Choose a plan to read through the Bible'}</span></button>
@@ -130,8 +130,8 @@ async function openToday() {
       <button data-td="journal"><b>Journal</b><span>${state.journal.length ? `${state.journal.length} entr${state.journal.length === 1 ? 'y' : 'ies'}` : 'Your time with God, written down'}</span></button>
       <button data-td="gospel"><b>The gospel</b><span>How to be saved — to read, print or share</span></button>
     </div>
-    <div class="td-quiet" title="Days with God's Word: Time with God, family devotions, or a chapter read">
-      This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word · ${w.chapters} chapter${w.chapters === 1 ? '' : 's'} · ${w.family} family devotion${w.family === 1 ? '' : 's'}${streak > 1 ? ` · walking ${streak} days` : ''}
+    <div class="td-quiet" title="Days with God's Word: Time with God, or a chapter read">
+      This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word · ${w.chapters} chapter${w.chapters === 1 ? '' : 's'} ${FEATURES.family ? `· ${w.family} family devotion${w.family === 1 ? '' : 's'}` : ''}${streak > 1 ? ` · walking ${streak} days` : ''}
       <button class="linkish" data-td="remind">Gentle reminders…</button>
     </div>`, 'm-today');
 }
@@ -536,22 +536,22 @@ function checkReminder() {
 // ===================================================================== tour, quick start, commands
 {
   const i = TOUR.findIndex((t) => t.el === '#btnDaily');
-  TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0, { el: '#btnToday', title: 'Today', text: 'Start here each day. Time with God walks you through prayer, reading, reflecting, praying for others and remembering a verse — and saves it in your journal. Family devotions, your prayer list and the gospel are here too.' });
+  TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0, { el: '#btnToday', title: 'Today', text: `Start here each day. Time with God walks you through prayer, reading, reflecting, praying for others and remembering a verse — and saves it in your journal.${FEATURES.family ? ' Family devotions, your' : ' Your'} prayer list and the gospel are here too.` });
   const prevQS = window.openQuickStart;
   window.openQuickStart = () => {
     prevQS();
     const first = $('#modal .qs section');
     if (first) first.insertAdjacentHTML('afterend', `<section><h3>Your daily walk</h3><ul>
       <li><b>Today</b> (Ctrl+Shift+W): <i>Time with God</i> — prepare, read, reflect, pray and remember. It is saved in Notes › Journal.</li>
-      <li><b>Family devotions</b> (Ctrl+Shift+Y): 52 Bible stories, one a week, with questions for little ones and older children, a memory verse and a prayer. <i>Large view</i> for reading together; <i>Print</i> for the table.</li>
+      ${FEATURES.family ? '<li><b>Family devotions</b> (Ctrl+Shift+Y): 52 Bible stories, one a week, with questions for little ones and older children, a memory verse and a prayer. <i>Large view</i> for reading together; <i>Print</i> for the table.</li>' : ''}
       <li><b>Notes › Prayer</b>: your prayer list by category; mark requests answered and keep a record of God's faithfulness.</li>
       <li><b>Memory verses</b>: practise with first letters, fill in the blanks, or type it out.</li>
       <li><b>The gospel</b>: how to be saved, in Scripture's own words — print it or save it to share.</li></ul></section>`);
   };
+  if (FEATURES.family) COMMANDS.unshift(['Family devotions', 'children kids family stories', () => openFamily()]);
   COMMANDS.unshift(
     ['Today — time with God', 'walk devotion quiet time pray', () => openToday()],
     ['Time with God (guided)', 'quiet time devotion pray read reflect', () => beginWalk()],
-    ['Family devotions', 'children kids family stories', () => openFamily()],
     ['Prayer list', 'requests answered', () => showMarksView('prayer')],
     ['Journal', 'diary entries', () => showMarksView('journal')],
     ['The gospel — how to be saved', 'salvation saved romans road share', () => openGospel()],
@@ -561,7 +561,7 @@ function checkReminder() {
 
 // ===================================================================== events
 function wireV38() {
-  $('#btnDaily').insertAdjacentHTML('beforebegin', '<button id="btnToday" class="icon text" title="Today: time with God, family devotions, prayer list (Ctrl+Shift+W)">Today</button>');
+  $('#btnDaily').insertAdjacentHTML('beforebegin', '<button id="btnToday" class="icon text" title="Today: time with God, prayer list, memory verses (Ctrl+Shift+W)">Today</button>');
   $('#btnToday').addEventListener('click', () => openToday());
   const modal = $('#modal');
   modal.addEventListener('click', async (e) => {
@@ -857,7 +857,7 @@ function wireV38() {
   });
   tsk.onMenu((cmd) => {
     if (cmd === 'walk') openToday();
-    else if (cmd === 'family') openFamily();
+    else if (cmd === 'family' && FEATURES.family) openFamily();
     else if (cmd === 'prayers') showMarksView('prayer');
     else if (cmd === 'journal') showMarksView('journal');
     else if (cmd === 'gospel') openGospel();

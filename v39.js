@@ -402,22 +402,22 @@ async function printPathStep() {
     await prevToday();
     const tiles = $('#modal .td-tiles');
     if (!tiles) return;
-    const paths = await loadPaths().catch(() => []);
+    const paths = FEATURES.paths ? await loadPaths().catch(() => []) : [];
     const going = paths.find((p) => Object.keys(pathProgress(p.id).done).length && Object.keys(pathProgress(p.id).done).length < p.steps.length);
-    tiles.insertAdjacentHTML('afterbegin', `<button data-td2="paths"><b>Discipleship paths</b><span>${going ? `${esc(going.title)}: step ${pathProgress(going.id).cur}` : 'First Steps, Growing in Christ, Leading Your Family'}</span></button>
+    tiles.insertAdjacentHTML('afterbegin', `${FEATURES.paths ? `<button data-td2="paths"><b>Discipleship paths</b><span>${going ? `${esc(going.title)}: step ${pathProgress(going.id).cur}` : 'First Steps, Growing in Christ, Leading Your Family'}</span></button>` : ''}
       <button data-td2="study"><b>Study methods</b><span>Guided worksheets: observe, words, people, topics</span></button>`);
   };
+  if (FEATURES.paths) COMMANDS.unshift(['Discipleship paths', 'disciple mentor first steps growing family new believer', () => openPaths()]);
   COMMANDS.unshift(
-    ['Discipleship paths', 'disciple mentor first steps growing family new believer', () => openPaths()],
     ['Study methods', 'inductive observe interpret apply soap word character topical verse mapping book overview worksheet', () => openStudyChooser()],
   );
   const i = TOUR.findIndex((t) => t.el === '#btnToday');
-  if (i >= 0) TOUR[i] = { ...TOUR[i], text: `${TOUR[i].text} Discipleship paths and study methods start here too.` };
+  if (i >= 0) TOUR[i] = { ...TOUR[i], text: `${TOUR[i].text}${FEATURES.paths ? ' Discipleship paths and study methods start here too.' : ' Study methods start here too.'}` };
   const prevQS = window.openQuickStart;
   window.openQuickStart = () => {
     prevQS();
     const walk = $$('#modal .qs section').find((s) => /Your daily walk/.test(s.textContent));
-    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', `<li><b>Discipleship paths</b> (Today): First Steps, Growing in Christ and Leading Your Family — eight steps each, to go through alone or with someone. <i>Print</i> a step to meet with a friend.</li>
+    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', `${FEATURES.paths ? '' : '<!--'}<li><b>Discipleship paths</b> (Today): First Steps, Growing in Christ and Leading Your Family — eight steps each, to go through alone or with someone. <i>Print</i> a step to meet with a friend.</li>${FEATURES.paths ? '' : '-->'}
       <li><b>Study methods</b> (Today, or Ctrl+K): Observe–Interpret–Apply, SOAP, word study, character study, topical study, verse mapping and book overview, with study aids filled in for you. Saved in Notes › Journal.</li>`);
   };
 }
@@ -557,7 +557,7 @@ function wireV39() {
     }
   });
   tsk.onMenu((cmd) => {
-    if (cmd === 'paths') openPaths();
+    if (cmd === 'paths' && FEATURES.paths) openPaths();
     else if (cmd === 'study') openStudyChooser();
   });
 }

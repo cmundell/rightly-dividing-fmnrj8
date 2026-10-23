@@ -311,15 +311,20 @@ function wireListen() {
   tsk.onMenu((cmd) => {
     if (cmd === 'listen') listen.playing ? stopListening() : listenToChapter();
   });
-  COMMANDS.unshift(['Listen to this chapter', 'read aloud audio voice speak hear', () => listenToChapter()]);
   const i = TOUR.findIndex((t) => t.el === '#btnToday');
-  TOUR.splice(i >= 0 ? i + 1 : TOUR.length - 1, 0, { el: '#btnListen', title: 'Listen', text: 'Hear the chapter read aloud by a British voice, verse by verse, with the verse being read highlighted. It all happens on your computer — no internet needed. Choose the pace, and whether to keep going into the next chapter.' });
+  // only mention Listen where the voice is installed (it is set aside in current releases)
+  listenAvailable().then((ok) => {
+    if (!ok) return;
+    COMMANDS.unshift(['Listen to this chapter', 'read aloud audio voice speak hear', () => listenToChapter()]);
+    TOUR.splice(i >= 0 ? i + 1 : TOUR.length - 1, 0, { el: '#btnListen', title: 'Listen', text: 'Hear the chapter read aloud by a British voice, verse by verse, with the verse being read highlighted. It all happens on your computer — no internet needed. Choose the pace, and whether to keep going into the next chapter.' });
+  });
   const prevQS = window.openQuickStart;
   window.openQuickStart = () => {
     prevQS();
+    if (!listen.ok) return;
     const ul = $('#modal .qs section ul');
     const walk = $$('#modal .qs section').find((s) => /Your daily walk/.test(s.textContent));
-    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', '<li><b>Listen</b> (Ctrl+Shift+L): the chapter read aloud from the verse you have selected; Space pauses. Family devotions and Time with God have a Listen button too.</li>');
+    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', '<li><b>Listen</b> (Ctrl+Shift+L): the chapter read aloud from the verse you have selected; Space pauses. Time with God has a Listen button too.</li>');
     else if (ul) ul.insertAdjacentHTML('beforeend', '<li><b>Listen</b> (Ctrl+Shift+L): the chapter read aloud.</li>');
   };
 }

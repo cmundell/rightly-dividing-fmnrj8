@@ -18,6 +18,25 @@ document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria
   <button id="mStudyPill" class="m-pill" hidden></button>`);
 // a Menu button in the toolbar too (desktop browsers have no menu bar)
 if (isPhone()) $('#searchInput').placeholder = 'Go to John 3:16, or search words';
+// light / sepia / dark: one button on the reading screen; each tap moves to the next
+$('.toolbar .group.nav').insertAdjacentHTML('beforeend', '<button id="mTheme" class="icon m-theme" title="Light, sepia or dark" aria-label="Change theme"></button>');
+const THEME_ICON = { light: '&#9728;', sepia: '&#9681;', dark: '&#9790;' };
+const paintThemeBtn = () => {
+  const t = (state.settings && state.settings.theme) || 'light';
+  $('#mTheme').innerHTML = THEME_ICON[t] || THEME_ICON.light;
+  $('#mTheme').setAttribute('aria-label', `Theme: ${t}. Tap to change`);
+};
+$('#mTheme').addEventListener('click', () => {
+  toggleTheme();
+  paintThemeBtn();
+});
+{
+  const prevApply = window.applySettings;
+  window.applySettings = function () {
+    prevApply();
+    paintThemeBtn();
+  };
+}
 $('.group.right').insertAdjacentHTML('afterbegin', '<button id="btnMenu" class="icon text" title="Menu">Menu</button>');
 
 function setView(v) {
@@ -97,8 +116,8 @@ const MENU = [
   ['Your walk', [
     ['Today', () => openToday()],
     ['Devotional', () => openDaily(0, null)],
-    ['Family devotions', () => openFamily()],
-    ['Discipleship paths', () => openPaths()],
+    ...(FEATURES.family ? [['Family devotions', () => openFamily()]] : []),
+    ...(FEATURES.paths ? [['Discipleship paths', () => openPaths()]] : []),
     ['Study methods', () => openStudyChooser()],
     ['The gospel', () => openGospel()],
   ]],
@@ -179,7 +198,7 @@ const PHONE_TOUR = [
   { el: '.toolbar .group.nav', title: 'Choose a chapter', text: 'Pick a book and chapter here. The ‹ and › buttons also change chapters.', before: () => ($('#mStudyPill').hidden = true) },
   { el: '#searchForm', title: 'Go to a verse, or search', text: 'Type a reference like John 3:16 to go straight there, or words to search the whole Bible.' },
   { el: '#study .tabs', title: 'Study', text: 'Cross-references for the verse you selected. Slide the tabs along for Words (Hebrew and Greek), Commentary, Topics, Places and People.', before: () => { setView('study'); switchTab('refs'); } },
-  { el: '#mNav [data-mn="today"]', title: 'Today', text: 'Time with God, the devotional, family devotions, discipleship paths, study methods, your prayer list and badges.', before: () => setView('read') },
+  { el: '#mNav [data-mn="today"]', title: 'Today', text: 'Time with God, the devotional, study methods, memory verses, your prayer list and badges.', before: () => setView('read') },
   { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from the Menu now and then.' },
   { el: '#mNav [data-mn="menu"]', title: 'Menu', text: 'Everything else: reading plan, timeline, text size, dark mode, backing up your notes, and this tutorial.' },
   { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },

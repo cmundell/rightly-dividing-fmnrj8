@@ -108,7 +108,7 @@ function openBadges() {
     <p class="hint">A verse counts as learned when you have said it correctly from memory three times, on separate days (Notes › Memory).</p>
     <div class="section-title">Days in the Word <span class="hint">· ${p.days} in all${dayNext ? ` · next at ${dayNext.n}` : ''}</span></div>
     <div class="bd-grid">${BADGES.filter((b) => b.group === 'days').map((b) => card(b, String(b.n), `${Math.min(p.days, b.n)} of ${b.n}`)).join('')}</div>
-    <p class="hint">Any day you read a chapter, spend time with God or have family devotions. Days do not need to be in a row.</p>
+    <p class="hint">Any day you read a chapter or spend time with God. Days do not need to be in a row.</p>
     <div class="section-title">Reading the Bible through <span class="hint">· ${p.books.length} of 66 books</span></div>
     <div class="bd-grid">${BADGES.filter((b) => b.group === 'whole').map((b) => card(b, b.id === 'nt' ? 'NT' : '66', b.id === 'nt' ? `${p.books.filter((x) => x.id >= 40).length} of 27 books` : `${p.books.length} of 66 books`)).join('')}</div>
     <div class="bd-books">${bookCells}</div>
