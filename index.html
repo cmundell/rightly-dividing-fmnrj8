@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1f3a6b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Scriptures" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <title>Search the Scriptures</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="web.css" />
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand" title="Search the Scriptures — John 5:39">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 7c4-1.6 8-1.6 12 1v17c-4-2.6-8-2.6-12-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M28 7c-4-1.6-8-1.6-12 1v17c4-2.6 8-2.6 12-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M20 12l4-.8M20 16l4-.8M8 12l4 .8M8 16l4 .8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <span class="bname">Search the Scriptures</span>
+    </div>
+    <div class="group">
+      <button id="btnBack" class="icon" title="Back (Alt+←)" disabled>&#8592;</button>
+      <button id="btnFwd" class="icon" title="Forward (Alt+→)" disabled>&#8594;</button>
+    </div>
+    <form id="gotoForm" class="goto" autocomplete="off" hidden>
+      <input id="gotoInput" placeholder="Go to… e.g. John 3:16, Ps 23, rom 8" title="Go to reference (Ctrl+G)" />
+    </form>
+    <div class="group nav">
+      <select id="bookSel" title="Book"></select>
+      <select id="chapSel" title="Chapter"></select>
+      <button id="btnPrev" class="icon" title="Previous chapter (Ctrl+←)">&#8249;</button>
+      <button id="btnNext" class="icon" title="Next chapter (Ctrl+→)">&#8250;</button>
+    </div>
+    <form id="searchForm" class="search" autocomplete="off">
+      <input id="searchInput" type="search" placeholder="Go to John 3:16 · or search faith, &quot;living water&quot;, G25 (Ctrl+F)" title="Type a reference to go there, or words to search (Ctrl+F / Ctrl+G)" />
+    </form>
+    <div class="group right">
+      <button id="btnDaily" class="icon text" title="Devotional: Spurgeon's Morning and Evening for today (Ctrl+Shift+M)">Devotional</button>
+      <button id="btnTimeline" class="icon text" title="Timeline of Bible history (Ctrl+Shift+T)">Timeline</button>
+      <button id="btnPlan" class="icon text" title="Reading plan">Plan</button>
+      <button id="btnSheet" class="icon text" title="Export a study sheet for the selected verse (Ctrl+P)">Study sheet</button>
+      <button id="btnFocus" class="icon" title="Focus mode: just the text (Ctrl+\)"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button id="btnTheme" class="icon" title="Light / dark (Ctrl+D)"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="currentColor"/></svg></button>
+      <button id="btnRead" class="icon text" title="Reading options: font, spacing, sepia, italics, red letters (Ctrl+,)">Aa</button>
+      <button id="btnFontDown" class="icon small" title="Smaller text (Ctrl+-)">A&#8722;</button>
+      <button id="btnFontUp" class="icon" title="Larger text (Ctrl+=)">A+</button>
+    </div>
+  </header>
+
+  <div id="trail" class="trail" title="Reference trail: the verses you've studied, in order">
+    <span class="trail-label">Trail</span>
+    <div id="trailItems" class="trail-items"></div>
+    <button id="trailClear" class="trail-btn" title="Clear the trail">Clear</button>
+  </div>
+
+  <main id="layout">
+    <section id="reader" tabindex="-1">
+      <div id="pins" class="pins" hidden></div>
+      <div id="readerInner"></div>
+    </section>
+    <div id="divider" title="Drag to resize"></div>
+    <aside id="study">
+      <nav class="tabs">
+        <button data-tab="refs" class="on" title="Ctrl+1">Refs</button>
+        <button data-tab="words" title="Ctrl+2">Words</button>
+        <button data-tab="comm" title="Ctrl+3">Commentary</button>
+        <button data-tab="topics" title="Ctrl+4">Topics <span id="topicCount" class="count"></span></button>
+        <button data-tab="places" title="Ctrl+5">Places <span id="placeCount" class="count"></span></button>
+        <button data-tab="people" title="Ctrl+6">People</button>
+        <button data-tab="search" title="Ctrl+7">Search <span id="searchCount" class="count"></span></button>
+        <button data-tab="marks" title="Ctrl+8">Notes <span id="markCount" class="count"></span></button>
+      </nav>
+      <div class="panes">
+        <div id="pane-refs" class="pane on"></div>
+        <div id="pane-words" class="pane"></div>
+        <div id="pane-comm" class="pane"></div>
+        <div id="pane-topics" class="pane"></div>
+        <div id="pane-places" class="pane"></div>
+        <div id="pane-people" class="pane"></div>
+        <div id="pane-search" class="pane">
+          <div class="searchbar">
+            <select id="scopeSel" title="Limit search to">
+              <option value="">Whole Bible</option>
+              <option value="OT">Old Testament</option>
+              <option value="NT">New Testament</option>
+            </select>
+            <span id="searchStatus"></span>
+          </div>
+          <div id="searchResults" class="results"></div>
+        </div>
+        <div id="pane-marks" class="pane"></div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="preview" class="preview" hidden></div>
+  <div id="wordcard" class="wordcard" hidden></div>
+  <div id="toast" class="toast" hidden></div>
+  <div id="modal" class="modal" hidden><div class="modal-card" role="dialog" aria-modal="true"><button class="modal-x" title="Close (Esc)">&times;</button><div id="modalBody"></div></div></div>
+  <div id="cmdk" class="cmdk" hidden role="dialog" aria-modal="true" aria-label="Command box">
+    <div class="cmdk-card"><input id="cmdkInput" placeholder="Type a reference, a feature, a person, a journey, or words in your notes…" aria-label="Command" autocomplete="off" />
+      <div id="cmdkList" class="cmdk-list" role="listbox"></div>
+      <div class="cmdk-foot"><span>↑ ↓ to choose · Enter to open · Esc to close</span><span>Ctrl+K</span></div></div></div>
+  <div id="tour" class="tour" hidden><div class="tour-spot"></div><div class="tour-card"></div></div>
+  <script src="lib/sql-wasm-browser.js"></script>
+  <script src="lib/cjs-shim.js"></script>
+  <script src="lib/db.js"></script>
+  <script src="lib/jszip.min.js"></script>
+  <script src="lib/docx.js"></script>
+  <script src="tsk-web.js"></script>
+  <script src="refparse.js"></script>
+  <script src="app.js"></script>
+  <script src="v3.js"></script>
+  <script src="v32.js"></script>
+  <script src="v33.js"></script>
+  <script src="v34.js"></script>
+  <script src="v35.js"></script>
+  <script src="v36.js"></script>
+  <script src="v37.js"></script>
+  <script src="v38.js"></script>
+  <script src="v381.js"></script>
+  <script src="v39.js"></script>
+  <script src="web.js"></script>
+</body>
+</html>
