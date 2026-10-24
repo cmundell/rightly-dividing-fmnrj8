@@ -126,7 +126,7 @@ async function openToday() {
       <button data-td="plan"><b>Reading plan</b><span>${planToday.length ? `Today: ${esc(planLabel(planToday))}` : ps && ps.finished ? 'Plan finished — well done' : 'Choose a plan to read through the Bible'}</span></button>
       <button data-td="daily"><b>Devotional</b><span>Spurgeon's Morning and Evening for today</span></button>
       <button data-td="journal"><b>Journal</b><span>${state.journal.length ? `${state.journal.length} entr${state.journal.length === 1 ? 'y' : 'ies'}` : 'Your time with God, written down'}</span></button>
-      <button data-td="gospel"><b>The gospel</b><span>How to be saved — to read, print or share</span></button>
+      <button data-td="gospel"><b>The Gospel</b><span>How to be saved — to read, print or share</span></button>
       <button data-td3="badges"><b>Medallions</b><span>${badges ? `${badges} collected` : 'Milestones in memorizing and reading'}</span></button>
     </div>
     <div class="td-quiet" title="Days with God's Word: Time with God, or a chapter read">
@@ -333,24 +333,27 @@ async function printFamily() {
 // ===================================================================== the gospel
 async function openGospel() {
   const g = await loadGospel();
-  const vs = (x) => `<blockquote class="gs-verse">${x.verses.map((v) => esc(v.t)).join(' ')} <span>${esc(x.ref)}</span></blockquote>`;
-  openModal(`<div class="kicker">The gospel</div><h2 class="m-title">How can I be saved?</h2>
-    <p class="wk-lead">The Bible's good news, in God's own words.</p>
-    <ol class="gs-steps">${g.steps.map((s) => `<li><h3>${esc(s.title)}</h3>${vs(s)}<p>${esc(curly(s.text))}</p></li>`).join('')}</ol>
-    <div class="gs-pray"><h3>Will you trust Him?</h3><p>Words alone do not save; God looks at the heart that turns from sin and trusts Christ. If you are ready, you could pray something like this:</p>
-      <p class="gs-prayer">“Lord Jesus, I know that I am a sinner and cannot save myself. I believe You died on the cross for my sins and rose again. I turn from my sin and trust You alone to save me. Thank You for Your gift of eternal life. Amen.”</p></div>
-    <h3 class="gs-next-h">Next steps</h3>
-    <ul class="gs-next">${g.next.map((s) => `<li><b>${esc(s.title)}.</b> ${esc(s.text)} <button class="pl-vs" data-dvgo="${s.s}">${esc(s.ref)}</button></li>`).join('')}</ul>
+  // Word for word from Teays Valley Baptist (see tools/build_gospel.py): nothing here is reworded.
+  const block = (x) => `<p class="gs-${x.k}">${esc(x.t)}</p>`;
+  openModal(`<h2 class="m-title">${esc(g.title)}</h2>
+    ${g.sections.map((s) => `<section class="gs-sec"><h3><button class="gs-ref" data-dvgo="${s.s}" title="Open in the Bible">${esc(s.ref)}</button></h3>
+      <blockquote class="gs-verse">${s.quote.map((q) => `<span class="gs-q">${esc(q)}</span>`).join('')}</blockquote>
+      ${s.blocks.map(block).join('')}</section>`).join('')}
+    <p class="gs-src">From ${esc(g.source)}, <a href="${esc(g.sourceUrl)}" target="_blank" rel="noopener">Witness Assist</a>.</p>
+    <a class="gs-film" href="${esc(g.film.url)}" target="_blank" rel="noopener">
+      <span class="gs-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span>
+      <span class="gs-film-t"><b>Watch ${esc(g.film.title)}</b><small>${esc(g.film.by)} · YouTube · needs internet</small></span>
+      <span class="gs-film-go" aria-hidden="true">&#8250;</span></a>
     <div class="fm-foot"><button data-gs="print">Print</button><button data-gs="pdf">Save as PDF</button><button data-gs="html" title="A web page anyone can open — to email or put on a USB stick">Save to share</button></div>`, 'm-gospel');
 }
 
 async function gospelPage() {
   const g = await loadGospel();
-  return sheetPage('How can I be saved?', `<div class="k">The gospel</div><h1>How can I be saved?</h1><p>The Bible's good news, in God's own words.</p>
-    ${g.steps.map((s, i) => `<h2>${i + 1}. ${esc(s.title)}</h2><blockquote>${s.verses.map((v) => esc(v.t)).join(' ')}<cite>${esc(s.ref)}</cite></blockquote><p>${esc(curly(s.text))}</p>`).join('')}
-    <h2>Will you trust Him?</h2><p>Words alone do not save; God looks at the heart that turns from sin and trusts Christ. If you are ready, you could pray something like this:</p>
-    <blockquote>Lord Jesus, I know that I am a sinner and cannot save myself. I believe You died on the cross for my sins and rose again. I turn from my sin and trust You alone to save me. Thank You for Your gift of eternal life. Amen.</blockquote>
-    <h2>Next steps</h2><ul>${g.next.map((s) => `<li><b>${esc(s.title)}.</b> ${esc(s.text)} <i>(${esc(s.ref)}: “${esc(s.verses.map((v) => v.t).join(' '))}”)</i></li>`).join('')}</ul>`);
+  return sheetPage(g.title, `<h1>${esc(g.title)}</h1>
+    ${g.sections.map((s) => `<h2>${esc(s.ref)}</h2><blockquote>${s.quote.map(esc).join('<br>')}</blockquote>
+      ${s.blocks.map((x) => `<p${x.k === 'p' ? '' : ' style="font-weight:600"'}>${esc(x.t)}</p>`).join('')}`).join('')}
+    <p>Watch ${esc(g.film.title)} (${esc(g.film.by)}): <a href="${esc(g.film.url)}">${esc(g.film.url)}</a></p>
+    <p style="color:#666;font-size:.9em">From ${esc(g.source)}, Witness Assist: ${esc(g.sourceUrl)}</p>`);
 }
 
 // ===================================================================== prayer list (Notes › Prayer)
@@ -531,7 +534,7 @@ function checkReminder() {
 // ===================================================================== tour, quick start, commands
 {
   const i = TOUR.findIndex((t) => t.el === '#btnTimeline');
-  TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0, { el: '#btnToday', title: 'Today', text: `Start here each day. Time with God walks you through prayer, reading, reflecting, praying for others and remembering a verse — and saves it in your journal.${FEATURES.family ? ' Family devotions, your' : ' Your'} prayer list and the gospel are here too.` });
+  TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0, { el: '#btnToday', title: 'Today', text: `Start here each day. Time with God walks you through prayer, reading, reflecting, praying for others and remembering a verse — and saves it in your journal.${FEATURES.family ? ' Family devotions, your' : ' Your'} prayer list and The Gospel are here too.` });
   const prevQS = window.openQuickStart;
   window.openQuickStart = () => {
     prevQS();
@@ -541,7 +544,7 @@ function checkReminder() {
       ${FEATURES.family ? '<li><b>Family devotions</b> (Ctrl+Shift+Y): 52 Bible stories, one a week, with questions for little ones and older children, a memory verse and a prayer. <i>Large view</i> for reading together; <i>Print</i> for the table.</li>' : ''}
       <li><b>Notes › Prayer</b>: your prayer list by category; mark requests answered and keep a record of God's faithfulness.</li>
       <li><b>Memory verses</b>: practise with first letters, fill in the blanks, or type it out.</li>
-      <li><b>The gospel</b>: how to be saved, in Scripture's own words — print it or save it to share.</li></ul></section>`);
+      <li><b>The Gospel</b>: how to be saved — print it or save it to share.</li></ul></section>`);
   };
   if (FEATURES.family) COMMANDS.unshift(['Family devotions', 'children kids family stories', () => openFamily()]);
   COMMANDS.unshift(
@@ -549,7 +552,7 @@ function checkReminder() {
     ['Time with God (guided)', 'quiet time devotion pray read reflect', () => beginWalk()],
     ['Prayer list', 'requests answered', () => showMarksView('prayer')],
     ['Journal', 'diary entries', () => showMarksView('journal')],
-    ['The gospel — how to be saved', 'salvation saved romans road share', () => openGospel()],
+    ['The Gospel — how to be saved', 'salvation saved romans road share', () => openGospel()],
     ['Gentle reminders', 'notification reminder login', () => openReminders()],
   );
 }

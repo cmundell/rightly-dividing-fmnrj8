@@ -307,12 +307,12 @@ function openQuickStart() {
       <li><kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> go back and forward. The <b>trail</b> under the toolbar lists every verse you've studied — click one to return.</li>
       <li>Highlighted verses keep their color; marks in the left margin show verses you've noted (✎) or tagged (#).</li></ul></section>
     <section><h3>Studying a verse</h3><ul>
-      <li>New to Bible study? Select a verse and choose <b>Study this verse, step by step</b>: read it, related verses, one word up close, what a trusted teacher said, and what God is saying to you.</li>
+      <li>New to Bible study? Select a verse and choose <b>Study this verse, step by step</b>: read it, related verses, one word up close${FEATURES.commentary ? ', what a trusted teacher said' : ''}, and what God is saying to you.</li>
       <li><b>Related verses</b> — the Treasury of Scripture Knowledge cross-references, grouped by key word. Hover to preview, click to go.</li>
       <li><b>Original words</b> — every Hebrew/Greek word with Strong's number and grammar. Click a number for its full entry and every verse that uses it.</li>
-      <li><b>Commentary</b> — Matthew Henry's Concise Commentary on the passage. <b>Topics</b> — Nave's topics that cite the verse.</li>
+      <li>${FEATURES.commentary ? "<b>Commentary</b> — Matthew Henry's Concise Commentary on the passage." : '<b>Commentary</b> — opens the verse at Blue Letter Bible (online) if you want to read commentaries.'} <b>Topics</b> — Nave's topics that cite the verse.</li>
       <li>${dblClick()} any word in the text for its Webster's 1828 definition, the original word, and Easton's Bible Dictionary.</li>
-      <li><b>About this book</b>, under each chapter heading: who wrote it, when, to whom, its theme, a key verse and an outline.</li></ul></section>
+${FEATURES.about ? '      <li><b>About this book</b>, under each chapter heading: who wrote it, when, to whom, its theme, a key verse and an outline.</li>' : ''}</ul></section>
     <section><h3>Searching</h3><ul>
       <li><code>faith hope</code> all words · <code>"living water"</code> exact phrase · <code>shepherd OR sheep</code> either</li>
       <li><code>grace -law</code> leave a word out · <code>redeem*</code> word beginnings</li>
@@ -334,17 +334,18 @@ function openQuickStart() {
 const TOUR = [
   { title: 'Welcome to Search the Scriptures', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
   { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Highlighted verses keep their color; small marks in the left margin show your notes (✎) and tags (#).' },
-  { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: who wrote the book, when, to whom, its theme, a key verse and an outline you can click to move around the book, with Easton\'s Bible Dictionary article.' },
+  FEATURES.about && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: who wrote the book, when, to whom, its theme, a key verse and an outline you can click to move around the book, with Easton\'s Bible Dictionary article.' },
   { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
   { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
   { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
-  { el: '#pane-comm', tab: 'comm', title: 'Commentary and topics', text: 'Matthew Henry\'s Concise Commentary on the passage, with clickable scripture references. The Topics tab lists Nave\'s topics that cite the verse, and lets you browse any topic.' },
+  { el: '#pane-comm', tab: 'comm', title: 'Commentary and topics', text: (FEATURES.commentary ? 'Matthew Henry\'s Concise Commentary on the passage, with clickable scripture references.' : 'This app keeps to the Bible itself; the Commentary tab opens the verse at Blue Letter Bible (online) if you want to read commentaries.') + ' The Topics tab lists Nave\'s topics that cite the verse, and lets you browse any topic.' },
   { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. Click any one to go back to it.' },
   { el: '[data-tab="marks"]', tab: 'marks', title: 'Notes and lessons', text: 'Your notes (filter by tag), highlights, memory verses, prayer list and journal. Lessons collect verses in teaching order and export them as a PDF.' },
   { el: '#btnPlan', title: 'Reading plans', text: 'Choose a plan — the whole Bible in a year, the New Testament in 90 days, and more. A gold dot means today\'s reading is waiting.' },
-  { el: '#btnSheet', title: 'Study sheets', text: 'Save the selected verse with its cross-references, word study, commentary, topics and your notes as a PDF (Ctrl+P).' },
+  { el: '#btnSheet', title: 'Study sheets', text: 'Save the selected verse with its cross-references, word study, topics and your notes as a PDF (Ctrl+P).' },
   { el: '#btnFocus', title: 'Focus mode', text: 'Hide everything but the text for plain reading (Ctrl+\\). Press it again or Esc to come back. That\'s the tour — F1 opens the Quick Start guide any time.' },
 ];
+for (let i = TOUR.length - 1; i >= 0; i--) if (!TOUR[i]) TOUR.splice(i, 1); // steps for features that are switched off
 
 function startTour() {
   closeModal();

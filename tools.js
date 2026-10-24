@@ -574,7 +574,7 @@ const COMMANDS = [
   ['Reading plan', 'schedule today', () => openPlan()],
   ['Cross-references tab', 'refs tsk', () => switchTab('refs')],
   ['Word study tab', 'hebrew greek strongs interlinear', () => switchTab('words')],
-  ['Commentary tab', 'matthew henry', () => switchTab('comm')],
+  ['Commentary tab', 'commentary blue letter bible', () => switchTab('comm')],
   ['Topics tab', 'naves', () => switchTab('topics')],
   ['Places tab (maps)', 'map', () => document.querySelector('.tabs [data-tab="places"]').click()],
   ['Journeys (maps)', 'paul jesus exodus routes', async () => {

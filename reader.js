@@ -1028,7 +1028,27 @@ function setTags(id, text) {
 }
 
 // ===================================================================== commentary
+// 3.17: commentary is not part of the app; the tab opens the verse at Blue Letter Bible (online) instead
+const BLB_BOOKS = ['gen', 'exo', 'lev', 'num', 'deu', 'jos', 'jdg', 'rth', '1sa', '2sa', '1ki', '2ki', '1ch', '2ch', 'ezr', 'neh', 'est', 'job', 'psa',
+  'pro', 'ecc', 'sng', 'isa', 'jer', 'lam', 'eze', 'dan', 'hos', 'joe', 'amo', 'oba', 'jon', 'mic', 'nah', 'hab', 'zep', 'hag', 'zec', 'mal', 'mat',
+  'mar', 'luk', 'jhn', 'act', 'rom', '1co', '2co', 'gal', 'eph', 'phl', 'col', '1th', '2th', '1ti', '2ti', 'tit', 'phm', 'heb', 'jas', '1pe', '2pe',
+  '1jo', '2jo', '3jo', 'jde', 'rev'];
+async function renderBlb(id) {
+  const pane = $('#pane-comm');
+  const v = id ? (await tsk.versesByIds([id]).catch(() => []))[0] : null;
+  const m = v && v.label ? v.label.match(/^(.+) (\d+):(\d+)$/) : null;
+  const b = m ? state.books.findIndex((x) => x.name === m[1]) + 1 : 0;
+  const url = b ? `https://www.blueletterbible.org/kjv/${BLB_BOOKS[b - 1]}/${m[2]}/${m[3]}/` : 'https://www.blueletterbible.org/';
+  pane.innerHTML = `<div class="blb">
+    <p>Want to read what commentators have written${v ? ` on <b>${esc(v.label)}</b>` : ''}? Blue Letter Bible has many commentaries to choose from.</p>
+    <a class="blb-go" href="${url}" target="_blank" rel="noopener">Open ${v ? esc(v.label) : 'Blue Letter Bible'} at Blue Letter Bible ›</a>
+    <p class="hint">Opens in your web browser; it needs the internet. Blue Letter Bible is a separate website: compare what any writer says with the Scripture itself (Acts 17:11).</p></div>`;
+}
+
+if (!FEATURES.commentary) setTimeout(() => { if ($('#pane-comm') && !$('#pane-comm').innerHTML.trim()) renderBlb(null); }, 0);
+
 async function loadCommentary(id) {
+  if (!FEATURES.commentary) return renderBlb(id);
   if (v3.comm && id >= v3.comm.start_id && id <= v3.comm.end_id) return renderComm(id);
   v3.comm = await tsk.commentary(id);
   renderComm(id);
@@ -1353,7 +1373,7 @@ async function renderMarks() {
 
 // ===================================================================== study sheet
 async function buildSheet(id) {
-  const [x, words, comm, topics] = await Promise.all([tsk.xrefs(id), tsk.words(id), tsk.commentary(id), tsk.naveForVerse(id)]);
+  const [x, words, comm, topics] = await Promise.all([tsk.xrefs(id), tsk.words(id), FEATURES.commentary ? tsk.commentary(id) : null, tsk.naveForVerse(id)]);
   const groups = await Promise.all(
     x.groups.map(async (g) => ({
       ...g,
@@ -1402,7 +1422,7 @@ ${words.map((w) => `<tr><td>${esc(w.gloss)}</td><td class="og ${w.lang}">${esc(w
 ${comm ? `<h2>Matthew Henry · Concise Commentary (${esc(comm.label)})</h2><div class="comm">${plainComm}</div>` : ''}
 ${topics.length ? `<h2>Nave's Topical Bible</h2><div class="topics">Topics that cite this verse: ${topics.map((t) => esc(t.subject)).join(' · ')}</div>` : ''}
 <div class="credits">KJV (public domain). Treasury of Scripture Knowledge via CrossReferences.org (CC BY 4.0). Hebrew/Greek data: STEPBible.org, Tyndale House (CC BY 4.0).
-Strong's (public domain; Open Scriptures CC BY-SA). Matthew Henry's Concise Commentary (public domain). Nave's Topical Bible (public domain; BibleData CC BY 4.0).</div>
+Strong's (public domain; Open Scriptures CC BY-SA).${comm ? " Matthew Henry's Concise Commentary (public domain)." : ''} Nave's Topical Bible (public domain; BibleData CC BY 4.0).</div>
 </body></html>`;
   return { html, name: `${x.verse.label} - study sheet` };
 }

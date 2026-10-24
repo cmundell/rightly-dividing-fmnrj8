@@ -213,9 +213,9 @@ document.addEventListener('click', (e) => {
 const MENU = [
   ['Study', [
     ...(FEATURES.today === false ? [['Time with God', () => beginWalk()], ['Memory verses', () => showMarksView('memory')], ['Medallions', () => openMedals()]] : []),
-    ['The gospel', () => openGospel()],
+    ['The Gospel', () => openGospel()],
     ['Study methods', () => openStudyChooser()],
-    ['About this book', () => openBookIntro(state.cur.book)],
+    ...(FEATURES.about ? [['About this book', () => openBookIntro(state.cur.book)]] : []),
     ['Timeline', () => openTimeline()],
     ['Reading progress', () => openProgress()],
     ['Search everything…', () => openCmdk()],
@@ -263,8 +263,8 @@ function openAbout() {
       <li>Strong's dictionaries: James Strong (1894, public domain); JSON edition by Open Scriptures, CC BY-SA.</li>
       <li>Webster's American Dictionary of the English Language (1828, public domain); transcription by akaitsurugi, CC BY-SA 4.0.</li>
       <li>Easton's Bible Dictionary (1897, public domain); CCEL text as prepared by NEUU (github.com/neuu-org/bible-dictionary-dataset), CC BY 4.0.</li>
+      <li>The Gospel: "Witness Assist", Teays Valley Baptist (teaysvalleybaptist.com/witnessassist.html).</li>
       <li>Nave's Topical Bible (public domain), and Hitchcock's Bible Names: BibleData by Brady Stephenson, CC BY 4.0.</li>
-      <li>Matthew Henry's Concise Commentary (public domain), CrossWire SWORD module.</li>
       <li>Morning and Evening: C. H. Spurgeon (1866, public domain).</li>
       <li>Parallel passages and Old Testament quotations: UBS Parallel Passage Database, © 2023 United Bible Societies, CC BY-SA 4.0.</li>
       <li>People and family links: BibleData by Brady Stephenson, CC BY 4.0.</li>
@@ -285,12 +285,12 @@ const PHONE_TOUR = [
   } },
   { el: '.toolbar .group.nav', title: 'Choose a chapter', text: 'Pick a book and chapter here. The ‹ and › buttons also change chapters.', before: () => (hideVerseBar()) },
   { el: '#searchForm', title: 'Go to a verse, or search', text: 'Type a reference like John 3:16 to go straight there, or words to search the whole Bible.' },
-  { el: '#study .tabs', title: 'Study', text: 'Cross-references for the verse you selected, then Words (Hebrew and Greek) and Commentary. More holds Topics, Places, People and your search results.', before: () => { setView('study'); switchTab('refs'); } },
+  { el: '#study .tabs', title: 'Study', text: 'Cross-references for the verse you selected, then Words (Hebrew and Greek), and Commentary, which opens the verse at Blue Letter Bible online. More holds Topics, Places, People and your search results.', before: () => { setView('study'); switchTab('refs'); } },
   FEATURES.today === false
     ? { el: '#mNav [data-mn="search"]', title: 'Search', text: 'Search the whole Bible for words or phrases, and see the results with a chart of where they occur.', before: () => setView('read') }
     : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Time with God, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'} and medallions.`, before: () => setView('read') },
   { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from Menu › Settings now and then.' },
-  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Time with God, memory verses, medallions, ' : ''}The gospel, study methods, an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
+  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Time with God, memory verses, medallions, ' : ''}The Gospel, study methods, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
   { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },
 ];
 if (isPhone()) {

@@ -598,25 +598,56 @@ const eastonHtml = (entry, all) => {
 }
 
 // ---------------------------------------------------------------- About this book
+// The five questions, answered only in quotations: Scripture where the book speaks for itself, then the published
+// introductions (tools/build_bookabout.py). Then Matthew Henry's outline and Easton's article.
+const BA_QS = [
+  ['who', 'Who wrote it?', ''],
+  ['to', 'Who received it?', 'The original audience'],
+  ['rel', 'How do the author and readers relate?', ''],
+  ['occ', 'Occasion', 'What prompted the author to write'],
+  ['purpose', 'Purpose', 'What the author meant it to do'],
+];
+const BA_SRC = { jfb: 'Jamieson, Fausset & Brown', berkhof: 'Louis Berkhof' };
 async function openBookIntro(bookId) {
-  const d = await tsk.bookIntro(bookId);
+  const [d, mh, ba] = await Promise.all([tsk.bookIntro(bookId), tsk.mhIntro(bookId), tsk.bookAbout(bookId)]);
   const bk = state.books[bookId - 1];
-  if (!d || !bk) return;
-  const [kv] = d.k ? await tsk.versesByIds([d.k]) : [];
-  const ch = (a, b) => (a === b ? `${a}` : `${a}–${b}`);
+  if (!bk) return;
+  const label = (k) => BA_QS.find((q) => q[0] === k)[1];
+  const order = BA_QS.map((q) => q[0]);
+  const answer = (k, items) => {
+    if (!items.length) return '<p class="ba-none">Not stated in Scripture or these introductions.</p>';
+    const out = [];
+    let run = null;
+    for (const x of items) {
+      if (x.src === 'kjv') {
+        run = null;
+        out.push(`<blockquote class="ba-kjv">“${esc(x.text)}” <button class="linkish" data-bi-go="${x.s}" data-bi-end="${x.e}">${esc(x.ref)}</button></blockquote>`);
+      } else if (x.src === 'see') {
+        run = null;
+        out.push(`<p class="ba-see">See “${esc(label(x.q))}” ${order.indexOf(x.q) < order.indexOf(k) ? 'above' : 'below'}.</p>`);
+      } else {
+        // consecutive sentences from the same introduction read as one quotation
+        if (!run || run.src !== x.src || !x.join) out.push((run = { src: x.src, paras: [[]] }));
+        else if (x.join === 'para') run.paras.push([]);
+        else if (x.join === 'gap') run.paras[run.paras.length - 1].push('…');
+        run.paras[run.paras.length - 1].push(x.text);
+      }
+    }
+    return out.map((o) => (typeof o === 'string' ? o : `<blockquote class="ba-intro">${o.paras.map((p, i) => `<p>${i ? '' : '“'}${p.map(esc).join(' ')}${i === o.paras.length - 1 ? '”' : ''}</p>`).join('')}<cite>${esc(BA_SRC[o.src] || o.src)}</cite></blockquote>`)).join('');
+  };
+  const outline = mh ? Object.entries(mh.outline || {}).map(([c, items]) => [Number(c), items]).sort((x, y) => x[0] - y[0]) : [];
+  const allChapters = Array.from({ length: bk.chapters }, (_, i) => i + 1);
   const single = bk.chapters === 1;
+  const used = ba ? [...new Set(Object.values(ba.q).flat().map((x) => x.src))] : [];
   openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2>
-    <dl class="bi-facts">
-      <dt>Written by</dt><dd>${esc(d.a)}</dd>
-      <dt>When</dt><dd>${esc(d.w)}</dd>
-      <dt>Written to</dt><dd>${esc(d.to)}</dd>
-      <dt>Theme</dt><dd>${esc(d.th)}</dd>
-    </dl>
-    ${kv ? `<blockquote class="td-invite bi-key">“${esc(kv.text)}” <span><button class="linkish" data-bi-go="${kv.id}">${esc(kv.label)}</button></span></blockquote>` : ''}
-    <div class="section-title">Outline</div>
-    <ol class="bi-outline">${d.o.map(([a, b, t]) => `<li><button data-bi-ch="${a}">${single ? '' : `<span class="bi-ch">${bookId === 19 ? (a === b ? 'Psalm' : 'Psalms') : a === b ? 'Chapter' : 'Chapters'} ${ch(a, b)}</span>`}${esc(t)}</button></li>`).join('')}</ol>
-    ${d.e ? `<details class="bi-easton"><summary>Read more in Easton's Bible Dictionary</summary><div class="eb-body" data-key="${esc(d.e)}"><p class="hint">Loading…</p></div></details>` : ''}
-    <p class="hint bi-note">Where Scripture does not name the writer, this says so and gives the traditional view.</p>`, 'm-bookintro');
+    ${ba ? `<div class="ba-qs">${BA_QS.map(([k, t, sub]) => `<section class="ba-q${ba.q[k].length ? '' : ' empty'}"><h3>${esc(t)}${sub ? ` <span>${esc(sub)}</span>` : ''}</h3>${answer(k, ba.q[k])}</section>`).join('')}</div>` : ''}
+    <div class="section-title">Outline <span class="bi-by">Matthew Henry</span></div>
+    <ol class="bi-outline bi-mh-outline">${allChapters.map((c) => {
+      const items = (outline.find((o) => o[0] === c) || [])[1] || [];
+      return `<li value="${c}"><button data-bi-ch="${c}" class="bi-chh">${single ? 'The whole book' : `${bookId === 19 ? 'Psalm' : 'Chapter'} ${c}`}</button>${items.length ? `<ul>${items.map(([t, a, z]) => `<li><button data-bi-ch="${c}" data-bi-vs="${a || ''}">${esc(t)}${a ? ` <span class="bi-vs">${a === z ? `v. ${a}` : `vv. ${a}–${z}`}</span>` : ''}</button></li>`).join('')}</ul>` : ''}</li>`;
+    }).join('')}</ol>
+    ${d && d.e ? `<details class="bi-easton"><summary>Read more in Easton's Bible Dictionary</summary><div class="eb-body" data-key="${esc(d.e)}"><p class="hint">Loading…</p></div></details>` : ''}
+    <p class="hint bi-note">Every answer is a quotation, word for word: the King James Version${used.includes('jfb') ? `; Jamieson, Fausset & Brown, <i>Commentary Critical and Explanatory on the Whole Bible</i> (1871), ${esc(ba.jfb === 'Introduction' ? 'introduction to this book' : ba.jfb.replace(/^Introduction/, 'introduction'))}` : ''}${used.includes('berkhof') ? '; Louis Berkhof, <i>Introduction to the New Testament</i> (1915)' : ''}. Outline from Matthew Henry's Concise Commentary; Easton's Bible Dictionary (1897).</p>`, 'm-bookintro');
   $('#modal').dataset.book = bookId;
 }
 $('#modal').addEventListener('click', (e) => {
@@ -628,8 +659,9 @@ $('#modal').addEventListener('click', (e) => {
   if (!c && !v && !r) return;
   closeModal();
   toReading();
-  if (c) go({ book, ch: Number(c.dataset.biCh) });
-  else if (v) go({ id: Number(v.dataset.biGo) });
+  if (c && c.dataset.biVs) go({ book, ch: Number(c.dataset.biCh), vs: Number(c.dataset.biVs) });
+  else if (c) go({ book, ch: Number(c.dataset.biCh) });
+  else if (v) go({ id: Number(v.dataset.biGo), endId: v.dataset.biEnd ? Number(v.dataset.biEnd) : undefined });
   else go({ id: Number(r.dataset.s), endId: Number(r.dataset.e) });
 });
 $('#modal').addEventListener('toggle', async (e) => {
@@ -643,6 +675,7 @@ $('#modal').addEventListener('toggle', async (e) => {
 }, true);
 // a quiet link under each chapter heading
 new MutationObserver(() => {
+  if (!FEATURES.about) return;
   const head = $('#readerInner .chapter-head');
   if (!head || head.nextElementSibling && head.nextElementSibling.classList.contains('bi-link')) return;
   const bk = state.books[(state.cur.book || 1) - 1];
@@ -653,7 +686,7 @@ $('#readerInner').addEventListener('click', (e) => {
   const b = e.target.closest('[data-bi-open]');
   if (b) openBookIntro(Number(b.dataset.biOpen));
 });
-COMMANDS.push(['About this book', 'introduction author date theme outline book', () => openBookIntro(state.cur.book)]);
+if (FEATURES.about) COMMANDS.push(['About this book', 'introduction author date theme outline book', () => openBookIntro(state.cur.book)]);
 window.openBookIntro = openBookIntro;
 
 // ---------------------------------------------------------------- Settings (the page is built in study.js): your name and backups
@@ -782,7 +815,7 @@ const GUIDE_STEPS = [
   { key: 'word', title: 'Look closer at one word', what: 'The Bible was first written in Hebrew and Greek. Pick a word to see the word behind the English and what it means.' },
   { key: 'teacher', title: 'What a trusted teacher said', what: 'Matthew Henry (1662–1714), a pastor, wrote short notes on the whole Bible. Here is what he said about this passage.' },
   { key: 'apply', title: 'What is God saying to you?', what: 'Write a sentence or two in your own words: what you learned, and what you will do. It is saved as your note on this verse.' },
-];
+].filter((s) => s.key !== 'teacher' || FEATURES.commentary);
 const FUNCTION_WORDS = /^(Function=(Conjunction|Article|Preposition|Particle|Pronoun|Adverb)|.*(Article|Conjunction|Preposition))/;
 const guide = { id: null, step: 0, data: null, word: null };
 
@@ -792,7 +825,7 @@ async function startGuide(id) {
   guide.id = id;
   guide.step = 0;
   guide.word = null;
-  const [x, words, comm] = await Promise.all([tsk.xrefs(id, 'kjv'), tsk.words(id).catch(() => []), tsk.commentary(id).catch(() => null)]);
+  const [x, words, comm] = await Promise.all([tsk.xrefs(id, 'kjv'), tsk.words(id).catch(() => []), FEATURES.commentary ? tsk.commentary(id).catch(() => null) : null]);
   const v = x.verse;
   const around = await tsk.versesByIds([id - 1, id + 1]).catch(() => []);
   // a few related verses, with their text
@@ -950,7 +983,7 @@ $('#modal').addEventListener('click', (e) => {
 const TAB_HELP = {
   refs: { line: 'Other verses that speak about the same thing.', tip: 'The Bible explains the Bible. Under the verse you selected are other verses on the same words and ideas, grouped by key word. Point to one (or tap it) to read it; click to go there.', eg: 'Try it: select John 3:16 and look under “loved”.' },
   words: { line: 'The Hebrew or Greek behind each English word.', tip: 'The Old Testament was written in Hebrew and the New Testament in Greek. Choose a word to see what it means, and every other verse that uses the same word — the KJV sometimes translates it differently.', eg: 'In John 3:16, “loved” is agapaō, the love of God.' },
-  comm: { line: 'Notes on this passage by Matthew Henry, a pastor (1662–1714).', tip: 'Matthew Henry wrote short notes on the whole Bible. Read the passage for yourself first, then see what he noticed — a teacher to learn from, with Scripture as the final word.', eg: '' },
+  comm: FEATURES.commentary ? { line: 'Notes on this passage by Matthew Henry, a pastor (1662–1714).', tip: 'Matthew Henry wrote short notes on the whole Bible. Read the passage for yourself first, then see what he noticed — a teacher to learn from, with Scripture as the final word.', eg: '' } : { line: 'Commentaries, online at Blue Letter Bible.', tip: 'This app keeps to the Bible itself. If you want to read what commentators have written about a verse, this tab opens the verse at Blue Letter Bible, where you can choose a commentary. It needs the internet.', eg: '' },
   topics: { line: 'Bible subjects this verse is listed under.', tip: 'Nave’s Topical Bible gathers verses by subject — prayer, faith, forgiveness, marriage, money. Open a topic to read every verse on it, in order.', eg: '' },
   places: { line: 'Where it happened, on a map.', tip: 'Every place named in the chapter is on the map, and places in the selected verse are marked. Tap a place to see every verse that names it, or follow one of the journeys.', eg: '' },
   people: { line: 'Who is named in this verse, and their family.', tip: 'Everyone named in the verse, with parents, husband or wife, children, brothers and sisters — each with the verse that says so. Follow a line back to Adam.', eg: '' },
@@ -1041,16 +1074,19 @@ $('#modal').addEventListener('click', (e) => {
     return h;
   };
   async function bookCard(b, ch) {
-    if (!(b.id in introCache)) introCache[b.id] = await tsk.bookIntro(b.id).catch(() => null);
-    const intro = introCache[b.id];
+    if (!(b.id in introCache)) introCache[b.id] = FEATURES.about ? await tsk.mhIntro(b.id).catch(() => null) : null;
+    const mh = introCache[b.id];
+    // the first sentence of Matthew Henry's introduction
+    const first = mh && mh.intro && mh.intro[0] ? (mh.intro[0].replace(/<[^>]+>/g, '').match(/^.{20,220}?[.;:](\s|$)/) || [mh.intro[0].slice(0, 160) + '…'])[0].trim() : '';
+    const intro = first ? { th: first } : null;
     const read = state.readlog && state.readlog.chapters ? state.readlog.chapters : {};
     const nRead = Array.from({ length: b.chapters }, (_, i) => read[`${b.id}:${i + 1}`]).filter(Boolean).length;
     const label = b.id === 19 ? 'Psalm' : 'Chapter';
     return `<div class="sg-book">
       <div class="sg-book-h"><span class="sg-book-n">${esc(b.name)}</span><span class="sg-book-c">${b.chapters} chapter${b.chapters === 1 ? '' : 's'}${nRead ? ` · ${nRead} read` : ''}</span>
-        <button class="sg-about" data-sg-about="${b.id}" tabindex="-1">About ${esc(b.name)} ›</button></div>
+        ${FEATURES.about ? `<button type="button" class="sg-about" data-sg-about="${b.id}" tabindex="-1">About ${esc(b.name)} ›</button>` : ''}</div>
       ${intro ? `<div class="sg-book-t">${esc(intro.th)}</div>` : ''}
-      <div class="sg-chs" role="group" aria-label="${esc(b.name)} chapters">${Array.from({ length: b.chapters }, (_, i) => i + 1).map((c) => `<button class="sg-ch${read[`${b.id}:${c}`] ? ' read' : ''}${c === ch ? ' on' : ''}" data-sg-go="${b.id}:${c}" title="${label} ${c}${read[`${b.id}:${c}`] ? ' — read' : ''}">${c}</button>`).join('')}</div></div>`;
+      <div class="sg-chs" role="group" aria-label="${esc(b.name)} chapters">${Array.from({ length: b.chapters }, (_, i) => i + 1).map((c) => `<button type="button" class="sg-ch${read[`${b.id}:${c}`] ? ' read' : ''}${c === ch ? ' on' : ''}" data-sg-go="${b.id}:${c}" title="${label} ${c}${read[`${b.id}:${c}`] ? ' — read' : ''}">${c}</button>`).join('')}</div></div>`;
   }
   async function suggest() {
     const my = ++seq;
@@ -1066,7 +1102,7 @@ $('#modal').addEventListener('click', (e) => {
       const b = books[0];
       html.push(await bookCard(b, chapter && chapter <= b.chapters ? chapter : null));
     } else if (books.length > 1) {
-      html.push(`<div class="sg-sec">Books</div><div class="sg-books">${books.map((b) => `<button class="sg-item sg-bk" data-sg-book="${b.id}">${esc(b.name)}<span>${b.chapters} ch.</span></button>`).join('')}</div>`);
+      html.push(`<div class="sg-sec">Books</div><div class="sg-books">${books.map((b) => `<button type="button" class="sg-item sg-bk" data-sg-book="${b.id}">${esc(b.name)}<span>${b.chapters} ch.</span></button>`).join('')}</div>`);
     }
     // phrases, topics and people for words (not for "John 3")
     if (!chapter && /[a-z]{2}/i.test(q)) {
@@ -1080,15 +1116,15 @@ $('#modal').addEventListener('click', (e) => {
         if (k === words.length && p.toLowerCase() !== q.toLowerCase()) hits.push([p, n]);
         if (hits.length >= (books.length ? 3 : 6)) break;
       }
-      if (hits.length) html.push(`<div class="sg-sec">In the KJV</div>${hits.map(([p, n]) => `<button class="sg-item sg-ph" data-sg-phrase="${esc(p)}"><span class="sg-q">${mark(p, words)}</span><span class="sg-n">${n} time${n === 1 ? '' : 's'}</span></button>`).join('')}`);
+      if (hits.length) html.push(`<div class="sg-sec">In the KJV</div>${hits.map(([p, n]) => `<button type="button" class="sg-item sg-ph" data-sg-phrase="${esc(p)}"><span class="sg-q">${mark(p, words)}</span><span class="sg-n">${n} time${n === 1 ? '' : 's'}</span></button>`).join('')}`);
       if (q.length >= 3 && !books.length) {
         const [topics, people] = await Promise.all([tsk.naveSearch(q).catch(() => []), tsk.personSearch(q).catch(() => [])]);
         if (my !== seq) return;
         const ts = (topics || []).filter((t) => t.subject.toLowerCase().startsWith(words[0])).slice(0, 2);
         const ps = (people || []).slice(0, 2);
         if (ts.length || ps.length) {
-          html.push(`<div class="sg-sec">Topics and people</div>${ts.map((t) => `<button class="sg-item sg-tp" data-sg-topic="${t.id}"><span class="sg-kind">Topic</span><span class="sg-q">${esc(t.subject.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()))}</span></button>`).join('')}
-            ${ps.map((p) => `<button class="sg-item sg-pp" data-sg-person="${p.pid}"><span class="sg-kind">Person</span><span class="sg-q">${esc(p.name)}</span><span class="sg-n">${esc(String(p.note || '').split(/[.;]/)[0].slice(0, 50))}</span></button>`).join('')}`);
+          html.push(`<div class="sg-sec">Topics and people</div>${ts.map((t) => `<button type="button" class="sg-item sg-tp" data-sg-topic="${t.id}"><span class="sg-kind">Topic</span><span class="sg-q">${esc(t.subject.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()))}</span></button>`).join('')}
+            ${ps.map((p) => `<button type="button" class="sg-item sg-pp" data-sg-person="${p.pid}"><span class="sg-kind">Person</span><span class="sg-q">${esc(p.name)}</span><span class="sg-n">${esc(String(p.note || '').split(/[.;]/)[0].slice(0, 50))}</span></button>`).join('')}`);
         }
       }
     }

@@ -935,7 +935,7 @@ body.reduce-motion .j-halo { animation: none; }
 /* Today */
 .modal.m-today .modal-card { width: min(760px, 100%); }
 .td-invite { font-family: var(--scripture); font-size: 19px; line-height: 1.5; color: var(--accent-strong); border-left: 3px solid var(--gold); margin: 10px 0 16px; padding: 2px 0 2px 14px; }
-.td-invite span, .wk-verse span, .gs-verse span { display: block; font: 12.5px var(--ui); color: var(--ink-soft); margin-top: 4px; }
+.td-invite span, .wk-verse span { display: block; font: 12.5px var(--ui); color: var(--ink-soft); margin-top: 4px; }
 :root[data-theme='dark'] .td-invite, :root[data-theme='dark'] .wk-verse { color: var(--ink); }
 .td-begin { display: block; width: 100%; text-align: left; padding: 14px 18px !important; font-size: 18px; border-radius: 12px !important; }
 .td-begin span { display: block; font-size: 12.5px; opacity: .85; margin-top: 3px; letter-spacing: .03em; }
@@ -1023,14 +1023,26 @@ body.reduce-motion .j-halo { animation: none; }
 
 /* gospel */
 .modal.m-gospel .modal-card { width: min(760px, 100%); }
-.gs-steps { padding-left: 22px; margin: 6px 0; }
-.gs-steps li::marker { color: var(--gold); font-weight: 700; }
-.gs-steps h3 { margin: 14px 0 2px; color: var(--accent); font-size: 17px; }
-.gs-verse { font-family: var(--scripture); font-size: 18px; line-height: 1.55; color: var(--accent-strong); border-left: 3px solid var(--gold); margin: 6px 0; padding: 2px 0 2px 12px; }
+.gs-sec { margin: 4px 0 18px; }
+.gs-sec h3 { margin: 16px 0 4px; }
+.gs-ref { font: 700 17px var(--ui); color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+.gs-ref:hover { text-decoration: underline; }
+.gs-verse { font-family: var(--scripture); font-size: 18px; line-height: 1.55; color: var(--accent-strong); border-left: 3px solid var(--gold); margin: 6px 0 10px; padding: 2px 0 2px 12px; }
 :root[data-theme='dark'] .gs-verse { color: var(--ink); }
-.gs-pray { background: var(--accent-soft); border-radius: 12px; padding: 4px 16px 6px; margin: 16px 0; }
-.gs-pray h3 { color: var(--accent); }
-.gs-prayer { font-family: var(--scripture); font-size: 17px; line-height: 1.6; font-style: italic; }
+.gs-verse .gs-q { display: block; font: inherit; color: inherit; margin: 0; }
+.gs-sec p { line-height: 1.6; margin: 8px 0; }
+.gs-line { font-family: var(--scripture); font-style: italic; color: var(--accent-strong); }
+:root[data-theme='dark'] .gs-line { color: var(--ink); }
+.gs-ask { font-weight: 700; font-size: 1.05em; }
+.gs-film { display: flex; align-items: center; gap: 14px; margin: 10px 0 8px; padding: 14px 16px; border: 1px solid var(--rule); border-radius: 14px; background: var(--paper); color: var(--ink); text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.gs-film:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.gs-play { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; }
+.gs-film-t { flex: 1; min-width: 0; }
+.gs-film-t b { display: block; font: 700 16px var(--ui); color: var(--accent); }
+.gs-film-t small { display: block; font: 13px var(--ui); color: var(--ink-soft); margin-top: 2px; }
+.gs-film-go { font-size: 26px; color: var(--ink-soft); }
+.gs-src { font-size: 13px; color: var(--ink-soft); }
+.gs-src a { color: inherit; }
 .gs-next-h { color: var(--accent); }
 .gs-next li { margin: 6px 0; }
 
@@ -1363,3 +1375,38 @@ body.listening #readerInner { padding-bottom: 80px; }
 .sg-books .sg-bk { width: auto; border: 1px solid var(--rule); padding: 6px 12px; font-family: var(--scripture); font-size: 15px; }
 .sg-books .sg-bk span { font: 11px var(--ui); color: var(--ink-soft); }
 .sg-foot { font-size: 11.5px; color: var(--ink-soft); padding: 8px 10px 2px; border-top: 1px solid var(--rule); margin-top: 6px; }
+/* About this book, from Matthew Henry */
+.bi-by { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-soft); font-style: italic; margin-left: 6px; }
+.bi-mh { font: 16px/1.65 var(--scripture); color: var(--ink); }
+.bi-mh p { margin: 0 0 10px; }
+.bi-src { margin-top: -6px; }
+.bi-mh-outline { padding-left: 0; list-style: none; }
+.bi-mh-outline > li { border-top: 1px solid var(--rule); padding: 4px 0; }
+.bi-mh-outline .bi-chh { font: 600 13.5px var(--ui); color: var(--accent); padding: 6px 0 2px; }
+:root[data-theme='dark'] .bi-mh-outline .bi-chh { color: var(--ink); }
+.bi-mh-outline ul { list-style: none; margin: 0 0 4px; padding: 0 0 0 12px; }
+.bi-mh-outline ul button { font: 15px/1.4 var(--scripture); padding: 4px 0; }
+.bi-vs { font: 12px var(--ui); color: var(--ink-soft); margin-left: 4px; white-space: nowrap; }
+/* About this book: five questions, answered in quotations */
+.ba-qs { margin: 6px 0 18px; }
+.ba-q { padding: 12px 0 6px; border-top: 1px solid var(--rule); }
+.ba-q:first-child { border-top: 0; padding-top: 4px; }
+.ba-q h3 { font: 700 15px var(--ui); color: var(--accent); margin: 0 0 6px; }
+:root[data-theme='dark'] .ba-q h3 { color: var(--ink); }
+.ba-q h3 span { font-weight: 400; font-size: 12.5px; color: var(--ink-soft); margin-left: 6px; }
+.ba-q.empty { padding: 8px 0 4px; }
+.ba-q.empty h3 { color: var(--ink-soft); font-weight: 600; margin: 0 0 2px; }
+.ba-none, .ba-see { font: italic 13.5px var(--ui); color: var(--ink-soft); margin: 0 0 6px; }
+.ba-kjv { font: 16px/1.55 var(--scripture); color: var(--accent-strong); border-left: 3px solid var(--gold); margin: 0 0 8px; padding: 1px 0 1px 12px; }
+:root[data-theme='dark'] .ba-kjv { color: var(--ink); }
+.ba-kjv .linkish { font: 12.5px var(--ui); margin-left: 4px; }
+.ba-intro { margin: 0 0 8px; padding: 1px 0 1px 12px; border-left: 3px solid var(--rule); }
+.ba-intro p { font: 15.5px/1.6 var(--scripture); color: var(--ink); margin: 0 0 6px; }
+.ba-intro p:last-of-type { margin-bottom: 0; }
+.ba-intro cite { display: block; font: 12px var(--ui); font-style: normal; color: var(--ink-soft); margin-top: 3px; }
+.ba-intro cite::before { content: '— '; }
+/* 3.17: the Commentary tab opens the verse at Blue Letter Bible */
+.blb { padding: 6px 2px; max-width: 560px; }
+.blb p { line-height: 1.6; margin: 0 0 12px; }
+.blb-go { display: inline-block; margin: 4px 0 14px; padding: 10px 16px; border-radius: 10px; background: var(--accent); color: #fff; font: 600 14.5px var(--ui); text-decoration: none; }
+.blb-go:hover { filter: brightness(1.1); }
