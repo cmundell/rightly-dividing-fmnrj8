@@ -250,18 +250,24 @@ $('#restoreFile').addEventListener('change', async (e) => {
 });
 function openAbout() {
   openModal(`<div class="kicker">About</div><h2 class="m-title">Search the Scriptures</h2>
-    <p>Version ${esc(tsk.version)} for the web. The King James Bible with the Treasury of Scripture Knowledge and study tools, kept on this device and usable offline after the first visit.</p>
+    <p>Version ${esc(tsk.version)} for iPhone and the web. The King James Bible with the Treasury of Scripture Knowledge and study tools, kept on this device and usable offline after the first visit.</p>
     <p class="hint">Your notes are kept only on this device. Use Menu › Settings › Back up my notes now and then, and keep the file somewhere safe. A backup from the Windows app (study-data.json) can be restored here too.</p>
-    <p class="hint">Reading aloud and reminders are in the Windows app only.</p>
     <div class="section-title">Sources and credits</div>
-    <ul class="hint">
-      <li>King James Version; Treasury of Scripture Knowledge; Strong's; Webster's 1828; Nave's Topical Bible; Matthew Henry's Concise Commentary; Hitchcock's Bible Names; C. H. Spurgeon, Morning and Evening — public domain.</li>
-      <li>Hebrew and Greek words: STEPBible (Tyndale House, Cambridge), CC BY 4.0.</li>
-      <li>Bible places: OpenBible.info, CC BY 4.0. Base map: Natural Earth; terrain: NASA Blue Marble — public domain.</li>
+    <ul class="hint ab-credits">
+      <li>Bible text: King James Version (public domain). Italics and paragraph marks: farskipper/kjv; words of Christ: open-bibles KJV (public domain).</li>
+      <li>Cross-references: Treasury of Scripture Knowledge (public domain), as curated by CrossReferences.org, CC BY 4.0.</li>
+      <li>Hebrew and Greek words and grammar: STEPBible.org (Tyndale House, Cambridge), CC BY 4.0.</li>
+      <li>Strong's dictionaries: James Strong (1894, public domain); JSON edition by Open Scriptures, CC BY-SA.</li>
+      <li>Webster's American Dictionary of the English Language (1828, public domain); transcription by akaitsurugi, CC BY-SA 4.0.</li>
+      <li>Easton's Bible Dictionary (1897, public domain); CCEL text as prepared by NEUU (github.com/neuu-org/bible-dictionary-dataset), CC BY 4.0.</li>
+      <li>Nave's Topical Bible (public domain), and Hitchcock's Bible Names: BibleData by Brady Stephenson, CC BY 4.0.</li>
+      <li>Matthew Henry's Concise Commentary (public domain), CrossWire SWORD module.</li>
+      <li>Morning and Evening: C. H. Spurgeon (1866, public domain).</li>
+      <li>Parallel passages and Old Testament quotations: UBS Parallel Passage Database, © 2023 United Bible Societies, CC BY-SA 4.0.</li>
       <li>People and family links: BibleData by Brady Stephenson, CC BY 4.0.</li>
-      <li>Parallel passages and quotations: UBS Parallel Passage Database, © 2023 United Bible Societies, CC BY-SA 4.0.</li>
-      <li>Timeline: Theographic Bible Metadata by Robert Rouse, CC BY-SA 4.0.</li>
-      <li>Easton's Bible Dictionary (1897) — public domain; from the CCEL text as prepared by NEUU (github.com/neuu-org/bible-dictionary-dataset), CC BY 4.0.</li>
+      <li>Timeline: Theographic Bible Metadata by Robert Rouse, CC BY-SA 4.0 (chronology of Floyd Nolen Jones).</li>
+      <li>Bible places: OpenBible.info Bible Geocoding Data, CC BY 4.0. Base map: Natural Earth; terrain: NASA Blue Marble shaded relief (public domain).</li>
+      <li>Journeys: each stop drawn from the KJV text; order of the Gospel events after A. T. Robertson's Harmony of the Gospels (1922, public domain).</li>
     </ul>`, 'm-about');
 }
 

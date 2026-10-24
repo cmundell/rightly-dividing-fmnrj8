@@ -1,4 +1,11 @@
 'use strict';
+/* Morning and Evening, Gospel parallels and Old Testament quotations, People, the Timeline, smarter notes, reading progress, the command box (Ctrl+K) and accessibility.
+   Merged in 3.15 from the per-release layers (v37.js), kept in their original order: later
+   sections still extend earlier ones by wrapping window.X. */
+
+// =====================================================================================================
+// from v37.js
+// =====================================================================================================
 /* v3.7: Morning and Evening; Gospel parallels and Old Testament quotations; People (family tree);
    Timeline; smarter notes (linked references, backlinks, SOAP and prayer templates); reading progress;
    command box (Ctrl+K); accessibility (interface size, high contrast, reduced motion, labels).
@@ -575,7 +582,7 @@ const COMMANDS = [
     document.querySelector('.tabs [data-tab="places"]').click();
   }],
   ['People and family tree', 'genealogy family', () => switchTab('people')],
-  ['Notes and bookmarks', 'notes tags lessons', () => switchTab('marks')],
+  ['Notes', 'notes tags highlights bookmarks lessons', () => switchTab('marks')],
   ['Reading options', 'font size spacing', () => openReadingOptions()],
   ['Light / sepia / dark', 'theme night', () => toggleTheme()],
   ['High contrast on or off', 'accessibility contrast', () => setContrast(state.settings.contrast !== 'on')],
@@ -678,19 +685,7 @@ function setContrast(on) {
   saveUser(['settings']);
   toast(on ? 'High contrast on' : 'High contrast off');
 }
-// Reading options: interface size and contrast
-{
-  const prevRO = window.openReadingOptions;
-  window.openReadingOptions = function () {
-    prevRO();
-    const s = state.settings;
-    const grid = $('#modal .ro-grid');
-    if (!grid) return;
-    const cur = Number(s.uiScale) || 1;
-    grid.insertAdjacentHTML('beforeend', `<label>Interface size</label><div class="ro-seg">${UI_STEPS.map((v) => `<button data-ui="${v}" class="${Math.abs(v - cur) < 0.01 ? 'on' : ''}">${Math.round(v * 100)}%</button>`).join('')}</div>
-      <label>Contrast</label><div class="ro-seg"><button data-hc="off" class="${s.contrast === 'on' ? '' : 'on'}">Standard</button><button data-hc="on" class="${s.contrast === 'on' ? 'on' : ''}">High contrast</button></div>`);
-  };
-}
+// (interface size and contrast are on the Settings page, built in study.js)
 // labels for icon-only buttons; tabs as a tab list
 function labelControls() {
   for (const b of $$('button[title]')) if (!b.getAttribute('aria-label') && !b.textContent.trim().match(/[a-z]{3}/i)) b.setAttribute('aria-label', b.title.replace(/\s*\(.*\)$/, ''));
@@ -710,14 +705,14 @@ function labelControls() {
   const i = TOUR.findIndex((t) => t.title === 'Your trail');
   TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0,
     { el: '[data-tab="people"]', tab: 'people', title: 'People', text: 'Everyone named in the verse, with their family: parents, husband or wife, children, brothers and sisters — each link with the verse that states it. Follow any line back to Adam.' },
-    { el: '#btnDaily', title: 'Devotional and the timeline', text: 'Devotional opens Spurgeon\'s Morning and Evening for today. Timeline shows Bible history in order, with this chapter marked. Press Ctrl+K anywhere to jump to any feature, person, journey or note.' });
+    { el: '#btnTimeline', title: 'Timeline', text: 'Timeline shows Bible history in order, with the chapter you are reading marked. Spurgeon\'s Morning and Evening is on Today and in the Go menu. Press Ctrl+K anywhere to jump to any feature, person, journey or note.' });
   const prevQS = window.openQuickStart;
   window.openQuickStart = () => {
     prevQS();
     const first = $('#modal .qs section');
     if (first) first.insertAdjacentHTML('afterend', `<section><h3>Study tools</h3><ul>
       <li><b>Ctrl+K</b> opens the command box: type a reference, a feature, a person, a journey or words from your notes.</li>
-      <li><b>Devotional</b>: Spurgeon's <i>Morning and Evening</i> for today. <b>Timeline</b>: Bible history in order; the chapter you are reading is marked.</li>
+      <li><b>Devotional</b> (Today, or ${tsk.web ? 'Menu' : 'Go menu'}): Spurgeon's <i>Morning and Evening</i> for today. <b>Timeline</b>: Bible history in order; the chapter you are reading is marked.</li>
       <li><b>‖</b> beside a verse number means the same event is told elsewhere; <b>“</b> means the New Testament quotes it or it quotes the Old. See the Refs tab, and <i>Side by side</i>.</li>
       <li><b>People</b> tab: the family of anyone named in the verse, with the verse for every link.</li>
       <li>Notes: <i>SOAP study</i> and <i>Prayer journal</i> templates; references you type (e.g. Rom 8:28) become links, and a verse shows which of your notes mention it.</li>

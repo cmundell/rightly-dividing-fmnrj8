@@ -1237,3 +1237,30 @@ body.listening #readerInner { padding-bottom: 80px; }
   .bi-facts dd { margin-bottom: 8px; }
   .ro-grid.st-grid { grid-template-columns: 1fr; }
 }
+
+/* v3.15: the verse's actions — Copy, Memorize, More ⋯ (copy references, all verse text, tags, lessons, pin) */
+.xhead .actions { position: relative; align-items: center; }
+.xhead .actions .va-more-btn { font-weight: 600; }
+.xhead .va-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 230px; background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 10px; box-shadow: var(--shadow); padding: 4px; display: flex; flex-direction: column; }
+.xhead .va-menu[hidden] { display: none; }
+.xhead .actions .va-menu button { border: 0; border-radius: 6px; text-align: left; padding: 8px 10px; font-size: 13px; background: none; color: var(--ink); }
+.xhead .actions .va-menu button:hover { background: var(--sel); color: var(--ink); }
+.xhead .actions .va-menu button.on { background: var(--accent-soft); color: var(--ink); }
+/* Notes: Notes · Highlights · Memory · Prayer · Journal, with Lessons and Export at the side */
+.mswitch-row { flex-wrap: wrap; }
+.mswitch-side { display: flex; gap: 12px; align-items: center; }
+.mswitch-side .linkbtn.on { color: var(--accent); font-weight: 700; }
+.tagbar .hlf { display: inline-flex; align-items: center; gap: 5px; }
+.tagbar .hlf .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--rule); }
+/* right-click a verse */
+.verse-menu { position: fixed; z-index: 80; min-width: 210px; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); padding: 6px; display: flex; flex-direction: column; }
+.verse-menu[hidden] { display: none; }
+.verse-menu .vm-head { font-size: 12px; font-weight: 700; color: var(--accent); padding: 4px 8px 6px; letter-spacing: .02em; }
+.verse-menu .vm-hl { display: flex; gap: 8px; padding: 2px 8px 8px; }
+.verse-menu .vm-hl .dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--rule); cursor: pointer; padding: 0; }
+.verse-menu .vm-hl .dot.on { box-shadow: 0 0 0 2px var(--accent); }
+.verse-menu .vm-hl .dot.none { background: var(--paper); color: var(--ink-soft); font-size: 13px; line-height: 1; }
+.verse-menu > button { border: 0; background: none; text-align: left; padding: 7px 10px; border-radius: 6px; font: inherit; font-size: 13.5px; color: var(--ink); cursor: pointer; }
+.verse-menu > button:hover, .verse-menu > button:focus-visible { background: var(--sel); }
+.verse-menu .vm-sep { height: 1px; background: var(--rule); margin: 4px 6px; }

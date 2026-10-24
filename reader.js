@@ -1,4 +1,11 @@
 'use strict';
+/* Reading and the core of the app: the text, cross-references, search, word study, the word card, highlights and tags, commentary, topics, the notes list, the trail and study sheets.
+   Merged in 3.15 from the per-release layers (app.js, v3.js), kept in their original order: later
+   sections still extend earlier ones by wrapping window.X. */
+
+// =====================================================================================================
+// from app.js
+// =====================================================================================================
 /* global tsk, makeRefParser */
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -17,7 +24,6 @@ const state = {
   history: [],
   hIndex: -1,
   search: { q: '', results: [], total: 0 },
-  markFilter: 'all',
 };
 
 // ---------- persistence ----------
@@ -193,12 +199,6 @@ async function renderChapter() {
   if (window.v3AfterChapter) window.v3AfterChapter(); // paint highlights onto the new verses
 }
 
-function markIcons(id) {
-  const parts = [];
-  if (state.bookmarks.some((b) => b.id === id)) parts.push('&#9733;');
-  if (state.notes[id]) parts.push('&#9998;');
-  return parts.length ? `<span class="marks">${parts.join(' ')}</span>` : '';
-}
 
 function refreshMarkIcons(id) {
   const el = document.getElementById(`v${id}`);
@@ -262,16 +262,19 @@ async function showRefs(id) {
   state.xref = x;
   const pane = $('#pane-refs');
   const v = x.verse;
-  const marked = state.bookmarks.some((b) => b.id === id);
   const html = [];
   html.push(`<div class="xhead"><h2>${esc(v.label)}</h2>`);
   html.push(`<div class="sub">${x.groups.length} keyword${x.groups.length === 1 ? '' : 's'} · ${x.total} reference${x.total === 1 ? '' : 's'}</div>`);
   html.push(`<div class="vtext">${highlightAnchors(v.text, x.groups)}</div>`);
+  // what you can do with the verse: the everyday ones first, the rest under More
   html.push(`<div class="actions">
-      <button data-act="mark" class="${marked ? 'on' : ''}">${marked ? '&#9733; Bookmarked' : '&#9734; Bookmark'}</button>
-      <button data-act="expandAll" class="${state.settings.expandAll ? 'on' : ''}">Show verse text for all</button>
       <button data-act="copy">Copy verse</button>
-      <button data-act="copyRefs">Copy references</button>
+      <button data-act="vaMore" class="va-more-btn" aria-haspopup="true" aria-expanded="false">More &#8943;</button>
+      <div class="va-menu" hidden>
+        <button data-act="copyRefs">Copy references</button>
+        <button data-act="expandAll" class="${state.settings.expandAll ? 'on' : ''}">Show verse text for all references</button>
+        <button data-act="addTags">Add tags…</button>
+      </div>
     </div>`);
   html.push(`<textarea class="note" placeholder="Your notes on ${esc(v.label)}…" data-id="${id}">${esc(state.notes[id] || '')}</textarea></div>`);
   if (!x.groups.length) html.push('<div class="empty">No TSK entries for this verse.</div>');
@@ -377,97 +380,8 @@ function hiliteTerms(text, q) {
   return html;
 }
 
-async function runSearch(q, append = false) {
-  q = (q || '').trim();
-  if (!q) return;
-  const scope = $('#scopeSel').value;
-  const offset = append ? state.search.results.length : 0;
-  const res = await tsk.search(q, dataTr(), scope, 200, offset);
-  state.search = { q, total: res.total, results: append ? state.search.results.concat(res.results) : res.results, error: res.error };
-  renderSearch();
-  switchTab('search');
-}
 
-function renderSearch() {
-  const s = state.search;
-  $('#searchCount').textContent = s.q ? `(${s.total.toLocaleString()})` : '';
-  $('#searchStatus').textContent = s.error
-    ? s.error
-    : s.q
-    ? `${s.total.toLocaleString()} verse${s.total === 1 ? '' : 's'} for ${s.q.includes('"') ? s.q : `“${s.q}”`}${s.total > s.results.length ? ` — showing ${s.results.length}` : ''}`
-    : '';
-  const box = $('#searchResults');
-  if (!s.q) {
-    box.innerHTML = helpHtml();
-    return;
-  }
-  if (!s.results.length && !s.error) {
-    box.innerHTML = '<div class="empty">No verses found.</div>';
-    return;
-  }
-  box.innerHTML =
-    s.results.map((r) => `<div class="hit" data-id="${r.id}"><div class="lab">${esc(r.label)}</div><div class="t">${hiliteTerms(r.text, s.q)}</div></div>`).join('') +
-    (s.total > s.results.length ? '<button class="more">Load more results</button>' : '');
-}
 
-function helpHtml() {
-  return `<div class="help hint">
-    <p><b>Search tips</b></p>
-    <p><code>faith hope charity</code> — verses containing all of the words</p>
-    <p><code>"living water"</code> — an exact phrase</p>
-    <p><code>shepherd OR sheep</code> — either word</p>
-    <p><code>grace -law</code> — leave out verses with a word</p>
-    <p><code>redeem*</code> — word beginnings (redeem, redeemed, redeemer…)</p>
-    <p>Word endings are matched loosely, so <code>love</code> also finds <i>loved</i> and <i>loveth</i>.</p>
-    <p><b>Go to</b> box: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</p>
-    <p><b>Keys</b>: ↑/↓ move between verses · Ctrl+←/→ change chapter · Alt+←/→ back/forward · Ctrl+G go to · Ctrl+F search · Ctrl+T switch KJV/BSB.</p>
-  </div>`;
-}
-
-// ---------- bookmarks ----------
-async function toggleBookmark(id) {
-  const i = state.bookmarks.findIndex((b) => b.id === id);
-  if (i >= 0) state.bookmarks.splice(i, 1);
-  else state.bookmarks.push({ id, added: Date.now() });
-  saveUser(['bookmarks']);
-  refreshMarkIcons(id);
-  renderMarks();
-  if (state.cur.sel === id) {
-    const btn = $('[data-act="mark"]');
-    const on = i < 0;
-    if (btn) {
-      btn.classList.toggle('on', on);
-      btn.innerHTML = on ? '&#9733; Bookmarked' : '&#9734; Bookmark';
-    }
-  }
-}
-
-async function renderMarks() {
-  const ids = new Set(state.bookmarks.map((b) => b.id));
-  Object.keys(state.notes).forEach((k) => state.notes[k] && ids.add(Number(k)));
-  let list = [...ids].sort((a, b) => a - b);
-  if (state.markFilter === 'marks') list = list.filter((id) => state.bookmarks.some((b) => b.id === id));
-  if (state.markFilter === 'notes') list = list.filter((id) => state.notes[id]);
-  $('#markCount').textContent = ids.size ? `(${ids.size})` : '';
-  const verses = await tsk.versesByIds(list, dataTr());
-  const pane = $('#pane-marks');
-  const f = state.markFilter;
-  pane.innerHTML =
-    `<div class="filter">
-      <button data-f="all" class="${f === 'all' ? 'on' : ''}">All</button>
-      <button data-f="marks" class="${f === 'marks' ? 'on' : ''}">Bookmarked</button>
-      <button data-f="notes" class="${f === 'notes' ? 'on' : ''}">With notes</button></div>` +
-    (verses.length
-      ? verses
-          .map((v) => {
-            const isMark = state.bookmarks.some((b) => b.id === v.id);
-            return `<div class="mark" data-id="${v.id}"><div class="top"><span class="lab">${isMark ? '&#9733; ' : ''}${esc(v.label)}</span>
-            ${isMark ? `<button class="del" data-id="${v.id}" title="Remove bookmark">&times;</button>` : ''}</div>
-            <div class="t">${esc(v.text)}</div>${state.notes[v.id] ? `<div class="nt">${esc(state.notes[v.id])}</div>` : ''}</div>`;
-          })
-          .join('')
-      : '<div class="empty">Nothing here yet. Use “Bookmark” or write a note on any verse.</div>');
-}
 
 // ---------- tabs ----------
 function switchTab(name) {
@@ -551,7 +465,21 @@ function wire() {
     const act = e.target.closest('[data-act]');
     if (!act || !state.xref) return;
     const id = state.xref.verse.id;
-    if (act.dataset.act === 'mark') toggleBookmark(id);
+    const menu = $('#pane-refs .va-menu');
+    if (act.dataset.act === 'vaMore' && menu) {
+      menu.hidden = !menu.hidden;
+      act.setAttribute('aria-expanded', String(!menu.hidden));
+      return;
+    }
+    if (menu && act.closest('.va-menu')) setTimeout(() => (menu.hidden = true), 0); // after the item has done its work
+    if (act.dataset.act === 'addTags') {
+      const t = $('#pane-refs .tagin');
+      if (t) {
+        t.hidden = false;
+        t.focus();
+      }
+      return;
+    }
     if (act.dataset.act === 'expandAll') {
       state.settings.expandAll = !state.settings.expandAll;
       act.classList.toggle('on', state.settings.expandAll);
@@ -590,14 +518,21 @@ function wire() {
     if (h) go({ id: Number(h.dataset.id) }).then(() => switchTab('search'));
   });
 
+  document.addEventListener('click', (e) => {
+    const menu = $('#pane-refs .va-menu');
+    if (menu && !menu.hidden && !e.target.closest('#pane-refs .actions')) menu.hidden = true;
+  });
   $('#pane-marks').addEventListener('click', (e) => {
-    const f = e.target.closest('[data-f]');
-    if (f) {
-      state.markFilter = f.dataset.f;
+    const un = e.target.closest('[data-unhl]');
+    if (un) {
+      e.stopPropagation();
+      return setHighlight(Number(un.dataset.unhl), '');
+    }
+    const c = e.target.closest('[data-hlf]');
+    if (c) {
+      v3.markColor = v3.markColor === c.dataset.hlf ? null : c.dataset.hlf;
       return renderMarks();
     }
-    const del = e.target.closest('.del');
-    if (del) return toggleBookmark(Number(del.dataset.id));
     const m = e.target.closest('.mark');
     if (m) go({ id: Number(m.dataset.id) });
   });
@@ -683,11 +618,6 @@ function wire() {
   });
 }
 
-function toggleTheme() {
-  state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
-  applySettings();
-  saveUser(['settings']);
-}
 
 // =====================================================================
 // v2: Word study (Strong's), Webster 1828, word card
@@ -787,32 +717,6 @@ function strongChip(id) {
   return id ? `<span class="sn" data-sn="${esc(id)}">${esc(id)}</span>` : '';
 }
 
-function renderWordsPane() {
-  const pane = $('#pane-words');
-  if (ws.view === 'strong') return renderStrongEntry();
-  const x = state.xref;
-  if (!x || x.verse.id !== ws.verseId) {
-    pane.innerHTML = '<div class="empty">Select a verse to study its Hebrew or Greek words.</div>';
-    return;
-  }
-  const lang = ws.words[0] ? (ws.words[0].lang === 'H' ? 'Hebrew' : 'Greek') : '';
-  const html = [`<div class="xhead"><h2>${esc(x.verse.label)}</h2><div class="sub">${ws.words.length} ${lang} words · click an English word or a row</div></div>`];
-  html.push(`<div class="ws-verse" id="wsVerse">${wrapWords(x.verse.text)}</div>`);
-  if (!ws.words.length) {
-    html.push('<div class="empty">No original-language tagging for this verse (it is absent from the Hebrew manuscript used).</div>');
-  } else {
-    html.push(`<div class="wslist-head"><span>English gloss</span><span>${lang}</span><span>Transliteration</span><span>Strong's</span></div>`);
-    for (const w of ws.words) {
-      html.push(`<div class="wsrow${ws.selPos === w.pos ? ' on' : ''}" data-pos="${w.pos}" data-sn="${esc(w.strongs || '')}" title="${esc(w.def || '')}">
-        <span class="gl">${esc(w.gloss)}</span><span class="og ${w.lang}">${esc(w.word)}</span>
-        <span class="tl">${esc(w.translit)}</span>${strongChip(w.strongs)}</div>`);
-    }
-  }
-  html.push(`<div class="section-title">Webster's 1828 Dictionary</div>
-    <form class="lookup" id="dictForm"><input id="dictInput" placeholder="Look up any word, e.g. conversation, prevent, charity" value="${esc(ws.dict ? ws.dict.query : '')}" /><button>Look up</button></form>
-    <div id="dictOut">${ws.dict ? dictHtml(ws.dict) : '<div class="hint">KJV forms like “loveth” or “spake” are matched to their headwords.</div>'}</div>`);
-  pane.innerHTML = html.join('');
-}
 
 function dictHtml(d) {
   if (!d.headword) return `<div class="empty">No 1828 entry found for “${esc(d.query)}”.</div>`;
@@ -867,29 +771,7 @@ function hiliteGloss(text, glosses, kjvDef) {
   return esc(text).replace(/[A-Za-z][A-Za-z']*/g, (m) => (keys.some((k) => stemsMatch(stems(m), k)) && !STOP.has(m.toLowerCase()) ? `<b>${m}</b>` : m));
 }
 
-// ---------- floating word card ----------
-async function showWordCard(word, rect, verseId, tokenIndex, tokenCount) {
-  const card = $('#wordcard');
-  const [d, words] = await Promise.all([tsk.dict(word), verseId === ws.verseId ? ws.words : tsk.words(verseId)]);
-  const match = alignToken(word, words, tokenIndex, tokenCount);
-  const label = verseId && state.xref && state.xref.verse.id === verseId ? state.xref.verse.label : '';
-  card.innerHTML = `
-    <div class="wc-head"><h4>${esc(word)}</h4><span class="hint">${esc(label)}</span><button class="x" title="Close (Esc)">&times;</button></div>
-    ${match ? `<div class="wc-label">Original word (best match)</div>
-      <div class="wc-strong"><span class="og">${esc(match.word)}</span><i>${esc(match.translit)}</i>${strongChip(match.strongs)}
-      <span class="d"><b>${esc(match.gloss)}</b> — ${esc(match.def || '')}</span></div>` : ''}
-    <div class="wc-label">Webster's 1828</div>
-    ${d.headword ? `${d.headword !== word.toLowerCase() ? `<div class="hint">Entry: ${esc(d.headword.toUpperCase())}</div>` : ''}<div class="dict">${sanitize(d.html)}</div>` : `<div class="hint">No 1828 entry for “${esc(word)}”.</div>`}
-    ${match && match.strongs ? `<button class="more" data-sn="${esc(match.strongs)}">Open ${esc(match.strongs)} word study</button>` : ''}`;
-  card.hidden = false;
-  const w = card.offsetWidth, h = card.offsetHeight;
-  let left = Math.min(Math.max(12, rect.left), window.innerWidth - w - 12);
-  let top = rect.bottom + 8;
-  if (top + h > window.innerHeight - 12) top = Math.max(12, rect.top - h - 8);
-  card.style.left = `${left}px`;
-  card.style.top = `${top}px`;
-  card.scrollTop = 0;
-}
+
 const hideWordCard = () => ($('#wordcard').hidden = true);
 
 function tokenIndexIn(text, offsetWord) {
@@ -990,6 +872,13 @@ function wireV2() {
   state.settings.tr = 'kjv';
   if (window.v3Init) window.v3Init(u);
   state.bookmarks = u.bookmarks || [];
+  // 3.15: a bookmark is now simply a highlight
+  if (state.bookmarks.length) {
+    state.highlights = state.highlights || {}; // loaded by v3Init, just above
+    for (const b of state.bookmarks) if (!state.highlights[b.id]) state.highlights[b.id] = 'yellow';
+    state.bookmarks = [];
+    saveUser(['bookmarks', 'highlights']);
+  }
   state.notes = u.notes || {};
   const bs = $('#bookSel');
   const og = document.createElement('optgroup');
@@ -1007,3 +896,605 @@ function wireV2() {
   if (last && last.book) await go({ book: last.book, ch: last.ch, selId: last.sel || undefined });
   else await go({ book: 1, ch: 1, vs: 1 });
 })();
+
+// =====================================================================================================
+// from v3.js
+// =====================================================================================================
+/* v3 features: reference trail, highlights & tags, Matthew Henry commentary, Nave's topics,
+   grammar parsing, Strong's-aware search results, notes manager, study sheets.
+   Loaded after app.js and shares its globals (state, tsk, go, esc, $, $$, ...). */
+/* global tsk, state, $, $$, esc, go, toast, switchTab, showPreview, hidePreview, sanitize, saveUser,
+   ws, openStrong, alignToken, tokensOf, stems, stemsMatch, STOP, hiliteTerms, hiliteGloss, refreshMarkIcons,
+   markSelection, strongChip, wrapWords, dictHtml, renderStrongEntry, hideWordCard */
+
+const v3 = {
+  comm: null,
+  topicsVerse: [],
+  topicsFor: null,
+  topic: null,
+  topicView: 'list',
+  topicQuery: '',
+  topicResults: [],
+  cursor: -1,
+  skipTrail: false,
+  markTag: null,
+  markColor: null,
+  markQuery: '',
+};
+const HL_COLORS = ['yellow', 'green', 'blue', 'pink', 'purple'];
+// Defaults until v3Init receives the saved data (init in app.js is async)
+state.highlights = state.highlights || {};
+state.tags = state.tags || {};
+state.trail = state.trail || [];
+
+// ===================================================================== init + hooks
+window.v3Init = (u) => {
+  state.highlights = u.highlights || {};
+  state.tags = u.tags || {};
+  state.trail = Array.isArray(u.trail) ? u.trail : [];
+  v3.cursor = state.trail.length - 1;
+  if (u.importedFrom) setTimeout(() => toast(`Notes and highlights copied from “${u.importedFrom}”`), 1500);
+};
+
+window.v3AfterChapter = () => {
+  for (const el of $$('.verse')) applyHighlight(el);
+};
+
+window.v3OnVerse = (id, x) => {
+  pushTrail(id);
+  renderTrail();
+  injectVerseTools(id);
+  loadCommentary(id);
+  loadVerseTopics(id, x);
+};
+
+// ===================================================================== reference trail
+function pushTrail(id) {
+  if (v3.skipTrail) {
+    v3.skipTrail = false;
+    return;
+  }
+  const t = state.trail;
+  if (t[t.length - 1] === id) {
+    v3.cursor = t.length - 1;
+    return;
+  }
+  t.push(id);
+  if (t.length > 60) t.splice(0, t.length - 60);
+  v3.cursor = t.length - 1;
+  saveUser(['trail']);
+}
+
+async function renderTrail() {
+  const box = $('#trailItems');
+  const ids = state.trail;
+  if (!ids.length) {
+    box.innerHTML = '<span class="hint">Verses you study appear here in order, so you can retrace a chain of cross-references.</span>';
+    return;
+  }
+  const rows = await tsk.versesByIds([...new Set(ids)]);
+  const label = new Map(rows.map((r) => [r.id, r.label]));
+  box.innerHTML = ids
+    .map((id, i) => `${i ? '<span class="sep">›</span>' : ''}<button class="crumb${i === v3.cursor ? ' on' : ''}" data-i="${i}" data-id="${id}" title="${esc(label.get(id) || '')}">${esc(shortLabel(label.get(id) || ''))}</button>`)
+    .join('');
+  const cur = $('.crumb.on', box);
+  if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+
+function shortLabel(full) {
+  const b = state.books.find((x) => full.startsWith(x.name + ' '));
+  return b ? full.replace(b.name, b.abbr) : full;
+}
+
+// ===================================================================== highlights + tags
+function applyHighlight(el) {
+  const c = state.highlights[el.dataset.id];
+  HL_COLORS.forEach((k) => el.classList.remove(`hl-${k}`));
+  if (c) el.classList.add(`hl-${c}`);
+}
+
+function injectVerseTools(id) {
+  const note = $('#pane-refs .note');
+  if (!note || $('#pane-refs .v3tools')) return;
+  const cur = state.highlights[id] || '';
+  const tags = (state.tags[id] || []).join(', ');
+  note.insertAdjacentHTML(
+    'afterend',
+    `<div class="v3tools">
+      <span class="lbl">Highlight</span>
+      ${HL_COLORS.map((c) => `<button class="dot hl-${c}${cur === c ? ' on' : ''}" data-hl="${c}" title="${c}"></button>`).join('')}
+      <button class="dot none${cur ? '' : ' on'}" data-hl="" title="No highlight">&times;</button>
+      <input class="tagin" data-id="${id}" placeholder="Tags, e.g. prayer, sermon idea" value="${esc(tags)}" title="Comma-separated tags; press Enter to save"${tags ? '' : ' hidden'} />
+    </div>`
+  );
+}
+
+function setHighlight(id, color) {
+  if (color) state.highlights[id] = color;
+  else delete state.highlights[id];
+  saveUser(['highlights']);
+  const el = document.getElementById(`v${id}`);
+  if (el) applyHighlight(el);
+  $$('#pane-refs .v3tools .dot').forEach((d) => d.classList.toggle('on', d.dataset.hl === (color || '')));
+  renderMarks();
+}
+
+function setTags(id, text) {
+  const tags = [...new Set(String(text).split(',').map((t) => t.trim().toLowerCase()).filter(Boolean))];
+  if (tags.length) state.tags[id] = tags;
+  else delete state.tags[id];
+  saveUser(['tags']);
+  renderMarks();
+}
+
+// ===================================================================== commentary
+async function loadCommentary(id) {
+  if (v3.comm && id >= v3.comm.start_id && id <= v3.comm.end_id) return renderComm(id);
+  v3.comm = await tsk.commentary(id);
+  renderComm(id);
+}
+
+/** Sanitize commentary HTML: keep basic formatting, turn scripture links into clickable spans. */
+function commHtml(html) {
+  const doc = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html');
+  const OK = new Set(['P', 'B', 'I', 'BR', 'H4']);
+  const walk = (node) => {
+    let out = '';
+    for (const n of node.childNodes) {
+      if (n.nodeType === 3) out += esc(n.textContent);
+      else if (n.nodeType === 1) {
+        const inner = walk(n);
+        const t = n.tagName;
+        if (t === 'A' && n.getAttribute('data-osis')) out += `<span class="cref" data-osis="${esc(n.getAttribute('data-osis'))}">${inner}</span>`;
+        else if (t === 'BR') out += '<br>';
+        else if (OK.has(t)) out += `<${t.toLowerCase()}>${inner}</${t.toLowerCase()}>`;
+        else out += inner;
+      }
+    }
+    return out;
+  };
+  return walk(doc.body.firstChild);
+}
+
+function renderComm(selId) {
+  const pane = $('#pane-comm');
+  const c = v3.comm;
+  if (!c) {
+    pane.innerHTML = '<div class="empty">Select a verse to read Matthew Henry’s commentary on its passage.</div>';
+    return;
+  }
+  const label = state.xref && state.xref.verse.id === selId ? state.xref.verse.label : '';
+  pane.innerHTML = `
+    <div class="comm-head">
+      <div><div class="kicker">Matthew Henry · Concise Commentary</div>
+      <h2>${esc(c.label)}</h2>
+      <div class="sub">${label ? `Commentary on the passage containing ${esc(label)}` : ''}</div></div>
+      <div class="comm-nav">
+        <button data-act="commPrev" ${c.prev ? '' : 'disabled'} title="Previous section">&#8249; Prev</button>
+        <button data-act="commShow" title="Highlight this passage in the reading pane">Show passage</button>
+        <button data-act="commNext" ${c.next ? '' : 'disabled'} title="Next section">Next &#8250;</button>
+      </div>
+    </div>
+    <div class="comm-body">${commHtml(c.html)}</div>
+    <div class="hint" style="margin-top:14px">Scripture references in the commentary are clickable; hover to preview.</div>`;
+}
+
+// ===================================================================== Nave's topics
+async function loadVerseTopics(id, x) {
+  v3.topicsVerse = await tsk.naveForVerse(id);
+  v3.topicsFor = x ? x.verse.label : '';
+  $('#topicCount').textContent = v3.topicsVerse.length ? `(${v3.topicsVerse.length})` : '';
+  if (v3.topicView === 'list') renderTopicList();
+}
+
+function renderTopicList() {
+  v3.topicView = 'list';
+  const pane = $('#pane-topics');
+  const found = v3.topicQuery
+    ? v3.topicResults.length
+      ? `<div class="topic-grid">${v3.topicResults.map(topicChip).join('')}</div>`
+      : `<div class="empty">No topic matches “${esc(v3.topicQuery)}”.</div>`
+    : '';
+  pane.innerHTML = `
+    <div class="kicker">Nave’s Topical Bible</div>
+    <form class="lookup" id="topicForm"><input id="topicInput" placeholder="Find a topic, e.g. covenant, prayer, faith" value="${esc(v3.topicQuery)}" /><button>Find</button></form>
+    ${found}
+    <div class="section-title">${v3.topicsFor ? `Topics that cite ${esc(v3.topicsFor)}` : 'Topics for the selected verse'}</div>
+    ${v3.topicsVerse.length ? `<div class="topic-grid">${v3.topicsVerse.map(topicChip).join('')}</div>` : '<div class="empty">No Nave’s topics cite this verse directly.</div>'}`;
+}
+
+function topicChip(t) {
+  return `<button class="topic" data-topic="${t.id}">${esc(t.subject)}<span>${t.refs}</span></button>`;
+}
+
+async function openTopic(id) {
+  v3.topic = await tsk.naveTopic(id);
+  v3.topicView = 'topic';
+  const t = v3.topic;
+  const lines = t.lines
+    .map((l) => {
+      const refs = l.refs.map((r) => `<span class="ref" data-s="${r.start}" data-e="${r.end}">${esc(r.label)}</span>`).join('');
+      const head = !l.refs.length;
+      return `<div class="tline${head ? ' head' : ''}" style="margin-left:${Math.min(l.depth, 4) * 18}px">
+        ${l.text ? `<span class="tt">${esc(l.text)}</span>` : ''}${refs ? `<span class="refs">${refs}</span>` : ''}</div>`;
+    })
+    .join('');
+  $('#pane-topics').innerHTML = `
+    <button class="backlink" data-act="topicBack">&#8592; Back to topics</button>
+    <div class="kicker">Nave’s Topical Bible</div>
+    <h2 class="topic-title">${esc(t.subject)}</h2>
+    <div class="sub">${t.refs.toLocaleString()} references · hover to preview, click to read</div>
+    <div class="tlines">${lines}</div>`;
+  $('#pane-topics').scrollTop = 0;
+  switchTab('topics');
+}
+
+// ===================================================================== grammar in word study
+function shortGrammar(exp) {
+  if (!exp) return '';
+  const vals = exp
+    .split(';')
+    .map((p) => p.split('=')[1])
+    .filter(Boolean)
+    .map((v) => v.replace(/\(hence[^)]*\)/g, '').trim())
+    .map((v) => ({ Third: '3rd', Second: '2nd', First: '1st' }[v] || v))
+    .filter((v) => v && !/^Common$/i.test(v));
+  return vals.join(' · ');
+}
+
+// Override: word list with a grammar line per word
+function renderWordsPane() {
+  const pane = $('#pane-words');
+  if (ws.view === 'strong') return renderStrongEntry();
+  const x = state.xref;
+  if (!x || x.verse.id !== ws.verseId) {
+    pane.innerHTML = '<div class="empty">Select a verse to study its Hebrew or Greek words.</div>';
+    return;
+  }
+  const lang = ws.words[0] ? (ws.words[0].lang === 'H' ? 'Hebrew' : 'Greek') : '';
+  const html = [`<div class="xhead"><h2>${esc(x.verse.label)}</h2><div class="sub">${ws.words.length} ${lang} words · click an English word or a row</div></div>`];
+  html.push(`<div class="ws-verse" id="wsVerse">${wrapWords(x.verse.text)}</div>`);
+  if (!ws.words.length) {
+    html.push('<div class="empty">No original-language tagging for this verse (it is absent from the Hebrew manuscript used).</div>');
+  } else {
+    html.push(`<div class="wslist-head"><span>English gloss</span><span>${lang}</span><span>Transliteration</span><span>Strong's</span></div>`);
+    for (const w of ws.words) {
+      html.push(`<div class="wsrow${ws.selPos === w.pos ? ' on' : ''}" data-pos="${w.pos}" data-sn="${esc(w.strongs || '')}" title="${esc(w.def || '')}">
+        <span class="gl">${esc(w.gloss)}</span><span class="og ${w.lang}">${esc(w.word)}</span>
+        <span class="tl">${esc(w.translit)}</span>${strongChip(w.strongs)}
+        ${w.grammar ? `<span class="gr" title="${esc(w.morph || '')}: ${esc(w.grammar)}">${esc(shortGrammar(w.grammar))}</span>` : ''}</div>`);
+    }
+  }
+  html.push(`<div class="section-title">Webster's 1828 Dictionary</div>
+    <form class="lookup" id="dictForm"><input id="dictInput" placeholder="Look up any word, e.g. conversation, prevent, charity" value="${esc(ws.dict ? ws.dict.query : '')}" /><button>Look up</button></form>
+    <div id="dictOut">${ws.dict ? dictHtml(ws.dict) : '<div class="hint">KJV forms like “loveth” or “spake” are matched to their headwords.</div>'}</div>`);
+  pane.innerHTML = html.join('');
+}
+
+// Override: word card with grammar line
+async function showWordCard(word, rect, verseId, tokenIndex, tokenCount) {
+  const card = $('#wordcard');
+  const [d, words] = await Promise.all([tsk.dict(word), verseId === ws.verseId ? ws.words : tsk.words(verseId)]);
+  const match = alignToken(word, words, tokenIndex, tokenCount);
+  const label = verseId && state.xref && state.xref.verse.id === verseId ? state.xref.verse.label : '';
+  card.innerHTML = `
+    <div class="wc-head"><h4>${esc(word)}</h4><span class="hint">${esc(label)}</span><button class="x" title="Close (Esc)">&times;</button></div>
+    ${match ? `<div class="wc-label">Original word (best match)</div>
+      <div class="wc-strong"><span class="og">${esc(match.word)}</span><i>${esc(match.translit)}</i>${strongChip(match.strongs)}
+      <span class="d"><b>${esc(match.gloss)}</b> — ${esc(match.def || '')}</span>
+      ${match.grammar ? `<span class="d gr2">${esc(shortGrammar(match.grammar))}</span>` : ''}</div>` : ''}
+    <div class="wc-label">Webster's 1828</div>
+    ${d.headword ? `${d.headword !== word.toLowerCase() ? `<div class="hint">Entry: ${esc(d.headword.toUpperCase())}</div>` : ''}<div class="dict">${sanitize(d.html)}</div>` : `<div class="hint">No 1828 entry for “${esc(word)}”.</div>`}
+    ${match && match.strongs ? `<button class="more" data-sn="${esc(match.strongs)}">Open ${esc(match.strongs)} word study</button>` : ''}`;
+  card.hidden = false;
+  const w = card.offsetWidth, h = card.offsetHeight;
+  const left = Math.min(Math.max(12, rect.left), window.innerWidth - w - 12);
+  let top = rect.bottom + 8;
+  if (top + h > window.innerHeight - 12) top = Math.max(12, rect.top - h - 8);
+  card.style.left = `${left}px`;
+  card.style.top = `${top}px`;
+  card.scrollTop = 0;
+}
+
+// ===================================================================== search (override)
+function renderSearch() {
+  const s = state.search;
+  $('#searchCount').textContent = s.q ? `(${s.total.toLocaleString()})` : '';
+  const sn = (s.strongs || []).length ? ` · Strong's ${s.strongs.join(', ')}` : '';
+  $('#searchStatus').textContent = s.error
+    ? s.error
+    : s.q
+    ? `${s.total.toLocaleString()} verse${s.total === 1 ? '' : 's'} for ${s.q.includes('"') ? s.q : `“${s.q}”`}${sn}${s.total > s.results.length ? ` — showing ${s.results.length}` : ''}`
+    : '';
+  const box = $('#searchResults');
+  if (!s.q) {
+    box.innerHTML = helpHtml();
+    return;
+  }
+  if (!s.results.length && !s.error) {
+    box.innerHTML = '<div class="empty">No verses found.</div>';
+    return;
+  }
+  box.innerHTML =
+    s.results
+      .map((r) => {
+        let t = hiliteTerms(r.text, s.q.replace(/\b[HGhg]\d{1,4}[a-z]?\b/g, ' '));
+        if (r.glosses) t = hiliteGloss(r.text, r.glosses, '').replace(/<b>/g, '<b class="sg">');
+        return `<div class="hit" data-id="${r.id}"><div class="lab">${esc(r.label)}${r.glosses ? `<span class="gls">${esc(r.glosses)}</span>` : ''}</div><div class="t">${t}</div></div>`;
+      })
+      .join('') + (s.total > s.results.length ? '<button class="more">Load more results</button>' : '');
+}
+
+
+function helpHtml() {
+  return `<div class="help hint">
+    <p><b>Search tips</b></p>
+    <p><code>faith hope charity</code> — verses containing all of the words</p>
+    <p><code>"living water"</code> — an exact phrase</p>
+    <p><code>shepherd OR sheep</code> — either word</p>
+    <p><code>grace -law</code> — leave out verses with a word</p>
+    <p><code>redeem*</code> — word beginnings (redeem, redeemed, redeemer…)</p>
+    <p><code>G25</code> — every verse using Greek <i>agapaō</i>; <code>H2617 mercy</code> — Hebrew <i>hesed</i> where the KJV says “mercy”</p>
+    <p><code>G26 -love</code> — where <i>agapē</i> is translated some other way (e.g. “charity”)</p>
+    <p>Word endings are matched loosely, so <code>love</code> also finds <i>loved</i> and <i>loveth</i>.</p>
+    <p><b>Go to</b> box: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</p>
+    <p><b>Keys</b>: ↑/↓ verses · Ctrl+←/→ chapter · Alt+←/→ back/forward · Ctrl+1–6 tabs · Ctrl+P study sheet · double-click a word for its card.</p>
+  </div>`;
+}
+
+// ===================================================================== notes manager (override)
+async function renderMarks() {
+  // Notes › Notes (verses with a note or tags) and Notes › Highlights; the other views live in study.js and walk.js
+  const view = typeof v32 !== 'undefined' && v32.marksView === 'hl' ? 'hl' : 'notes';
+  const noted = new Set();
+  for (const k of Object.keys(state.notes)) if (state.notes[k]) noted.add(Number(k));
+  for (const k of Object.keys(state.tags || {})) noted.add(Number(k));
+  const lit = new Set(Object.keys(state.highlights || {}).map(Number));
+  const all = new Set([...noted, ...lit]);
+  $('#markCount').textContent = all.size ? `(${all.size})` : '';
+
+  const tagCounts = {};
+  for (const list of Object.values(state.tags || {})) for (const t of list) tagCounts[t] = (tagCounts[t] || 0) + 1;
+  const colorCounts = {};
+  for (const c of Object.values(state.highlights || {})) colorCounts[c] = (colorCounts[c] || 0) + 1;
+
+  let list = [...(view === 'hl' ? lit : noted)].sort((a, b) => a - b);
+  if (view === 'notes' && v3.markTag) list = list.filter((id) => (state.tags[id] || []).includes(v3.markTag));
+  if (view === 'hl' && v3.markColor) list = list.filter((id) => state.highlights[id] === v3.markColor);
+  const verses = await tsk.versesByIds(list);
+  const q = v3.markQuery.trim().toLowerCase();
+  const shown = q
+    ? verses.filter((v) => [v.label, v.text, state.notes[v.id] || '', (state.tags[v.id] || []).join(' ')].join(' ').toLowerCase().includes(q))
+    : verses;
+
+  const pane = $('#pane-marks');
+  const hadFocus = document.activeElement && document.activeElement.id === 'markSearch';
+  const head = view === 'hl'
+    ? (Object.keys(colorCounts).length > 1 ? `<div class="tagbar hlbar-f">${HL_COLORS.filter((c) => colorCounts[c]).map((c) => `<button class="tag hlf${v3.markColor === c ? ' on' : ''}" data-hlf="${c}" title="${c}"><i class="dot hl-${c}"></i> <span>${colorCounts[c]}</span></button>`).join('')}</div>` : '')
+    : (Object.keys(tagCounts).length ? `<div class="tagbar">${Object.entries(tagCounts)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([t, n]) => `<button class="tag${v3.markTag === t ? ' on' : ''}" data-tag="${esc(t)}">#${esc(t)} <span>${n}</span></button>`)
+      .join('')}</div>` : '');
+  const empty = view === 'hl'
+    ? (lit.size ? 'Nothing matches.' : 'No highlights yet. Select a verse and pick a highlight color — highlighted verses are kept here, like bookmarks.')
+    : (noted.size ? 'Nothing matches.' : 'No notes yet. Select a verse and write a note on the Refs tab.');
+  pane.innerHTML = `${head}
+    <input id="markSearch" class="marksearch" placeholder="${view === 'hl' ? 'Search your highlighted verses' : 'Search your notes and tags'}" value="${esc(v3.markQuery)}" />` +
+    (shown.length
+      ? shown
+          .map((v) => {
+            const hl = state.highlights[v.id];
+            const tags = state.tags[v.id] || [];
+            return `<div class="mark${hl ? ` hlbar hl-${hl}` : ''}" data-id="${v.id}"><div class="top"><span class="lab">${esc(v.label)}</span>
+            ${view === 'hl' ? `<button class="del" data-unhl="${v.id}" title="Remove highlight">&times;</button>` : ''}</div>
+            <div class="t">${esc(v.text)}</div>
+            ${tags.length ? `<div class="mtags">${tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
+            ${state.notes[v.id] ? `<div class="nt">${esc(state.notes[v.id])}</div>` : ''}</div>`;
+          })
+          .join('')
+      : `<div class="empty">${empty}</div>`);
+  if (hadFocus) {
+    const inp = $('#markSearch');
+    inp.focus();
+    inp.setSelectionRange(inp.value.length, inp.value.length);
+  }
+}
+
+// ===================================================================== study sheet
+async function buildSheet(id) {
+  const [x, words, comm, topics] = await Promise.all([tsk.xrefs(id), tsk.words(id), tsk.commentary(id), tsk.naveForVerse(id)]);
+  const groups = await Promise.all(
+    x.groups.map(async (g) => ({
+      ...g,
+      texts: await Promise.all(g.refs.map((r) => tsk.passage(r.start, Math.min(r.end, r.start + 4)))),
+    }))
+  );
+  const note = state.notes[id];
+  const tags = state.tags[id] || [];
+  const plainComm = comm ? commHtml(comm.html).replace(/<span class="cref"[^>]*>(.*?)<\/span>/g, '<b>$1</b>') : '';
+  const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(x.verse.label)} — Study sheet</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; color: #1f1b16; font-size: 11pt; line-height: 1.45; }
+  h1 { font-size: 20pt; font-weight: normal; margin: 0 0 4pt; }
+  h2 { font-size: 12pt; text-transform: uppercase; letter-spacing: .08em; color: #1f3a6b; border-bottom: 1px solid #d6dbe6; padding-bottom: 3pt; margin: 18pt 0 8pt; font-family: 'Segoe UI', Arial, sans-serif; }
+  .meta { color: #6b6155; font-size: 9pt; font-family: 'Segoe UI', Arial, sans-serif; }
+  .verse { font-size: 14pt; background: #f1f4fa; padding: 10pt 12pt; border-left: 3pt solid #1f3a6b; margin: 10pt 0; }
+  .note { white-space: pre-wrap; background: #fffdf9; border: 1px solid #e1dccf; padding: 8pt 10pt; }
+  .tags span { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9pt; background: #e4eaf5; padding: 1pt 6pt; border-radius: 8pt; margin-right: 4pt; }
+  .kw { font-weight: bold; color: #1f3a6b; margin-top: 8pt; }
+  .ref { margin: 2pt 0 2pt 12pt; }
+  .ref b { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9pt; color: #8a6414; }
+  table { border-collapse: collapse; width: 100%; font-size: 10pt; }
+  td, th { border-bottom: 1px solid #e1dccf; padding: 3pt 5pt; text-align: left; vertical-align: top; }
+  th { font-family: 'Segoe UI', Arial, sans-serif; font-size: 8pt; text-transform: uppercase; color: #6b6155; }
+  .og { font-size: 13pt; }
+  .H { direction: rtl; }
+  .comm h4 { margin: 6pt 0 2pt; font-size: 11pt; }
+  .topics { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5pt; }
+  .credits { margin-top: 24pt; font-size: 7.5pt; color: #8a8072; font-family: 'Segoe UI', Arial, sans-serif; }
+  h2, .kw { page-break-after: avoid; }
+</style></head><body>
+<h1>${esc(x.verse.label)}</h1>
+<div class="meta">King James Version · Study sheet · ${esc(date)}</div>
+<div class="verse">${esc(x.verse.text)}</div>
+${tags.length ? `<div class="tags">${tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
+${note ? `<h2>My notes</h2><div class="note">${esc(note)}</div>` : ''}
+<h2>Treasury of Scripture Knowledge</h2>
+${groups.length ? groups
+  .map((g, i) => `<div class="kw">${i + 1}. ${esc(g.anchor || '(whole verse)')}</div>${g.texts
+    .map((p, j) => `<div class="ref"><b>${esc(g.refs[j].label)}</b> ${p.verses.map((v) => esc(v.text)).join(' ')}${g.refs[j].end > g.refs[j].start + 4 ? ' …' : ''}</div>`)
+    .join('')}`)
+  .join('') : '<p>No TSK entries for this verse.</p>'}
+${words.length ? `<h2>Word study</h2><table><tr><th>English</th><th>Original</th><th>Translit.</th><th>Strong's</th><th>Grammar</th><th>Definition</th></tr>
+${words.map((w) => `<tr><td>${esc(w.gloss)}</td><td class="og ${w.lang}">${esc(w.word)}</td><td><i>${esc(w.translit)}</i></td><td>${esc(w.strongs || '')}</td><td>${esc(shortGrammar(w.grammar))}</td><td>${esc(w.def || '')}</td></tr>`).join('')}</table>` : ''}
+${comm ? `<h2>Matthew Henry · Concise Commentary (${esc(comm.label)})</h2><div class="comm">${plainComm}</div>` : ''}
+${topics.length ? `<h2>Nave's Topical Bible</h2><div class="topics">Topics that cite this verse: ${topics.map((t) => esc(t.subject)).join(' · ')}</div>` : ''}
+<div class="credits">KJV (public domain). Treasury of Scripture Knowledge via CrossReferences.org (CC BY 4.0). Hebrew/Greek data: STEPBible.org, Tyndale House (CC BY 4.0).
+Strong's (public domain; Open Scriptures CC BY-SA). Matthew Henry's Concise Commentary (public domain). Nave's Topical Bible (public domain; BibleData CC BY 4.0).</div>
+</body></html>`;
+  return { html, name: `${x.verse.label} - study sheet` };
+}
+
+async function exportSheet(print) {
+  const id = state.cur.sel;
+  if (!id) return toast('Select a verse first');
+  toast(print ? 'Preparing to print…' : 'Building study sheet…');
+  const { html, name } = await buildSheet(id);
+  if (print) await tsk.printSheet(html);
+  else {
+    const saved = await tsk.exportSheet(html, name);
+    if (saved) toast('Study sheet saved');
+  }
+}
+
+// ===================================================================== events
+function wireV3() {
+  // trail
+  $('#trailItems').addEventListener('click', (e) => {
+    const c = e.target.closest('.crumb');
+    if (!c) return;
+    v3.skipTrail = true;
+    v3.cursor = Number(c.dataset.i);
+    go({ id: Number(c.dataset.id) });
+  });
+  $('#trailClear').addEventListener('click', () => {
+    state.trail = state.cur.sel ? [state.cur.sel] : [];
+    v3.cursor = state.trail.length - 1;
+    saveUser(['trail']);
+    renderTrail();
+  });
+
+  // highlight + tags (refs pane)
+  $('#pane-refs').addEventListener('click', (e) => {
+    const d = e.target.closest('.v3tools .dot');
+    if (d && state.xref) setHighlight(state.xref.verse.id, d.dataset.hl);
+  });
+  $('#pane-refs').addEventListener('change', (e) => {
+    if (e.target.classList.contains('tagin')) setTags(Number(e.target.dataset.id), e.target.value);
+  });
+  $('#pane-refs').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.classList.contains('tagin')) {
+      e.preventDefault();
+      setTags(Number(e.target.dataset.id), e.target.value);
+      e.target.blur();
+      toast('Tags saved');
+    }
+  });
+
+  // commentary
+  const crefPreview = async (el) => {
+    if (!el.dataset.s) {
+      const r = await tsk.osis(el.dataset.osis);
+      if (!r) return;
+      el.dataset.s = r.start;
+      el.dataset.e = r.end;
+    }
+    showPreview(el);
+  };
+  $('#pane-comm').addEventListener('mouseover', (e) => {
+    const c = e.target.closest('.cref');
+    if (c) crefPreview(c);
+  });
+  $('#pane-comm').addEventListener('mouseout', (e) => e.target.closest('.cref') && hidePreview());
+  $('#pane-comm').addEventListener('click', async (e) => {
+    const c = e.target.closest('.cref');
+    if (c) {
+      hidePreview();
+      const r = await tsk.osis(c.dataset.osis);
+      if (r) go({ id: r.start, endId: r.end });
+      return;
+    }
+    const a = e.target.closest('[data-act]');
+    if (!a || !v3.comm) return;
+    if (a.dataset.act === 'commPrev' && v3.comm.prev) go({ id: v3.comm.prev });
+    if (a.dataset.act === 'commNext' && v3.comm.next) go({ id: v3.comm.next });
+    if (a.dataset.act === 'commShow') go({ id: v3.comm.start_id, endId: v3.comm.end_id }).then(() => switchTab('comm'));
+  });
+
+  // topics
+  let tq;
+  $('#pane-topics').addEventListener('input', (e) => {
+    if (e.target.id !== 'topicInput') return;
+    clearTimeout(tq);
+    tq = setTimeout(async () => {
+      v3.topicQuery = e.target.value.trim();
+      v3.topicResults = v3.topicQuery ? await tsk.naveSearch(v3.topicQuery) : [];
+      const pos = e.target.selectionStart;
+      renderTopicList();
+      const inp = $('#topicInput');
+      inp.focus();
+      inp.setSelectionRange(pos, pos);
+    }, 200);
+  });
+  $('#pane-topics').addEventListener('submit', async (e) => {
+    if (e.target.id !== 'topicForm') return;
+    e.preventDefault();
+    v3.topicQuery = $('#topicInput').value.trim();
+    v3.topicResults = v3.topicQuery ? await tsk.naveSearch(v3.topicQuery) : [];
+    if (v3.topicResults.length === 1) return openTopic(v3.topicResults[0].id);
+    renderTopicList();
+  });
+  $('#pane-topics').addEventListener('click', (e) => {
+    const t = e.target.closest('[data-topic]');
+    if (t) return openTopic(Number(t.dataset.topic));
+    if (e.target.closest('[data-act="topicBack"]')) return renderTopicList();
+    const r = e.target.closest('.ref');
+    if (r) {
+      hidePreview();
+      go({ id: Number(r.dataset.s), endId: Number(r.dataset.e) }).then(() => switchTab('topics'));
+    }
+  });
+
+  // notes manager extras
+  $('#pane-marks').addEventListener('click', (e) => {
+    const t = e.target.closest('[data-tag]');
+    if (t) {
+      v3.markTag = v3.markTag === t.dataset.tag ? null : t.dataset.tag;
+      renderMarks();
+    }
+  });
+  let mq;
+  $('#pane-marks').addEventListener('input', (e) => {
+    if (e.target.id !== 'markSearch') return;
+    clearTimeout(mq);
+    mq = setTimeout(() => {
+      v3.markQuery = e.target.value;
+      renderMarks();
+    }, 200);
+  });
+
+  // study sheet + menu
+  $('#btnSheet').addEventListener('click', () => exportSheet(false));
+  tsk.onMenu((cmd) => {
+    if (cmd === 'exportSheet') exportSheet(false);
+    else if (cmd === 'printSheet') exportSheet(true);
+    else if (cmd === 'clearTrail') $('#trailClear').click();
+    else if (cmd.startsWith('tab:')) switchTab(cmd.slice(4));
+  });
+
+  // re-apply highlights when the reader re-renders selection
+  renderTrail();
+}
+
+wireV3();

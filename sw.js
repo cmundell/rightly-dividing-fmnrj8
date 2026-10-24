@@ -1,7 +1,7 @@
 'use strict';
 // Keeps Search the Scriptures working offline. The cache name changes with every release.
-const CACHE = 'sts-3.14.0-538f6f50aa';
-const SHELL = ["./", "CHANGELOG.html", "app.js", "data/basemap.json", "data/bookintro.json", "data/easton.json", "data/gospel.json", "data/journeys.json", "data/landmarks.json", "data/relief.jpg", "features.js", "icon-180.png", "icon-192.png", "icon-512.png", "index.html", "lib/cjs-shim.js", "lib/db.js", "lib/docx.js", "lib/jszip.min.js", "lib/sql-wasm-browser.js", "lib/sql-wasm-browser.wasm", "manifest.webmanifest", "refparse.js", "robots.txt", "styles.css", "tsk-web.js", "v3.js", "v32.js", "v33.js", "v34.js", "v35.js", "v36.js", "v37.js", "v38.js", "v381.js", "v39.js", "v40.js", "v41.js", "v42.js", "v43.js", "v44.js", "web.css", "web.js"];
+const CACHE = 'sts-3.15.0-ed057e87b6';
+const SHELL = ["./", "CHANGELOG.html", "data/basemap.json", "data/bookintro.json", "data/easton.json", "data/gospel.json", "data/journeys.json", "data/landmarks.json", "data/relief.jpg", "features.js", "home.js", "icon-180.png", "icon-192.png", "icon-512.png", "index.html", "lib/cjs-shim.js", "lib/db.js", "lib/docx.js", "lib/jszip.min.js", "lib/sql-wasm-browser.js", "lib/sql-wasm-browser.wasm", "manifest.webmanifest", "maps.js", "reader.js", "refparse.js", "robots.txt", "study.js", "styles.css", "tools.js", "tsk-web.js", "walk.js", "web.css", "web.js"];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
