@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '3.17.0';
+  const VERSION = '3.17.1';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -81,8 +81,8 @@
   }
 
   // the database is kept in its own offline cache, saved once after the first download
-  const DBFILE = 'data/tsk-db-99f1c3e642.gz';
-  const DBPARTS = ["data/tsk-db-99f1c3e642.gz.1", "data/tsk-db-99f1c3e642.gz.2", "data/tsk-db-99f1c3e642.gz.3"];
+  const DBFILE = 'data/tsk-db-7aa6a5a59f.gz';
+  const DBPARTS = ["data/tsk-db-7aa6a5a59f.gz.1", "data/tsk-db-7aa6a5a59f.gz.2", "data/tsk-db-7aa6a5a59f.gz.3"];
   async function loadDbFile() {
     const cached = 'caches' in window ? await caches.match(DBFILE) : null;
     if (cached) {
@@ -92,7 +92,7 @@
     const pieces = [];
     for (let i = 0; i < DBPARTS.length; i++) {
       const a = 0.02 + (0.83 * i) / DBPARTS.length;
-      pieces.push(await fetchWithProgress(DBPARTS[i], 'Downloading the Bible (first time only)…', a, a + 0.83 / DBPARTS.length));
+      pieces.push(await fetchWithProgress(DBPARTS[i], 'Downloading the Bible (first time only, about 42 MB; Wi‑Fi is best)…', a, a + 0.83 / DBPARTS.length));
     }
     const gz = new Uint8Array(pieces.reduce((n, p) => n + p.length, 0));
     let at = 0;
@@ -125,6 +125,7 @@
       g.id = 'webGate';
       g.innerHTML = `<form class="wg-card"><div class="ws-title">Search the Scriptures</div>
         <p>Enter the passcode you were given.</p>
+        <p class="wg-note">The first time, the app downloads the Bible and its study tools (about 42 MB), so Wi‑Fi is best. After that it works without the internet.</p>
         <input type="password" autocomplete="off" autocapitalize="off" aria-label="Passcode" placeholder="Passcode" />
         <button class="primary-btn">Open</button><div class="wg-msg" aria-live="polite"></div></form>`;
       document.body.appendChild(g);
@@ -286,19 +287,12 @@
     landmarks: () => loadJson('landmarks.json', []),
     family: () => loadJson('family.json', { stories: [] }),
     gospel: () => loadJson('gospel.json', { steps: [], next: [] }),
-    // Easton's Bible Dictionary and the book introductions (3.14)
-    easton: async (word) => {
-      const d = await loadJson('easton.json', {});
-      const w = String(word || '').toLowerCase().replace(/[’']s$/, '').trim();
-      const tries = [w, w.replace(/ies$/, 'y'), w.replace(/es$/, ''), w.replace(/s$/, ''), `${w}s`, `${w}, book of`];
-      for (const k of tries) if (k && d[k]) return { key: k, ...d[k] };
-      return null;
-    },
-    eastonEntry: async (key) => (await loadJson('easton.json', {}))[key] || null,
+    // the book introductions (3.14)
     bookIntro: async (id) => (await loadJson('bookintro.json', {}))[id] || null,
     phrases: () => loadJson('phrases.json', []),
     mhIntro: async (id) => (await loadJson('mhintro.json', {}))[id] || null,
     bookAbout: async (id) => (await loadJson('bookabout.json', {}))[id] || null,
+    scofield: async (id) => (await loadJson('scofield.json', {}))[id] || null,
     paths: () => loadJson('paths.json', { paths: [] }),
     // after an update reaches this phone, show What's New once (not on a first install)
     whatsNewPending: async () => {

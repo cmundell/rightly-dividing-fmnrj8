@@ -1,7 +1,7 @@
 'use strict';
 // Keeps Search the Scriptures working offline. The cache name changes with every release.
-const CACHE = 'sts-3.17.0-729b1655cb';
-const SHELL = ["./", "CHANGELOG.html", "data/basemap.json", "data/easton.json", "data/gospel.json", "data/journeys.json", "data/landmarks.json", "data/phrases.json", "data/relief.jpg", "features.js", "home.js", "icon-180.png", "icon-192.png", "icon-512.png", "index.html", "lib/cjs-shim.js", "lib/db.js", "lib/docx.js", "lib/jszip.min.js", "lib/sql-wasm-browser.js", "lib/sql-wasm-browser.wasm", "manifest.webmanifest", "maps.js", "reader.js", "refparse.js", "robots.txt", "study.js", "styles.css", "tools.js", "tsk-web.js", "walk.js", "web.css", "web.js"];
+const CACHE = 'sts-3.17.1-875d3592ca';
+const SHELL = ["./", "CHANGELOG.html", "data/basemap.json", "data/gospel.json", "data/journeys.json", "data/landmarks.json", "data/phrases.json", "data/relief.jpg", "data/scofield.json", "features.js", "home.js", "icon-180.png", "icon-192.png", "icon-512.png", "index.html", "lib/cjs-shim.js", "lib/db.js", "lib/docx.js", "lib/jszip.min.js", "lib/sql-wasm-browser.js", "lib/sql-wasm-browser.wasm", "manifest.webmanifest", "maps.js", "reader.js", "refparse.js", "robots.txt", "study.js", "styles.css", "tools.js", "tsk-web.js", "walk.js", "web.css", "web.js"];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });

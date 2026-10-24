@@ -1,6 +1,6 @@
 {
  "name": "Search the Scriptures",
- "short_name": "Scriptures",
+ "short_name": "Search the Scriptures",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",

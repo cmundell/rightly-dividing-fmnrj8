@@ -1,5 +1,5 @@
 'use strict';
-/* Later additions: swiping between chapters, What's New, medallions, the start screen and your name, Settings, Easton's Bible Dictionary and the book introductions.
+/* Later additions: swiping between chapters, What's New, medallions, the start screen and your name, Settings and the book introductions.
    Merged in 3.15 from the per-release layers (v40.js, v41.js, v42.js, v43.js, v44.js), kept in their original order: later
    sections still extend earlier ones by wrapping window.X. */
 
@@ -548,58 +548,17 @@ function maybeStartWithToday() {
 // =====================================================================================================
 // from v44.js
 // =====================================================================================================
-/* v3.14: Easton's Bible Dictionary in the word card; an introduction to every book of the Bible; one Settings page
+/* v3.14: an introduction to every book of the Bible; one Settings page
    (the text, your name, the start screen and your notes). Loaded after v43.js. */
 /* global tsk, state, $, $$, esc, openModal, closeModal, saveUser, toast, go, hideWordCard, COMMANDS, TOUR, isPhone, setView */
 
 const onPhone = () => typeof isPhone === 'function' && isPhone();
 const toReading = () => typeof setView === 'function' && onPhone() && setView('read');
 
-// ---------------------------------------------------------------- Easton's Bible Dictionary, in the word card
-const eastonHtml = (entry, all) => {
-  const paras = all ? entry.p : entry.p.slice(0, 1);
-  return paras.map((p) => `<p>${p}</p>`).join(''); // Easton's own text; references are links (built by tools/build_easton.py)
-};
-{
-  const prevCard = window.showWordCard;
-  window.showWordCard = async (word, rect, verseId, ti, tc) => {
-    await prevCard(word, rect, verseId, ti, tc);
-    const card = $('#wordcard');
-    if (card.hidden || $('.wc-easton', card)) return;
-    const entry = await tsk.easton(word).catch(() => null);
-    if (!entry || card.hidden || $('.wc-easton', card) || $('h4', card).textContent !== word) return;
-    const more = entry.p.length > 1;
-    const sec = `<div class="wc-label">Easton's Bible Dictionary</div>
-      <div class="wc-easton" data-key="${esc(entry.key)}">${entry.t.toLowerCase() !== word.toLowerCase() ? `<div class="hint">Entry: ${esc(entry.t.toUpperCase())}</div>` : ''}
-      <div class="eb-body">${eastonHtml(entry, false)}</div>${more ? '<button class="linkish" data-eb="more">Read the whole entry</button>' : ''}</div>`;
-    const more1828 = $('.more', card);
-    if (more1828) more1828.insertAdjacentHTML('beforebegin', sec);
-    else card.insertAdjacentHTML('beforeend', sec);
-    if (!onPhone()) {
-      const r = card.getBoundingClientRect();
-      if (r.bottom > window.innerHeight - 12) card.style.top = `${Math.max(12, window.innerHeight - r.height - 12)}px`;
-    }
-  };
-  $('#wordcard').addEventListener('click', async (e) => {
-    if (e.target.closest('[data-eb="more"]')) {
-      const box = e.target.closest('.wc-easton');
-      const entry = await tsk.eastonEntry(box.dataset.key);
-      if (entry) $('.eb-body', box).innerHTML = eastonHtml(entry, true);
-      e.target.remove();
-      return;
-    }
-    const r = e.target.closest('.wc-easton .ref');
-    if (r) {
-      hideWordCard();
-      toReading();
-      go({ id: Number(r.dataset.s), endId: Number(r.dataset.e) });
-    }
-  });
-}
 
 // ---------------------------------------------------------------- About this book
 // The five questions, answered only in quotations: Scripture where the book speaks for itself, then the published
-// introductions (tools/build_bookabout.py). Then Matthew Henry's outline and Easton's article.
+// introductions (tools/build_bookabout.py). Then Matthew Henry's outline.
 const BA_QS = [
   ['who', 'Who wrote it?', ''],
   ['to', 'Who received it?', 'The original audience'],
@@ -646,8 +605,7 @@ async function openBookIntro(bookId) {
       const items = (outline.find((o) => o[0] === c) || [])[1] || [];
       return `<li value="${c}"><button data-bi-ch="${c}" class="bi-chh">${single ? 'The whole book' : `${bookId === 19 ? 'Psalm' : 'Chapter'} ${c}`}</button>${items.length ? `<ul>${items.map(([t, a, z]) => `<li><button data-bi-ch="${c}" data-bi-vs="${a || ''}">${esc(t)}${a ? ` <span class="bi-vs">${a === z ? `v. ${a}` : `vv. ${a}–${z}`}</span>` : ''}</button></li>`).join('')}</ul>` : ''}</li>`;
     }).join('')}</ol>
-    ${d && d.e ? `<details class="bi-easton"><summary>Read more in Easton's Bible Dictionary</summary><div class="eb-body" data-key="${esc(d.e)}"><p class="hint">Loading…</p></div></details>` : ''}
-    <p class="hint bi-note">Every answer is a quotation, word for word: the King James Version${used.includes('jfb') ? `; Jamieson, Fausset & Brown, <i>Commentary Critical and Explanatory on the Whole Bible</i> (1871), ${esc(ba.jfb === 'Introduction' ? 'introduction to this book' : ba.jfb.replace(/^Introduction/, 'introduction'))}` : ''}${used.includes('berkhof') ? '; Louis Berkhof, <i>Introduction to the New Testament</i> (1915)' : ''}. Outline from Matthew Henry's Concise Commentary; Easton's Bible Dictionary (1897).</p>`, 'm-bookintro');
+    <p class="hint bi-note">Every answer is a quotation, word for word: the King James Version${used.includes('jfb') ? `; Jamieson, Fausset & Brown, <i>Commentary Critical and Explanatory on the Whole Bible</i> (1871), ${esc(ba.jfb === 'Introduction' ? 'introduction to this book' : ba.jfb.replace(/^Introduction/, 'introduction'))}` : ''}${used.includes('berkhof') ? '; Louis Berkhof, <i>Introduction to the New Testament</i> (1915)' : ''}. Outline from Matthew Henry's Concise Commentary.</p>`, 'm-bookintro');
   $('#modal').dataset.book = bookId;
 }
 $('#modal').addEventListener('click', (e) => {
@@ -655,7 +613,7 @@ $('#modal').addEventListener('click', (e) => {
   const book = Number($('#modal').dataset.book);
   const c = e.target.closest('[data-bi-ch]');
   const v = e.target.closest('[data-bi-go]');
-  const r = e.target.closest('.bi-easton .ref');
+  const r = e.target.closest('.bi-sco .ref');
   if (!c && !v && !r) return;
   closeModal();
   toReading();
@@ -664,18 +622,9 @@ $('#modal').addEventListener('click', (e) => {
   else if (v) go({ id: Number(v.dataset.biGo), endId: v.dataset.biEnd ? Number(v.dataset.biEnd) : undefined });
   else go({ id: Number(r.dataset.s), endId: Number(r.dataset.e) });
 });
-$('#modal').addEventListener('toggle', async (e) => {
-  const det = e.target.closest && e.target.closest('.bi-easton');
-  if (!det || !det.open) return;
-  const body = $('.eb-body', det);
-  if (body.dataset.done) return;
-  const entry = await tsk.eastonEntry(body.dataset.key);
-  body.innerHTML = entry ? eastonHtml(entry, true) : '<p class="hint">Not found.</p>';
-  body.dataset.done = '1';
-}, true);
 // a quiet link under each chapter heading
 new MutationObserver(() => {
-  if (!FEATURES.about) return;
+  if (!ABOUT_ON) return;
   const head = $('#readerInner .chapter-head');
   if (!head || head.nextElementSibling && head.nextElementSibling.classList.contains('bi-link')) return;
   const bk = state.books[(state.cur.book || 1) - 1];
@@ -686,8 +635,19 @@ $('#readerInner').addEventListener('click', (e) => {
   const b = e.target.closest('[data-bi-open]');
   if (b) openBookIntro(Number(b.dataset.biOpen));
 });
-if (FEATURES.about) COMMANDS.push(['About this book', 'introduction author date theme outline book', () => openBookIntro(state.cur.book)]);
+if (ABOUT_ON) COMMANDS.push(['About this book', 'introduction writer author date theme outline book scofield', () => openBookIntro(state.cur.book)]);
 window.openBookIntro = openBookIntro;
+// 3.17.1: while the five-question pages are set aside, About this book is C. I. Scofield's introduction, word for word
+async function openScofieldIntro(bookId) {
+  const bk = state.books[bookId - 1];
+  if (!bk) return;
+  const html = await tsk.scofield(bookId).catch(() => null);
+  openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2>
+    <div class="bi-sco">${html || '<p class="hint">Not found.</p>'}</div>
+    <p class="hint bi-note">C. I. Scofield's introduction to ${esc(bk.name)}, from the Scofield Reference Bible notes (1917, public domain), word for word. Tap a reference to read it.</p>`, 'm-bookintro');
+  $('#modal').dataset.book = bookId;
+}
+if (!FEATURES.about && FEATURES.scofield) window.openBookIntro = openScofieldIntro;
 
 // ---------------------------------------------------------------- Settings (the page is built in study.js): your name and backups
 async function paintNotesSection() {
@@ -1084,7 +1044,7 @@ $('#modal').addEventListener('click', (e) => {
     const label = b.id === 19 ? 'Psalm' : 'Chapter';
     return `<div class="sg-book">
       <div class="sg-book-h"><span class="sg-book-n">${esc(b.name)}</span><span class="sg-book-c">${b.chapters} chapter${b.chapters === 1 ? '' : 's'}${nRead ? ` · ${nRead} read` : ''}</span>
-        ${FEATURES.about ? `<button type="button" class="sg-about" data-sg-about="${b.id}" tabindex="-1">About ${esc(b.name)} ›</button>` : ''}</div>
+        ${ABOUT_ON ? `<button type="button" class="sg-about" data-sg-about="${b.id}" tabindex="-1">About ${esc(b.name)} ›</button>` : ''}</div>
       ${intro ? `<div class="sg-book-t">${esc(intro.th)}</div>` : ''}
       <div class="sg-chs" role="group" aria-label="${esc(b.name)} chapters">${Array.from({ length: b.chapters }, (_, i) => i + 1).map((c) => `<button type="button" class="sg-ch${read[`${b.id}:${c}`] ? ' read' : ''}${c === ch ? ' on' : ''}" data-sg-go="${b.id}:${c}" title="${label} ${c}${read[`${b.id}:${c}`] ? ' — read' : ''}">${c}</button>`).join('')}</div></div>`;
   }
@@ -1211,3 +1171,95 @@ $('#modal').addEventListener('click', (e) => {
     if (!box.hidden && !e.target.closest('#searchForm')) hide();
   });
 }
+
+// =====================================================================================================
+// 3.17.1: help for new users — put the app on the iPhone Home Screen, and a monthly reminder to back up notes
+// =====================================================================================================
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isInstalled = () => navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+const SHARE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="vertical-align:-3px"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M6 11H5v10h14V11h-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function homeScreenHelpHtml() {
+  return isIOS() || !tsk.web
+    ? `<ol class="nd-steps"><li>In Safari, tap the Share button ${SHARE_ICON} at the bottom of the screen.</li><li>Scroll down and choose <b>Add to Home Screen</b>.</li><li>Tap <b>Add</b>. The app opens from its own icon, full screen, and works without the internet.</li></ol>`
+    : '<ol class="nd-steps"><li>Open your browser’s menu (⋮ or ☰).</li><li>Choose <b>Install app</b> or <b>Add to Home screen</b>.</li></ol>';
+}
+function openHomeScreenHelp() {
+  openModal(`<div class="kicker">On your phone</div><h2 class="m-title">Put it on your Home Screen</h2>
+    <p class="wk-lead">Then Search the Scriptures opens like any other app, with its own icon.</p>${homeScreenHelpHtml()}`, 'm-a2hs');
+}
+window.openHomeScreenHelp = openHomeScreenHelp;
+
+function showNudge(html, buttons) {
+  let el = $('#nudge');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'nudge';
+    el.setAttribute('role', 'dialog');
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<div class="nd-body">${html}</div><div class="nd-btns">${buttons.map((b, i) => `<button type="button" data-nd="${i}" class="${i === 0 ? 'primary-btn' : ''}">${esc(b[0])}</button>`).join('')}</div>`;
+  el.hidden = false;
+  el.onclick = (e) => {
+    const b = e.target.closest('[data-nd]');
+    if (!b) return;
+    el.hidden = true;
+    buttons[Number(b.dataset.nd)][1]();
+  };
+}
+
+const marksCount = () => Object.keys(state.notes || {}).length + Object.keys(state.highlights || {}).length + Object.keys(state.memory || {}).length
+  + (state.prayers || []).length + (state.journal || []).length;
+const DAY = 864e5;
+const since = (iso) => (iso ? Date.now() - Date.parse(iso) : Infinity);
+
+async function nextNudge() {
+  const s = state.settings;
+  if (!s.tourDone) return;
+  // iPhone in Safari: once, then only from the Menu
+  if (tsk.web && isIOS() && !isInstalled() && !s.homeScreenHelped) {
+    s.homeScreenHelped = new Date().toISOString();
+    saveUser(['settings']);
+    return showNudge(`<b>Put Search the Scriptures on your Home Screen</b>${homeScreenHelpHtml()}`, [['Got it', () => {}]]);
+  }
+  // notes worth keeping, and no backup in the last month: remind, at most once a month
+  if (marksCount() < 3 || since(s.backupNudged) < 30 * DAY) return;
+  if (tsk.web) {
+    if (since(s.lastBackup) < 30 * DAY) return;
+    s.backupNudged = new Date().toISOString();
+    saveUser(['settings']);
+    return showNudge('<b>Back up your notes?</b><p>Your notes, highlights and prayers are kept only on this phone. Save a copy now and then, somewhere safe (for example in Files or iCloud Drive).</p>', [
+      ['Back up now', () => tsk.backup().then(() => { s.lastBackup = new Date().toISOString(); saveUser(['settings']); toast('Saved. Keep the file somewhere safe.'); })],
+      ['Later', () => {}],
+    ]);
+  }
+  const b = await tsk.backupInfo().catch(() => ({}));
+  if (b.dir) return; // backed up automatically
+  s.backupNudged = new Date().toISOString();
+  saveUser(['settings']);
+  showNudge('<b>Keep a copy of your notes?</b><p>Choose a backup folder (for example inside OneDrive) and your notes, highlights and prayers are copied there automatically.</p>', [
+    ['Choose a folder…', () => tsk.backupChoose()],
+    ['Later', () => {}],
+  ]);
+}
+{
+  // after the start screen and anything else has had its turn: wait until nothing is open
+  const prevInit = window.v3Init;
+  window.v3Init = (u) => {
+    if (prevInit) prevInit(u);
+    let tries = 0;
+    const t = setInterval(() => {
+      tries++;
+      if (tries > 300) return clearInterval(t);
+      if (tries < 4 || !state.books.length || !$('#modal').hidden || !$('#tour').hidden) return;
+      clearInterval(t);
+      nextNudge();
+    }, 2000);
+  };
+}
+// a backup saved from Settings counts too
+$('#modal').addEventListener('click', (e) => {
+  if (e.target.closest('[data-st="backup"]')) {
+    state.settings.lastBackup = new Date().toISOString();
+    saveUser(['settings']);
+  }
+});

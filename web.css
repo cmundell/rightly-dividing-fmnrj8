@@ -110,6 +110,7 @@
 .wg-card input { height: 44px; font-size: 18px !important; text-align: center; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); }
 .wg-card .primary-btn { height: 44px; font-size: 16px; }
 .wg-msg { color: #b3261e; min-height: 1.2em; font-size: 14px; }
+.wg-note { font-size: 13.5px; line-height: 1.45; opacity: .8; margin: 4px 0 10px; }
 
 @keyframes wcUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (max-width: 760px) {
@@ -127,7 +128,7 @@
   .tabs button, .tabs .m-more { font-size: 14px; padding: 12px 10px; }
   .xhead .actions button { min-height: 38px; padding: 6px 12px; font-size: 14px; border-radius: 8px; }
   .xhead .actions .va-menu button { min-height: 42px; font-size: 15px; }
-  #pane-refs .ref, #pane-topics .ref, .wc-easton .ref { font-size: 14px; padding: 5px 9px; display: inline-block; margin: 2px 0; }
+  #pane-refs .ref, #pane-topics .ref { font-size: 14px; padding: 5px 9px; display: inline-block; margin: 2px 0; }
   .v3tools .dot { width: 30px; height: 30px; }
   .v3tools .tagin { font-size: 16px; min-height: 40px; }
   .tagbar .tag { font-size: 14px; padding: 6px 11px; }
@@ -144,3 +145,5 @@
   .sg-item { padding: 11px 10px; font-size: 15.5px; }
   .sg-foot { display: none; }
 }
+/* 3.17.1: the help card sits above the bottom buttons on the phone */
+@media (max-width: 760px) { #nudge { left: 16px; right: 16px; width: auto; bottom: calc(92px + env(safe-area-inset-bottom)); } }

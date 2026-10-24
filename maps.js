@@ -353,7 +353,7 @@ function decorateWordsPane() {
   const refs = TOUR.find((t) => t.title === 'Related verses');
   if (refs) refs.text += ' Switch to Map to see the references as a web, including the verses where they converge.';
   const words = TOUR.find((t) => t.title === 'Original words');
-  if (words) words.text = 'The Hebrew or Greek behind each English word: every word with its Strong\'s number and its grammar in plain words — as a list, or switch to Interlinear to see each word stacked with its meaning. Click a Strong\'s number for every verse that uses it. Double-click any word in the text for Webster\'s 1828 definition and Easton\'s Bible Dictionary.';
+  if (words) words.text = 'The Hebrew or Greek behind each English word: every word with its Strong\'s number and its grammar in plain words — as a list, or switch to Interlinear to see each word stacked with its meaning. Click a Strong\'s number for every verse that uses it. Double-click any word in the text for Webster\'s 1828 definition.';
 }
 {
   const prevQS = window.openQuickStart;

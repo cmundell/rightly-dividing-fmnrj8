@@ -311,8 +311,8 @@ function openQuickStart() {
       <li><b>Related verses</b> — the Treasury of Scripture Knowledge cross-references, grouped by key word. Hover to preview, click to go.</li>
       <li><b>Original words</b> — every Hebrew/Greek word with Strong's number and grammar. Click a number for its full entry and every verse that uses it.</li>
       <li>${FEATURES.commentary ? "<b>Commentary</b> — Matthew Henry's Concise Commentary on the passage." : '<b>Commentary</b> — opens the verse at Blue Letter Bible (online) if you want to read commentaries.'} <b>Topics</b> — Nave's topics that cite the verse.</li>
-      <li>${dblClick()} any word in the text for its Webster's 1828 definition, the original word, and Easton's Bible Dictionary.</li>
-${FEATURES.about ? '      <li><b>About this book</b>, under each chapter heading: who wrote it, when, to whom, its theme, a key verse and an outline.</li>' : ''}</ul></section>
+      <li>${dblClick()} any word in the text for its Webster's 1828 definition and the original word.</li>
+${ABOUT_ON ? '      <li><b>About this book</b>, under each chapter heading: the writer, the date, the theme and the divisions of the book, from C. I. Scofield (1917).</li>' : ''}</ul></section>
     <section><h3>Searching</h3><ul>
       <li><code>faith hope</code> all words · <code>"living water"</code> exact phrase · <code>shepherd OR sheep</code> either</li>
       <li><code>grace -law</code> leave a word out · <code>redeem*</code> word beginnings</li>
@@ -334,7 +334,7 @@ ${FEATURES.about ? '      <li><b>About this book</b>, under each chapter heading
 const TOUR = [
   { title: 'Welcome to Search the Scriptures', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
   { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Highlighted verses keep their color; small marks in the left margin show your notes (✎) and tags (#).' },
-  FEATURES.about && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: who wrote the book, when, to whom, its theme, a key verse and an outline you can click to move around the book, with Easton\'s Bible Dictionary article.' },
+  ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: the writer, the date, the theme and the divisions of the book, from C. I. Scofield\'s introductions (1917).' },
   { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
   { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
   { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
