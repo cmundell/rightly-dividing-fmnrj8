@@ -2,8 +2,8 @@
 /* Web edition front end: a phone layout (one screen at a time, a bar of five buttons at the bottom),
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
 /* global tsk, state, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
-   openProgress, openPaths, openStudyChooser, openFamily, openGospel, showMarksView, openReadingOptions, toggleTheme,
-   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES, beginWalk, openMedals */
+   openProgress, openStudyChooser, openGospel, showMarksView, openReadingOptions, toggleTheme,
+   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES, openMedals */
 
 const isPhone = () => window.matchMedia('(max-width: 760px)').matches;
 document.documentElement.classList.add('web');
@@ -212,7 +212,7 @@ document.addEventListener('click', (e) => {
 // ---------------------------------------------------------------- Menu
 const MENU = [
   ['Study', [
-    ...(FEATURES.today === false ? [['Time with God', () => beginWalk()], ['Memory verses', () => showMarksView('memory')], ['Medallions', () => openMedals()]] : []),
+    ...(FEATURES.today === false ? [['Memory verses', () => showMarksView('memory')], ['Medallions', () => openMedals()]] : []),
     ['The Gospel', () => openGospel()],
     ['Study methods', () => openStudyChooser()],
     ...(ABOUT_ON ? [['About this book', () => openBookIntro(state.cur.book)]] : []),
@@ -230,7 +230,7 @@ const MENU = [
 ];
 document.body.insertAdjacentHTML('beforeend', '<input id="restoreFile" type="file" accept=".json,application/json" hidden />');
 function openMenu() {
-  openModal(`<div class="kicker">Search the Scriptures</div><h2 class="m-title">Menu</h2>
+  openModal(`<div class="kicker">The Bible Study App</div><h2 class="m-title">Menu</h2>
     ${MENU.map(([h, items], gi) => `<div class="section-title">${esc(h)}</div><div class="wm-list">${items.map(([t], i) => `<button data-wm="${gi}.${i}">${esc(t)}</button>`).join('')}</div>`).join('')}`, 'm-menu');
 }
 $('#modal').addEventListener('click', (e) => {
@@ -253,7 +253,7 @@ $('#restoreFile').addEventListener('change', async (e) => {
   }
 });
 function openAbout() {
-  openModal(`<div class="kicker">About</div><h2 class="m-title">Search the Scriptures</h2>
+  openModal(`<div class="kicker">About</div><h2 class="m-title">The Bible Study App</h2>
     <p>Version ${esc(tsk.version)} for iPhone and the web. The King James Bible with the Treasury of Scripture Knowledge and study tools, kept on this device and usable offline after the first visit.</p>
     <p class="hint">Your notes are kept only on this device. Use Menu › Settings › Back up my notes now and then, and keep the file somewhere safe. A backup from the Windows app (study-data.json) can be restored here too.</p>
     <p class="hint"><b>Private:</b> nothing you write or read is collected or sent anywhere. The app only goes online for its first download and its own updates, and when you open a link to another website (Blue Letter Bible, The Gospel Film).</p>
@@ -279,7 +279,7 @@ function openAbout() {
 // ---------------------------------------------------------------- phone tweaks
 // the guided tour: on a phone, the same tour with steps for the phone's own buttons
 const PHONE_TOUR = [
-  { title: 'Welcome to Search the Scriptures', text: 'A quick tour of the app — about a minute. Tap Next, or Skip. You can take it again any time from Menu › Tutorial.', before: () => setView('read') },
+  { title: 'Welcome to The Bible Study App', text: 'A quick tour of the app — about a minute. Tap Next, or Skip. You can take it again any time from Menu › Tutorial.', before: () => setView('read') },
   { el: '#readerInner .verse', title: 'Read', text: 'Tap any verse to select it. Double-tap any word to see what it means, with the original Hebrew or Greek. Swipe left or right on the text to go to the next or previous chapter.', before: () => setView('read') },
   { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, copy or share it, add it to your memory verses, or Study it in depth. New to Bible study? “Study it step by step” walks you through.', before: () => {
     paintVerseBar();
@@ -290,9 +290,9 @@ const PHONE_TOUR = [
   { el: '#study .tabs', title: 'Study', text: 'Cross-references for the verse you selected, then Words (Hebrew and Greek), and Commentary, which opens the verse at Blue Letter Bible online. More holds Topics, Places, People and your search results.', before: () => { setView('study'); switchTab('refs'); } },
   FEATURES.today === false
     ? { el: '#mNav [data-mn="search"]', title: 'Search', text: 'Search the whole Bible for words or phrases, and see the results with a chart of where they occur.', before: () => setView('read') }
-    : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Time with God, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'} and medallions.`, before: () => setView('read') },
+    : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Open your Bible where you left off, the devotional, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'}, your journal and medallions.`, before: () => setView('read') },
   { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from Menu › Settings now and then.' },
-  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Time with God, memory verses, medallions, ' : ''}The Gospel, study methods, an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
+  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Memory verses, medallions, ' : ''}The Gospel, study methods, an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
   { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },
 ];
 if (isPhone()) {
@@ -419,4 +419,4 @@ window.addEventListener('resize', () => {
 }
 
 // ---------------------------------------------------------------- the name of the app, under the bottom buttons
-$('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="true">Search the Scriptures</div>');
+$('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="true">The Bible Study App</div>');

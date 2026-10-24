@@ -1,12 +1,12 @@
 'use strict';
-/* Today, Time with God, the gospel, the prayer list and journal, ways to practise memory verses; family devotions, reminders and Listen (set aside for now, see features.js); study methods and discipleship paths.
+/* Today, the gospel, the prayer list and journal, ways to practise memory verses; reminders and Listen (set aside for now, see features.js); study methods.
    Merged in 3.15 from the per-release layers (v38.js, v381.js, v39.js), kept in their original order: later
    sections still extend earlier ones by wrapping window.X. */
 
 // =====================================================================================================
 // from v38.js
 // =====================================================================================================
-/* v3.8: Daily walk and family — Today, Time with God, family devotions (52 Bible stories), the gospel,
+/* v3.8: Daily walk — Today, the gospel,
    prayer list, journal, more ways to practise memory verses, and gentle reminders.
    Loaded after v37.js; overrides use window.X so earlier code picks them up. */
 /* global tsk, state, $, $$, esc, go, toast, switchTab, saveUser, openModal, closeModal, todayStr, renderMarks, setTags,
@@ -14,11 +14,7 @@
    gradePractice, toggleMemory, MEMO_DAYS, WORD_RE, marksSwitch, newId, TOUR, openQuickStart, COMMANDS, bookName */
 
 const v38 = {
-  family: null, // { stories }
   gospel: null,
-  walkStep: 0,
-  session: null, // the Time with God in progress
-  famStep: 'read',
   journalQ: '',
 };
 const dkey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -37,12 +33,6 @@ const INVITES = [
   ['Lamentations 3:22-23', 'His compassions fail not. They are new every morning: great is thy faithfulness.'],
 ];
 const PRAYER_CATS = ['Family', 'Church', 'Friends', 'Those who need Christ', 'Missions', 'Our nation and leaders', 'Myself', 'Thanksgiving'];
-const REFLECT = [
-  ['god', 'What does this passage show me about God?', 'His character, His works, His promises…'],
-  ['respond', 'Is there a command to obey, a promise to trust, a sin to turn from, or an example to follow?', ''],
-  ['apply', 'How will I live this out today?', 'One small, concrete step'],
-];
-
 // ===================================================================== data + hooks
 {
   const prevInit = window.v3Init;
@@ -53,7 +43,6 @@ const REFLECT = [
     const w = u.walk && typeof u.walk === 'object' ? u.walk : {};
     state.walk = {
       days: w.days || {},
-      family: Object.assign({ cur: 1, done: {}, age: 'both' }, w.family || {}),
       remind: Object.assign({ on: false, time: '07:00' }, w.remind || {}),
       lastRemind: w.lastRemind || '',
     };
@@ -61,12 +50,8 @@ const REFLECT = [
 }
 state.journal = state.journal || [];
 state.prayers = state.prayers || [];
-state.walk = state.walk || { days: {}, family: { cur: 1, done: {}, age: 'both' }, remind: { on: false, time: '07:00' }, lastRemind: '' };
+state.walk = state.walk || { days: {}, remind: { on: false, time: '07:00' }, lastRemind: '' };
 
-async function loadFamily() {
-  if (!v38.family) v38.family = await tsk.family();
-  return v38.family;
-}
 async function loadGospel() {
   if (!v38.gospel) v38.gospel = await tsk.gospel();
   return v38.gospel;
@@ -74,21 +59,19 @@ async function loadGospel() {
 
 // ===================================================================== gentle progress (no pressure)
 function walkedOn(k) {
-  return !!(state.walk.days[k] || (state.readlog && state.readlog.days[k]) || Object.values(state.walk.family.done).includes(k));
+  return !!(state.walk.days[k] || (state.readlog && state.readlog.days[k]));
 }
 /** Days in a row with God's Word, with grace: one missed day in any seven doesn't break the walk. */
 function weekSummary() {
   const d = new Date();
-  let days = 0, chapters = 0, family = 0;
-  const famDays = Object.values(state.walk.family.done);
+  let days = 0, chapters = 0;
   for (let i = 0; i < 7; i++) {
     const k = dkey(d);
     if (walkedOn(k)) days += 1;
     chapters += (state.readlog && state.readlog.days[k]) || 0;
-    family += famDays.filter((x) => x === k).length;
     d.setDate(d.getDate() - 1);
   }
-  return { days, chapters, family };
+  return { days, chapters };
 }
 const inviteFor = (k) => INVITES[[...k].reduce((a, c) => a + c.charCodeAt(0), 0) % INVITES.length];
 
@@ -99,38 +82,30 @@ async function openToday() {
   const [ref, text] = inviteFor(today);
   const due = Object.values(state.memory || {}).filter((m) => m.due <= today).length;
   const open = state.prayers.filter((p) => !p.answered).length;
-  const fam = FEATURES.family ? await loadFamily() : { stories: [] };
-  const st = fam.stories[(state.walk.family.cur || 1) - 1] || fam.stories[0];
-  const done = !!state.walk.days[today];
   const hr = new Date().getHours();
   const hello = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
   const ps = typeof planStatus === 'function' ? planStatus() : null;
   const planToday = ps && !ps.finished ? ps.days[ps.today] || [] : [];
   const name = state.settings.name;
   const bk = state.books[(state.cur.book || 1) - 1];
-  const paths = FEATURES.paths ? await loadPaths().catch(() => []) : [];
-  const going = paths.find((p) => Object.keys(pathProgress(p.id).done).length && Object.keys(pathProgress(p.id).done).length < p.steps.length);
   const badges = Object.keys((state.walk && state.walk.badges) || {}).length;
   openModal(`<div class="kicker">${esc(longDate(today))}</div>
     <h2 class="m-title">${hello}${name ? `, ${esc(name)}` : ''}</h2>
     <blockquote class="td-invite">“${esc(text)}” <span>${esc(ref)}</span></blockquote>
     ${bk ? `<button class="td-open" data-td4="open">Open your Bible<span>Continue in ${esc(bk.name)} ${state.cur.ch}</span></button>` : ''}
     ${typeof showcaseHtml === 'function' ? showcaseHtml() : ''}
-    <button class="td-begin primary-btn" data-wk="begin">${done ? 'Spend more time with God' : 'Begin time with God'}<span>Pray · Read · Reflect · Pray · Remember</span></button>
     <div class="td-tiles">
-      ${FEATURES.paths ? `<button data-td2="paths"><b>Discipleship paths</b><span>${going ? `${esc(going.title)}: step ${pathProgress(going.id).cur}` : 'First Steps, Growing in Christ, Leading Your Family'}</span></button>` : ''}
       <button data-td2="study"><b>Study methods</b><span>Guided worksheets: observe, words, people, topics</span></button>
-      ${st ? `<button data-td="family"><b>Family devotions</b><span>Story ${st.n} of 52: ${esc(st.title)}</span></button>` : ''}
       ${FEATURES.prayer === false ? '' : `<button data-td="prayers"><b>Prayer list</b><span>${open ? `${open} request${open === 1 ? '' : 's'} you are praying for` : 'Keep a list of what you are praying for'}</span></button>`}
       <button data-td="memory"><b>Memory verses</b><span>${due ? `${due} to practise today` : `${Object.keys(state.memory || {}).length || 'No'} verse${Object.keys(state.memory || {}).length === 1 ? '' : 's'} hidden in your heart`}</span></button>
       <button data-td="plan"><b>Reading plan</b><span>${planToday.length ? `Today: ${esc(planLabel(planToday))}` : ps && ps.finished ? 'Plan finished — well done' : 'Choose a plan to read through the Bible'}</span></button>
       <button data-td="daily"><b>Devotional</b><span>Spurgeon's Morning and Evening for today</span></button>
-      <button data-td="journal"><b>Journal</b><span>${state.journal.length ? `${state.journal.length} entr${state.journal.length === 1 ? 'y' : 'ies'}` : 'Your time with God, written down'}</span></button>
+      <button data-td="journal"><b>Journal</b><span>${state.journal.length ? `${state.journal.length} entr${state.journal.length === 1 ? 'y' : 'ies'}` : 'Write down what God is teaching you'}</span></button>
       <button data-td="gospel"><b>The Gospel</b><span>How to be saved — to read, print or share</span></button>
       <button data-td3="badges"><b>Medallions</b><span>${badges ? `${badges} collected` : 'Milestones in memorizing and reading'}</span></button>
     </div>
-    <div class="td-quiet" title="Days with God's Word: Time with God, or a chapter read">
-      This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word · ${w.chapters} chapter${w.chapters === 1 ? '' : 's'} ${FEATURES.family ? `· ${w.family} family devotion${w.family === 1 ? '' : 's'}` : ''}
+    <div class="td-quiet" title="Days with God's Word: a chapter read">
+      This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word · ${w.chapters} chapter${w.chapters === 1 ? '' : 's'}
       ${FEATURES.reminders ? '<button class="linkish" data-td="remind">Gentle reminders…</button>' : ''}
     </div>`, 'm-today');
 }
@@ -146,165 +121,6 @@ function planLabel(list) {
   return byBook.map((x) => `${bookName(x.b)} ${x.c1}${x.c2 !== x.c1 ? `–${x.c2}` : ''}`).join('; ');
 }
 
-// ===================================================================== Time with God
-const WALK_STEPS = ['Prepare', 'Read', 'Reflect', 'Pray', 'Remember'];
-
-function beginWalk() {
-  const ps = typeof planStatus === 'function' ? planStatus() : null;
-  const planToday = ps && !ps.finished ? ps.days[ps.today] || [] : [];
-  v38.session = { step: 0, started: Date.now(), plan: planToday, chapters: [], answers: {}, prayer: '', prayed: [], carry: null, choice: planToday.length ? 'plan' : 'continue' };
-  renderWalk();
-}
-
-function nextChapterToRead() {
-  // the chapter after the one you most recently read; otherwise where you are now
-  let best = null;
-  for (const [k, c] of Object.entries(state.readlog.chapters || {})) if (!best || c.last > best.last || (c.last === best.last && k > best.k)) best = { k, last: c.last };
-  if (!best) return [state.cur.book, state.cur.ch];
-  const [b, c] = best.k.split(':').map(Number);
-  const bk = state.books[b - 1];
-  if (c < bk.chapters) return [b, c + 1];
-  return b < 66 ? [b + 1, 1] : [1, 1];
-}
-
-async function renderWalk() {
-  const s = v38.session;
-  const bar = `<ol class="wk-steps">${WALK_STEPS.map((t, i) => `<li class="${i === s.step ? 'on' : i < s.step ? 'done' : ''}">${t}</li>`).join('')}</ol>`;
-  let body = '';
-  if (s.step === 0) {
-    const [v] = await tsk.versesByIds([await tsk.verseId(19, 119, 18)]);
-    body = `<p class="wk-lead">Before you read, ask the Lord to speak to you through His Word.</p>
-      <blockquote class="wk-verse">“${esc(v.text)}” <span>Psalm 119:18</span></blockquote>
-      <p class="hint">Take a moment. Put away distractions, quiet your heart, and pray this verse in your own words.</p>`;
-  } else if (s.step === 1) {
-    const cont = nextChapterToRead();
-    const opts = [];
-    if (s.plan.length) opts.push(['plan', `Today's plan: ${planLabel(s.plan)}`]);
-    opts.push(['continue', `Continue reading: ${bookName(cont[0])} ${cont[1]}`]);
-    opts.push(['here', `The chapter open now: ${bookName(state.cur.book)} ${state.cur.ch}`]);
-    if (!s.chapters.length) s.chapters = s.choice === 'plan' && s.plan.length ? s.plan.slice() : s.choice === 'here' ? [[state.cur.book, state.cur.ch]] : [cont];
-    const chs = await Promise.all(s.chapters.slice(0, 4).map(([b, c]) => tsk.chapter(b, c)));
-    body = `<div class="wk-choose" role="radiogroup" aria-label="What to read">${opts.map(([k, t]) => `<button role="radio" aria-checked="${s.choice === k}" class="${s.choice === k ? 'on' : ''}" data-wkc="${k}">${esc(t)}</button>`).join('')}
-        <form class="wk-other" data-wk-form="ref"><input placeholder="Or type a passage, e.g. Psalm 1" aria-label="Another passage" /><button>Read</button></form></div>
-      <p class="hint">Read slowly. Click a verse that speaks to you to carry it with you today.</p>
-      <div class="wk-read">${chs.map((ch) => `<h3>${esc(ch.name)} ${ch.ch}</h3>${ch.verses.map((v) => `<span class="wk-v${s.carry === v.id ? ' carry' : ''}" data-wkv="${v.id}"><sup>${v.vs}</sup>${esc(v.text)} </span>`).join('')}`).join('')}
-        ${s.chapters.length > 4 ? `<p class="hint">…and ${s.chapters.length - 4} more chapter${s.chapters.length - 4 === 1 ? '' : 's'} in today's plan.</p>` : ''}</div>`;
-  } else if (s.step === 2) {
-    const carry = s.carry ? (await tsk.versesByIds([s.carry]))[0] : null;
-    body = `${carry ? `<blockquote class="wk-verse sm">“${esc(carry.text)}” <span>${esc(carry.label)}</span></blockquote>` : ''}
-      ${REFLECT.map(([k, q, ph]) => `<label class="wk-q">${esc(q)}<textarea data-wka="${k}" rows="3" placeholder="${esc(ph)}">${esc(s.answers[k] || '')}</textarea></label>`).join('')}
-      <p class="hint">Write as much or as little as you like. It is saved in your journal when you finish.</p>`;
-  } else if (s.step === 3) {
-    const open = state.prayers.filter((p) => !p.answered);
-    body = `<div class="wk-pray">
-        <p><b>Praise</b> God for who He is — think of what you just read about Him.</p>
-        <p><b>Confess</b> any sin He has shown you. “If we confess our sins, he is faithful and just to forgive us our sins” (1 John 1:9).</p>
-        <p><b>Thank</b> Him for what He has done.</p>
-        <p><b>Ask</b> for others and for yourself.</p></div>
-      ${open.length ? `<div class="section-title">Your prayer list</div><div class="wk-plist">${open.map((p) => `<label><input type="checkbox" data-wkp="${p.id}" ${s.prayed.includes(p.id) ? 'checked' : ''}/> <span>${esc(p.text)}</span> <i>${esc(p.cat)}</i></label>`).join('')}</div>` : '<p class="hint">Your prayer list is empty. Add requests from Today › Prayer list.</p>'}
-      <form class="wk-other" data-wk-form="prayer"><input placeholder="Add a prayer request" aria-label="Add a prayer request" /><button>Add</button></form>
-      <label class="wk-q">Your prayer (optional)<textarea data-wka="prayer" rows="3">${esc(s.prayer || '')}</textarea></label>`;
-  } else if (s.step === 4) {
-    const due = Object.values(state.memory || {}).filter((m) => m.due <= todayStr()).length;
-    const carry = s.carry ? (await tsk.versesByIds([s.carry]))[0] : null;
-    body = `<p class="wk-lead">“Thy word have I hid in mine heart, that I might not sin against thee.” <span class="hint">Psalm 119:11</span></p>
-      ${due ? `<p>You have <b>${due}</b> memory verse${due === 1 ? '' : 's'} to practise today.</p><button class="primary-btn" data-wk="practice">Practise now</button>` : '<p>No memory verses are due today.</p>'}
-      ${carry ? `<div class="wk-carry"><blockquote class="wk-verse sm">“${esc(carry.text)}” <span>${esc(carry.label)}</span></blockquote>
-        ${state.memory && state.memory[carry.id] ? '<p class="hint">This verse is already in your memory verses.</p>' : `<button data-wk="memorize" data-id="${carry.id}">Memorize this verse</button>`}</div>` : ''}`;
-  } else {
-    const w = weekSummary();
-    body = `<div class="wk-done"><h3>Amen.</h3>
-      <p>“The grass withereth, the flower fadeth: but the word of our God shall stand for ever.” <span class="hint">Isaiah 40:8</span></p>
-      <p>Your time with God is saved in your journal. This week you have spent ${w.days} day${w.days === 1 ? '' : 's'} in the Word.</p>
-      <div class="plan-foot"><button data-td="journal">Open journal</button><button class="primary-btn" data-wk="close">Done</button></div></div>`;
-  }
-  const nav = s.step <= 4 ? `<div class="wk-nav">${s.step ? '<button data-wk="back">Back</button>' : '<span></span>'}<button class="primary-btn" data-wk="next">${s.step === 4 ? 'Finish' : 'Next'}</button></div>` : '';
-  openModal(`<div class="kicker">Time with God</div>${s.step <= 4 ? bar : ''}<div class="wk-body">${body}</div>${nav}`, 'm-walk');
-  const first = $('#modal .wk-body textarea');
-  if (first && s.step === 2) first.focus();
-}
-
-function finishWalk() {
-  const s = v38.session;
-  const today = todayStr();
-  for (const [b, c] of s.chapters) markRead(b, c);
-  const entry = {
-    id: newId(),
-    date: today,
-    time: new Date().toTimeString().slice(0, 5),
-    minutes: Math.max(1, Math.round((Date.now() - s.started) / 60000)),
-    read: planLabel(s.chapters),
-    chapters: s.chapters,
-    carry: s.carry || null,
-    answers: Object.fromEntries(Object.entries(s.answers).filter(([, v]) => v && v.trim())),
-    prayer: (s.prayer || '').trim(),
-    prayed: s.prayed.slice(),
-  };
-  state.journal.push(entry);
-  state.walk.days[today] = (state.walk.days[today] || 0) + 1;
-  for (const id of s.prayed) {
-    const p = state.prayers.find((x) => x.id === id);
-    if (p) p.lastPrayed = today;
-  }
-  saveUser(['journal', 'walk', 'prayers']);
-  s.step = 5;
-  renderWalk();
-}
-
-// ===================================================================== family devotions
-async function openFamily(n) {
-  const fam = await loadFamily();
-  const f = state.walk.family;
-  if (n) f.cur = Math.min(Math.max(1, n), fam.stories.length);
-  const st = fam.stories[f.cur - 1];
-  const step = v38.famStep;
-  const doneOn = f.done[st.n];
-  const ages = f.age;
-  const tabs = [['read', 'Read'], ['talk', 'Talk'], ['remember', 'Remember'], ['pray', 'Pray']];
-  let body = '';
-  if (step === 'read') {
-    body = `<div class="fm-ref">${esc(st.passage.ref)}</div><div class="fm-text">${st.passage.verses.map((v) => `<span><sup>${v.v}</sup>${esc(v.t)} </span>`).join('')}</div>
-      <p class="fm-truth"><b>The big truth:</b> ${esc(st.truth)}</p>`;
-  } else if (step === 'talk') {
-    const q = (list, who) => `<div class="fm-qs"><h3>${who}</h3><ol>${list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>`;
-    body = `<div class="ro-seg fm-age" role="group" aria-label="Questions for">${[['little', 'Little ones'], ['older', 'Older children'], ['both', 'Both']].map(([k, t]) => `<button data-fage="${k}" class="${ages === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-      ${ages !== 'older' ? q(st.little, 'For little ones') : ''}${ages !== 'little' ? q(st.older, 'For older children') : ''}
-      <p class="hint">There is no need to ask every question. Let the children talk, and keep pointing back to what the verses say.</p>`;
-  } else if (step === 'remember') {
-    const v = st.memory.verses[0];
-    v38.famHide = v38.famHide || 0;
-    const words = v.t.split(/\s+/);
-    const hideOrder = words.map((_, i) => i).sort((a, b) => ((a * 7919) % 13) - ((b * 7919) % 13) || a - b);
-    const hidden = new Set(hideOrder.slice(0, v38.famHide));
-    body = `<div class="fm-ref">Memory verse · ${esc(st.memory.ref)}</div>
-      <div class="fm-text fm-mem">${words.map((w, i) => (hidden.has(i) ? `<span class="fm-blank">${'_'.repeat(Math.max(2, w.replace(/[^A-Za-z]/g, '').length))}${w.replace(/[A-Za-z']/g, '')}</span>` : esc(w))).join(' ')}</div>
-      <div class="fm-btns"><button data-fm="hide" ${v38.famHide >= words.length ? 'disabled' : ''}>Hide a word</button><button data-fm="hide3" ${v38.famHide >= words.length ? 'disabled' : ''}>Hide three</button><button data-fm="show">Show all</button>
-      ${state.memory && state.memory[v.id] ? '' : `<button data-fm="memorize" data-id="${v.id}">Add to my memory verses</button>`}</div>
-      <p class="hint">Say it together, then hide a word and say it again — until you can say it with every word hidden. Practise it all week.</p>`;
-  } else {
-    body = `<p class="fm-pray">${esc(st.prayer)}</p>
-      <p class="hint">Let each person pray a short sentence. Little ones can repeat after a parent.</p>
-      <div class="fm-finish">${doneOn ? `<p>You read this together on ${esc(shortDate(doneOn))}.</p>` : ''}<button class="primary-btn" data-fm="done">${doneOn ? 'We did it again today' : 'We did this together'}</button></div>`;
-  }
-  openModal(`<div class="fm-head"><div><div class="kicker">Family devotions · story ${st.n} of ${fam.stories.length}</div><h2 class="m-title">${esc(st.title)}</h2></div>
-      <div class="dv-nav"><button data-fm="prev" ${st.n > 1 ? '' : 'disabled'} aria-label="Previous story">&#8249;</button><button data-fm="list">All stories</button><button data-fm="next" ${st.n < fam.stories.length ? '' : 'disabled'} aria-label="Next story">&#8250;</button></div></div>
-    <div class="vswitch fm-tabs" role="tablist">${tabs.map(([k, t]) => `<button role="tab" aria-selected="${step === k}" data-fstep="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-    <div class="fm-body">${body}</div>
-    <div class="fm-foot"><button data-fm="big" title="Fill the window — good for reading together">Large view</button><button data-fm="print" title="Print this devotion for the table or the fridge">Print</button>
-      ${step !== 'pray' ? `<button class="primary-btn" data-fm="step">Next: ${tabs[tabs.findIndex(([k]) => k === step) + 1][1]}</button>` : ''}</div>`, `m-family${v38.famBig ? ' big' : ''}`);
-}
-
-async function openFamilyList() {
-  const fam = await loadFamily();
-  const f = state.walk.family;
-  const nOT = fam.stories.filter((s) => s.passage.b <= 39).length;
-  const item = (s) => `<button class="fl-item${s.n === f.cur ? ' here' : ''}${f.done[s.n] ? ' done' : ''}" data-fstory="${s.n}"><span class="fl-n">${s.n}</span><span class="fl-t">${esc(s.title)}</span><span class="fl-r">${esc(s.passage.ref)}</span>${f.done[s.n] ? '<span class="fl-d" title="Read together">✓</span>' : ''}</button>`;
-  openModal(`<div class="kicker">Family devotions</div><h2 class="m-title">52 Bible stories — one a week for a year</h2>
-    <p class="hint">Each story has a short passage to read together, questions for little ones and older children, a memory verse for the week, and a prayer. Everything is read from the King James text.</p>
-    <div class="section-title">Old Testament</div><div class="fl-grid">${fam.stories.slice(0, nOT).map(item).join('')}</div>
-    <div class="section-title">New Testament</div><div class="fl-grid">${fam.stories.slice(nOT).map(item).join('')}</div>`, 'm-family-list');
-}
-
 function sheetPage(title, inner) {
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>
     body{font:12.5pt/1.55 Georgia,'Times New Roman',serif;color:#1d2433;max-width:7in;margin:0.4in auto;padding:0 0.3in}
@@ -314,20 +130,7 @@ function sheetPage(title, inner) {
     blockquote cite{display:block;font:9.5pt 'Segoe UI',Arial,sans-serif;color:#5b6476;margin-top:3pt;font-style:normal}
     sup{font-size:7pt;color:#8a6414;margin-right:1pt}ol,ul{margin:4pt 0 8pt 18pt;padding:0}li{margin:2pt 0}
     .f{margin-top:22pt;font:8.5pt 'Segoe UI',Arial,sans-serif;color:#8a8f99}
-    @media print{body{margin:0 auto}}</style></head><body>${inner}<div class="f">Scripture from the King James Version. Made with Search the Scriptures.</div></body></html>`;
-}
-
-async function printFamily() {
-  const fam = await loadFamily();
-  const st = fam.stories[state.walk.family.cur - 1];
-  const html = sheetPage(st.title, `<div class="k">Family devotions · story ${st.n}</div><h1>${esc(st.title)}</h1>
-    <h2>Read together · ${esc(st.passage.ref)}</h2><p>${st.passage.verses.map((v) => `<sup>${v.v}</sup>${esc(v.t)}`).join(' ')}</p>
-    <p><b>The big truth:</b> ${esc(st.truth)}</p>
-    <h2>Talk about it</h2><b>For little ones</b><ol>${st.little.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
-    <b>For older children</b><ol>${st.older.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
-    <h2>Memory verse for the week</h2><blockquote>${esc(st.memory.verses[0].t)}<cite>${esc(st.memory.ref)}</cite></blockquote>
-    <h2>Pray</h2><p>${esc(st.prayer)}</p>`);
-  await tsk.printSheet(html);
+    @media print{body{margin:0 auto}}</style></head><body>${inner}<div class="f">Scripture from the King James Version. Made with The Bible Study App.</div></body></html>`;
 }
 
 // ===================================================================== the gospel
@@ -402,8 +205,8 @@ function renderJournal() {
   const label = { god: 'About God', respond: 'To obey, trust, turn from or follow', apply: 'Living it today' };
   $('#pane-marks').innerHTML = `${marksSwitch()}
     <div class="jr-bar"><input id="jrSearch" type="search" placeholder="Search your journal" value="${esc(v38.journalQ)}" aria-label="Search your journal" />
-      <button data-jr="new">New entry</button><button class="primary-btn" data-wk="begin">Time with God</button></div>
-    ${state.journal.length ? '' : '<div class="empty">Your journal fills in as you spend time with God: what you read, what it showed you, and what you prayed. You can also write a free entry any day.</div>'}
+      <button class="primary-btn" data-jr="new">New entry</button></div>
+    ${state.journal.length ? '' : '<div class="empty">Write down what God is teaching you: what you read, what it showed you, and what you prayed. Saved study worksheets appear here too.</div>'}
     ${months.map(([m, es]) => `<div class="section-title">${new Date(`${m}-01T00:00:00`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</div>
       ${es.map((e) => `<div class="jr-entry" data-jr-id="${e.id}"><div class="jr-top"><b>${esc(longDate(e.date))}</b>${e.read ? ` · <span class="ref" data-jr-read="${e.id}">${esc(e.read)}</span>` : ''}<button class="del" data-jr="rm" title="Delete this entry">&times;</button></div>
         ${Object.entries(e.answers || {}).map(([k, v]) => `<div class="jr-a"><i>${esc(label[k] || k)}</i>${esc(v)}</div>`).join('')}
@@ -505,7 +308,7 @@ function diffWords(want, got) {
 function openReminders() {
   const r = state.walk.remind;
   openModal(`<div class="kicker">Gentle reminders</div><h2 class="m-title">A quiet nudge, never a nag</h2>
-    <p class="hint">Search the Scriptures will never send you streak warnings or count what you missed. If you like, it can remind you once a day.</p>
+    <p class="hint">The Bible Study App will never send you streak warnings or count what you missed. If you like, it can remind you once a day.</p>
     <div class="ro-grid">
       <label>Daily reminder</label><div class="ro-seg"><button data-rm="off" class="${r.on ? '' : 'on'}">Off</button><button data-rm="on" class="${r.on ? 'on' : ''}">On</button></div>
       <label for="rmTime">At</label><div><input id="rmTime" type="time" value="${esc(r.time)}" ${r.on ? '' : 'disabled'} /></div>
@@ -527,29 +330,27 @@ function checkReminder() {
   state.walk.lastRemind = today;
   saveUser(['walk']);
   const [ref, text] = inviteFor(today);
-  tsk.notify('Time with God', `“${text}” — ${ref}`);
+  tsk.notify('A verse for today', `“${text}” — ${ref}`);
   toast(`“${text}” — ${ref}`);
 }
 
 // ===================================================================== tour, quick start, commands
 {
   const i = TOUR.findIndex((t) => t.el === '#btnTimeline');
-  TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0, { el: '#btnToday', title: 'Today', text: `Start here each day. Time with God walks you through prayer, reading, reflecting, praying for others and remembering a verse — and saves it in your journal.${FEATURES.family ? ' Family devotions, your' : ' Your'} prayer list and The Gospel are here too.` });
+  TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0, { el: '#btnToday', title: 'Today', text: 'Start here each day: open your Bible where you left off, today\'s devotional, your prayer list, memory verses, reading plan, journal and The Gospel.' });
   const prevQS = window.openQuickStart;
   window.openQuickStart = () => {
     prevQS();
     const first = $('#modal .qs section');
     if (first) first.insertAdjacentHTML('afterend', `<section><h3>Your daily walk</h3><ul>
-      <li><b>Today</b> (Ctrl+Shift+W): <i>Time with God</i> — prepare, read, reflect, pray and remember. It is saved in Notes › Journal.</li>
-      ${FEATURES.family ? '<li><b>Family devotions</b> (Ctrl+Shift+Y): 52 Bible stories, one a week, with questions for little ones and older children, a memory verse and a prayer. <i>Large view</i> for reading together; <i>Print</i> for the table.</li>' : ''}
+      <li><b>Today</b> (Ctrl+Shift+W): open your Bible where you left off, today's devotional, your prayer list, memory verses and reading plan.</li>
+      <li><b>Notes › Journal</b>: write down what God is teaching you, by date.</li>
       <li><b>Notes › Prayer</b>: your prayer list by category; mark requests answered and keep a record of God's faithfulness.</li>
       <li><b>Memory verses</b>: practise with first letters, fill in the blanks, or type it out.</li>
       <li><b>The Gospel</b>: how to be saved — print it or save it to share.</li></ul></section>`);
   };
-  if (FEATURES.family) COMMANDS.unshift(['Family devotions', 'children kids family stories', () => openFamily()]);
   COMMANDS.unshift(
-    ['Today — time with God', 'walk devotion quiet time pray', () => openToday()],
-    ['Time with God (guided)', 'quiet time devotion pray read reflect', () => beginWalk()],
+    ['Today', 'devotional prayer memory plan', () => openToday()],
     ['Prayer list', 'requests answered', () => showMarksView('prayer')],
     ['Journal', 'diary entries', () => showMarksView('journal')],
     ['The Gospel — how to be saved', 'salvation saved romans road share', () => openGospel()],
@@ -559,7 +360,7 @@ function checkReminder() {
 
 // ===================================================================== events
 function wireV38() {
-  $('#btnDaily').insertAdjacentHTML('beforebegin', '<button id="btnToday" class="icon text" title="Today: time with God, prayer list, memory verses (Ctrl+Shift+W)">Today</button>');
+  $('#btnDaily').insertAdjacentHTML('beforebegin', '<button id="btnToday" class="icon text" title="Today: devotional, prayer list, memory verses, reading plan (Ctrl+Shift+W)">Today</button>');
   $('#btnToday').addEventListener('click', () => openToday());
   const modal = $('#modal');
   modal.addEventListener('click', async (e) => {
@@ -567,7 +368,6 @@ function wireV38() {
     const td = t.closest('[data-td]');
     if (td) {
       const k = td.dataset.td;
-      if (k === 'family') return openFamily();
       if (k === 'prayers') return showMarksView('prayer');
       if (k === 'journal') return showMarksView('journal');
       if (k === 'memory') return showMarksView('memory');
@@ -579,107 +379,8 @@ function wireV38() {
     const wk = t.closest('[data-wk]');
     if (wk) {
       const k = wk.dataset.wk;
-      const s = v38.session;
-      if (k === 'begin') return beginWalk();
       if (k === 'close') return closeModal();
       if (k === 'practice') return startPractice(false);
-      if (k === 'memorize') {
-        toggleMemory(Number(wk.dataset.id));
-        return renderWalk();
-      }
-      if (!s) return;
-      if (k === 'back') s.step = Math.max(0, s.step - 1);
-      if (k === 'next') {
-        if (s.step === 4) return finishWalk();
-        s.step += 1;
-      }
-      return renderWalk();
-    }
-    const wkc = t.closest('[data-wkc]');
-    if (wkc && v38.session) {
-      v38.session.choice = wkc.dataset.wkc;
-      v38.session.chapters = [];
-      v38.session.carry = null;
-      return renderWalk();
-    }
-    const wkv = t.closest('[data-wkv]');
-    if (wkv && v38.session) {
-      const id = Number(wkv.dataset.wkv);
-      v38.session.carry = v38.session.carry === id ? null : id;
-      $$('#modal .wk-v').forEach((el) => el.classList.toggle('carry', Number(el.dataset.wkv) === v38.session.carry));
-      return;
-    }
-    const wkp = t.closest('[data-wkp]');
-    if (wkp && v38.session) {
-      const s = v38.session;
-      s.prayed = wkp.checked ? [...new Set([...s.prayed, wkp.dataset.wkp])] : s.prayed.filter((x) => x !== wkp.dataset.wkp);
-      return;
-    }
-    // family devotions
-    const fs = t.closest('[data-fstep]');
-    if (fs) {
-      v38.famStep = fs.dataset.fstep;
-      return openFamily();
-    }
-    const fage = t.closest('[data-fage]');
-    if (fage) {
-      state.walk.family.age = fage.dataset.fage;
-      saveUser(['walk']);
-      return openFamily();
-    }
-    const fstory = t.closest('[data-fstory]');
-    if (fstory) {
-      v38.famStep = 'read';
-      v38.famHide = 0;
-      state.walk.family.cur = Number(fstory.dataset.fstory);
-      saveUser(['walk']);
-      return openFamily();
-    }
-    const fm = t.closest('[data-fm]');
-    if (fm) {
-      const k = fm.dataset.fm;
-      const f = state.walk.family;
-      const order = ['read', 'talk', 'remember', 'pray'];
-      if (k === 'prev' || k === 'next') {
-        f.cur += k === 'next' ? 1 : -1;
-        v38.famStep = 'read';
-        v38.famHide = 0;
-        saveUser(['walk']);
-        return openFamily();
-      }
-      if (k === 'list') return openFamilyList();
-      if (k === 'step') {
-        v38.famStep = order[order.indexOf(v38.famStep) + 1] || 'pray';
-        return openFamily();
-      }
-      if (k === 'hide' || k === 'hide3') {
-        v38.famHide = (v38.famHide || 0) + (k === 'hide' ? 1 : 3);
-        return openFamily();
-      }
-      if (k === 'show') {
-        v38.famHide = 0;
-        return openFamily();
-      }
-      if (k === 'memorize') {
-        toggleMemory(Number(fm.dataset.id));
-        return openFamily();
-      }
-      if (k === 'big') {
-        v38.famBig = !v38.famBig;
-        return openFamily();
-      }
-      if (k === 'print') return printFamily();
-      if (k === 'done') {
-        const fam = await loadFamily();
-        f.done[f.cur] = todayStr();
-        const finished = f.cur;
-        if (f.cur < fam.stories.length) f.cur += 1;
-        v38.famStep = 'read';
-        v38.famHide = 0;
-        saveUser(['walk']);
-        toast(f.cur !== finished ? `Well done. Next time: ${fam.stories[f.cur - 1].title}` : 'You have read all 52 stories together. Praise the Lord!');
-        return openFamily();
-      }
     }
     // gospel
     const gs = t.closest('[data-gs]');
@@ -721,37 +422,11 @@ function wireV38() {
     }
   });
   modal.addEventListener('input', (e) => {
-    const a = e.target.closest('[data-wka]');
-    if (a && v38.session) {
-      if (a.dataset.wka === 'prayer') v38.session.prayer = a.value;
-      else v38.session.answers[a.dataset.wka] = a.value;
-    }
     if (e.target.id === 'rmTime') {
       state.walk.remind.time = e.target.value || '07:00';
       state.walk.lastRemind = '';
       saveUser(['walk']);
     }
-  });
-  modal.addEventListener('submit', async (e) => {
-    const f = e.target.closest('[data-wk-form]');
-    if (!f) return;
-    e.preventDefault();
-    const inp = $('input', f);
-    const val = inp.value.trim();
-    if (!val || !v38.session) return;
-    if (f.dataset.wkForm === 'ref') {
-      const r = state.parse(val);
-      if (!r) return toast('Type a passage such as Psalm 1 or John 15');
-      v38.session.choice = 'other';
-      v38.session.chapters = [[r.book, r.ch]];
-      v38.session.carry = null;
-      return renderWalk();
-    }
-    const p = { id: newId(), text: val, cat: 'Myself', added: todayStr(), answered: null };
-    state.prayers.push(p);
-    v38.session.prayed.push(p.id);
-    saveUser(['prayers']);
-    renderWalk();
   });
   modal.addEventListener('keydown', (e) => {
     const ta = e.target.closest && e.target.closest('.mem-type');
@@ -839,8 +514,6 @@ function wireV38() {
       if (en && en.chapters && en.chapters[0]) go({ book: en.chapters[0][0], ch: en.chapters[0][1], vs: 1 });
       return;
     }
-    const wk = e.target.closest('[data-wk="begin"]');
-    if (wk) return beginWalk();
   });
   pm.addEventListener('input', (e) => {
     if (e.target.id !== 'jrSearch') return;
@@ -855,7 +528,6 @@ function wireV38() {
   });
   tsk.onMenu((cmd) => {
     if (cmd === 'walk') openToday();
-    else if (cmd === 'family' && FEATURES.family) openFamily();
     else if (cmd === 'prayers') showMarksView('prayer');
     else if (cmd === 'journal') showMarksView('journal');
     else if (cmd === 'gospel') openGospel();
@@ -870,7 +542,7 @@ wireV38();
 // from v381.js
 // =====================================================================================================
 /* v3.8.1: Listen — the KJV read aloud by an offline British voice, verse by verse, with the verse being read
-   highlighted. Works in the reader, in family devotions and in Time with God. Loaded after v38.js. */
+   highlighted. Works in the reader. Loaded after v38.js. */
 /* global tsk, state, $, $$, esc, go, toast, saveUser, todayStr, markRead, v38, bookName, COMMANDS, TOUR, openQuickStart */
 
 const listen = {
@@ -1100,26 +772,6 @@ function updatePlayer(preparing) {
 }
 
 // ---------------------------------------------------------------- buttons in other places
-function addListenButtons() {
-  // family devotions: read the passage or the memory verse aloud
-  const fm = $('#modal.m-family .fm-body');
-  if (fm && !$('[data-lsx]', fm) && listen.ok) {
-    const ref = $('.fm-ref', fm);
-    if (ref) ref.insertAdjacentHTML('beforeend', ' <button class="ls-inline" data-lsx="family" title="Read it aloud">&#128266; Listen</button>');
-  }
-  const wk = $('#modal.m-walk .wk-read');
-  if (wk && !$('[data-lsx]', $('#modal.m-walk')) && listen.ok) {
-    wk.insertAdjacentHTML('beforebegin', '<button class="ls-inline" data-lsx="walk" title="Hear it read aloud">&#128266; Listen</button>');
-  }
-}
-
-async function familyListenList() {
-  const fam = await (window.loadFamily ? loadFamily() : tsk.family());
-  const st = fam.stories[state.walk.family.cur - 1];
-  const step = v38.famStep;
-  if (step === 'remember') return [{ ...st.memory.verses[0], label: `Memory verse · ${st.memory.ref}` }];
-  return st.passage.verses.map((v) => ({ ...v, label: `${st.passage.ref.replace(/:.*/, '')}:${v.v}` }));
-}
 
 // ---------------------------------------------------------------- wiring
 function wireListen() {
@@ -1137,20 +789,6 @@ function wireListen() {
       if (k === 'prev') return skip(-1);
       if (k === 'next') return skip(1);
       return;
-    }
-    const x = e.target.closest('[data-lsx]');
-    if (x) {
-      if (x.dataset.lsx === 'family') {
-        const list = await familyListenList();
-        // the family passage spans are not tagged; tag them so the verse being read is highlighted
-        $$('#modal .fm-text > span').forEach((sp, k) => list[k] && sp.setAttribute('data-id', list[k].id));
-        return listenToVerses(list, 'Family devotions', '#modal');
-      }
-      if (x.dataset.lsx === 'walk') {
-        const ids = $$('#modal .wk-v').map((el) => Number(el.dataset.wkv));
-        const vs = await tsk.versesByIds(ids);
-        return listenToVerses(vs.map((v) => ({ id: v.id, text: v.text, label: v.label })), 'Time with God', '#modal');
-      }
     }
   });
   document.addEventListener('change', (e) => {
@@ -1175,7 +813,6 @@ function wireListen() {
   });
   // the dialogs re-render; put the Listen buttons back each time, and stop reading a dialog that closes
   new MutationObserver(() => {
-    addListenButtons();
     if (listen.playing && listen.scope === '#modal' && $('#modal').hidden) stopListening();
   }).observe($('#modal'), { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class'] });
   tsk.onMenu((cmd) => {
@@ -1194,7 +831,7 @@ function wireListen() {
     if (!listen.ok) return;
     const ul = $('#modal .qs section ul');
     const walk = $$('#modal .qs section').find((s) => /Your daily walk/.test(s.textContent));
-    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', '<li><b>Listen</b> (Ctrl+Shift+L): the chapter read aloud from the verse you have selected; Space pauses. Time with God has a Listen button too.</li>');
+    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', '<li><b>Listen</b> (Ctrl+Shift+L): the chapter read aloud from the verse you have selected; Space pauses.</li>');
     else if (ul) ul.insertAdjacentHTML('beforeend', '<li><b>Listen</b> (Ctrl+Shift+L): the chapter read aloud.</li>');
   };
 }
@@ -1204,12 +841,11 @@ wireListen();
 // =====================================================================================================
 // from v39.js
 // =====================================================================================================
-/* v3.9: Study methods (guided worksheets that teach how to study a passage, using the app's own study data)
-   and discipleship paths (First Steps, Growing in Christ, Leading Your Family). Loaded after v381.js. */
+/* v3.9: Study methods (guided worksheets that teach how to study a passage, using the app's own study data). */
 /* global tsk, state, $, $$, esc, go, toast, saveUser, openModal, closeModal, todayStr, newId, v32, v38, switchTab,
    renderMarks, toggleMemory, COMMANDS, TOUR, openQuickStart, listenToVerses, listen, showMarksView, sheetPage, bookName */
 
-const v39 = { paths: null, study: null, pathTab: 'read' };
+const v39 = { study: null };
 
 // ===================================================================== study methods
 const METHODS = {
@@ -1492,14 +1128,7 @@ async function saveStudy() {
   if (st.entryId) state.journal = state.journal.filter((x) => x.id !== st.entryId);
   st.entryId = entry.id;
   state.journal.push(entry);
-  const saveKeys = ['journal'];
-  if (st.from) {
-    const pp = pathProgress(st.from.path);
-    pp.studied = pp.studied || {};
-    pp.studied[st.from.step] = todayStr();
-    saveKeys.push('walk');
-  }
-  saveUser(saveKeys);
+  saveUser(['journal']);
   toast('Saved in Notes › Journal');
 }
 
@@ -1514,106 +1143,18 @@ async function printStudy() {
   await tsk.printSheet(html);
 }
 
-// ===================================================================== discipleship paths
-async function loadPaths() {
-  if (!v39.paths) v39.paths = (await tsk.paths()).paths;
-  return v39.paths;
-}
-function pathProgress(pid) {
-  state.walk.paths = state.walk.paths || {};
-  state.walk.paths[pid] = state.walk.paths[pid] || { cur: 1, done: {} };
-  return state.walk.paths[pid];
-}
-
-async function openPaths() {
-  const paths = await loadPaths();
-  openModal(`<div class="kicker">Discipleship paths</div><h2 class="m-title">Grow step by step</h2>
-    <p class="hint">Each path has eight steps. Every step has a passage to read, a short teaching, a study method to practise, questions to talk over together, and one thing to do. Go through it on your own, or better, with someone else — a mentor, a friend, your husband or wife.</p>
-    <div class="pt-list">${paths.map((p) => {
-      const pp = pathProgress(p.id);
-      const n = Object.keys(pp.done).length;
-      return `<button class="pt-card" data-pt="${p.id}"><b>${esc(p.title)}</b><span>${esc(p.who)}</span>
-        <span class="pt-bar" aria-label="${n} of ${p.steps.length} steps done"><i style="width:${(n / p.steps.length) * 100}%"></i></span>
-        <span class="pt-next">${n >= p.steps.length ? 'Completed — well done' : n ? `Continue: step ${pp.cur}, ${esc(p.steps[pp.cur - 1].title)}` : 'Begin'}</span></button>`;
-    }).join('')}</div>`, 'm-paths');
-}
-
-async function openPathStep(pid, n, tab) {
-  const paths = await loadPaths();
-  const p = paths.find((x) => x.id === pid);
-  const pp = pathProgress(pid);
-  if (n) pp.cur = Math.min(Math.max(1, n), p.steps.length);
-  if (tab) v39.pathTab = tab;
-  v39.pathId = pid;
-  saveUser(['walk']);
-  const s = p.steps[pp.cur - 1];
-  const t = v39.pathTab;
-  const tabs = [['read', 'Read'], ['learn', 'Learn'], ['study', 'Study'], ['talk', 'Talk'], ['do', 'Do']];
-  const m = METHODS[s.method];
-  let body = '';
-  if (t === 'read') {
-    body = s.passages.map((x) => `<div class="fm-ref">${esc(x.ref)}${listen && listen.ok ? ' <button class="ls-inline" data-ptlisten="1" title="Hear it read aloud">&#128266; Listen</button>' : ''}</div><div class="pt-text">${x.verses.map((v) => `<span data-id="${v.id}"><sup>${v.v}</sup>${esc(v.t)} </span>`).join('')}</div>`).join('');
-  } else if (t === 'learn') {
-    const mv = s.memory.verses[0];
-    body = `<p class="pt-teach">${esc(s.teach).replace(/&quot;([^&]+)&quot;/g, '“$1”')}</p>
-      <div class="section-title">Memory verse</div><blockquote class="wk-verse sm">“${esc(mv.t)}” <span>${esc(s.memory.ref)}</span></blockquote>
-      ${state.memory && state.memory[mv.id] ? '<p class="hint">This verse is in your memory verses.</p>' : `<button data-ptmem="${mv.id}">Add to my memory verses</button>`}`;
-  } else if (t === 'study') {
-    body = `<p>This step practises <b>${esc(m.name)}</b>: ${esc(m.blurb)}</p>
-      <ol class="pt-how">${m.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
-      <button class="primary-btn" data-ptstudy="1">Open the ${esc(m.name)} worksheet for ${esc(s.passages[0].ref)}</button>
-      ${pp.studied && pp.studied[pp.cur] ? `<p class="hint">You saved a worksheet for this step on ${new Date(`${pp.studied[pp.cur]}T00:00`).toLocaleDateString()}.</p>` : ''}`;
-  } else if (t === 'talk') {
-    body = `<ol class="pt-qs">${s.questions.map((q) => `<li>${esc(q)}</li>`).join('')}</ol>
-      <div class="section-title">Together</div><p class="pt-together">${esc(s.together).replace(/&quot;([^&]+)&quot;/g, '“$1”')}</p>`;
-  } else {
-    const done = pp.done[pp.cur];
-    body = `<div class="section-title">This week</div><p class="pt-action">${esc(s.action)}</p>
-      <div class="fm-finish">${done ? `<p>You completed this step on ${new Date(`${done}T00:00`).toLocaleDateString()}.</p>` : ''}<button class="primary-btn" data-ptdone="1">${done ? 'Go on to the next step' : 'Mark this step complete'}</button></div>`;
-  }
-  openModal(`<div class="fm-head"><div><div class="kicker">${esc(p.title)} · step ${pp.cur} of ${p.steps.length}</div><h2 class="m-title">${esc(s.title)}</h2></div>
-      <div class="dv-nav"><button data-ptnav="prev" ${pp.cur > 1 ? '' : 'disabled'} aria-label="Previous step">&#8249;</button><button data-ptnav="list">All steps</button><button data-ptnav="next" ${pp.cur < p.steps.length ? '' : 'disabled'} aria-label="Next step">&#8250;</button></div></div>
-    <div class="vswitch fm-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${t === k}" data-pttab="${k}" class="${t === k ? 'on' : ''}">${l}</button>`).join('')}</div>
-    <div class="pt-body">${body}</div>
-    <div class="fm-foot"><button data-ptnav="paths">All paths</button><button data-ptprint="1" title="Print this step to meet with someone">Print</button>${t !== 'do' ? `<button class="primary-btn" data-ptnext="1">Next: ${tabs[tabs.findIndex(([k]) => k === t) + 1][1]}</button>` : ''}</div>`, 'm-path');
-}
-
-async function openPathSteps(pid) {
-  const p = (await loadPaths()).find((x) => x.id === pid);
-  const pp = pathProgress(pid);
-  openModal(`<div class="kicker">Discipleship paths</div><h2 class="m-title">${esc(p.title)}</h2><p class="hint">${esc(p.who)}</p>
-    <div class="fl-grid">${p.steps.map((s) => `<button class="fl-item${s.n === pp.cur ? ' here' : ''}${pp.done[s.n] ? ' done' : ''}" data-ptstep="${s.n}"><span class="fl-n">${s.n}</span><span class="fl-t">${esc(s.title)}</span><span class="fl-r">${esc(s.passages.map((x) => x.ref).join('; '))}</span>${pp.done[s.n] ? '<span class="fl-d" title="Completed">✓</span>' : ''}</button>`).join('')}</div>
-    <div class="fm-foot"><button data-ptnav="paths">All paths</button></div>`, 'm-family-list');
-}
-
-async function printPathStep() {
-  const p = (await loadPaths()).find((x) => x.id === v39.pathId);
-  const pp = pathProgress(p.id);
-  const s = p.steps[pp.cur - 1];
-  const q = (t) => esc(t).replace(/&quot;([^&]+)&quot;/g, '“$1”');
-  const html = sheetPage(`${p.title}: ${s.title}`, `<div class="k">${esc(p.title)} · step ${s.n} of ${p.steps.length}</div><h1>${esc(s.title)}</h1>
-    ${s.passages.map((x) => `<h2>Read · ${esc(x.ref)}</h2><p>${x.verses.map((v) => `<sup>${v.v}</sup>${esc(v.t)}`).join(' ')}</p>`).join('')}
-    <h2>Learn</h2><p>${q(s.teach)}</p><blockquote>${esc(s.memory.verses[0].t)}<cite>Memory verse · ${esc(s.memory.ref)}</cite></blockquote>
-    <h2>Talk about it</h2><ol>${s.questions.map((x) => `<li>${esc(x)}<div style="height:.45in"></div></li>`).join('')}</ol>
-    <p><b>Together:</b> ${q(s.together)}</p><h2>This week</h2><p>${esc(s.action)}</p>
-    <p style="color:#5b6476">Study method to practise: ${esc(METHODS[s.method].name)}.</p>`);
-  await tsk.printSheet(html);
-}
-
 // ===================================================================== Today, commands, tour, quick start
 {
-  if (FEATURES.paths) COMMANDS.unshift(['Discipleship paths', 'disciple mentor first steps growing family new believer', () => openPaths()]);
   COMMANDS.unshift(
     ['Study methods', 'inductive observe interpret apply soap word character topical verse mapping book overview worksheet', () => openStudyChooser()],
   );
   const i = TOUR.findIndex((t) => t.el === '#btnToday');
-  if (i >= 0) TOUR[i] = { ...TOUR[i], text: `${TOUR[i].text}${FEATURES.paths ? ' Discipleship paths and study methods start here too.' : ' Study methods start here too.'}` };
+  if (i >= 0) TOUR[i] = { ...TOUR[i], text: `${TOUR[i].text}${' Study methods start here too.'}` };
   const prevQS = window.openQuickStart;
   window.openQuickStart = () => {
     prevQS();
     const walk = $$('#modal .qs section').find((s) => /Your daily walk/.test(s.textContent));
-    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', `${FEATURES.paths ? '' : '<!--'}<li><b>Discipleship paths</b> (Today): First Steps, Growing in Christ and Leading Your Family — eight steps each, to go through alone or with someone. <i>Print</i> a step to meet with a friend.</li>${FEATURES.paths ? '' : '-->'}
-      <li><b>Study methods</b> (Today, or Ctrl+K): Observe–Interpret–Apply, SOAP, word study, character study, topical study, verse mapping and book overview, with study aids filled in for you. Saved in Notes › Journal.</li>`);
+    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', `<li><b>Study methods</b> (Today, or Ctrl+K): Observe–Interpret–Apply, SOAP, word study, character study, topical study, verse mapping and book overview, with study aids filled in for you. Saved in Notes › Journal.</li>`);
   };
 }
 
@@ -1623,7 +1164,7 @@ function wireV39() {
   modal.addEventListener('click', async (e) => {
     const t = e.target;
     const td2 = t.closest('[data-td2]');
-    if (td2) return td2.dataset.td2 === 'paths' ? openPaths() : openStudyChooser();
+    if (td2) return openStudyChooser();
     // study methods
     const sm = t.closest('[data-sm]');
     if (sm) return openStudy(sm.dataset.sm, v39.pickCtx || {});
@@ -1660,63 +1201,6 @@ function wireV39() {
       box.innerHTML = `<b>${esc(pas.label)}</b> ${esc(pas.verses.map((v) => v.text).join(' '))}`;
       return;
     }
-    // paths
-    const pt = t.closest('[data-pt]');
-    if (pt) {
-      v39.pathTab = 'read';
-      return openPathStep(pt.dataset.pt, pathProgress(pt.dataset.pt).cur);
-    }
-    const ptstep = t.closest('[data-ptstep]');
-    if (ptstep) {
-      v39.pathTab = 'read';
-      return openPathStep(v39.pathId, Number(ptstep.dataset.ptstep));
-    }
-    const pttab = t.closest('[data-pttab]');
-    if (pttab) return openPathStep(v39.pathId, null, pttab.dataset.pttab);
-    if (t.closest('[data-ptnext]')) {
-      const order = ['read', 'learn', 'study', 'talk', 'do'];
-      return openPathStep(v39.pathId, null, order[order.indexOf(v39.pathTab) + 1] || 'do');
-    }
-    const nav = t.closest('[data-ptnav]');
-    if (nav) {
-      const k = nav.dataset.ptnav;
-      if (k === 'paths') return openPaths();
-      if (k === 'list') return openPathSteps(v39.pathId);
-      const pp = pathProgress(v39.pathId);
-      v39.pathTab = 'read';
-      return openPathStep(v39.pathId, pp.cur + (k === 'next' ? 1 : -1));
-    }
-    const mem = t.closest('[data-ptmem]');
-    if (mem) {
-      toggleMemory(Number(mem.dataset.ptmem));
-      return openPathStep(v39.pathId);
-    }
-    if (t.closest('[data-ptstudy]')) {
-      const p = (await loadPaths()).find((x) => x.id === v39.pathId);
-      const s = p.steps[pathProgress(p.id).cur - 1];
-      const x = s.passages[0];
-      return openStudy(s.method, { s: x.s, e: s.method === 'versemap' || s.method === 'word' ? s.memory.verses[0].id : x.e, from: { path: p.id, step: s.n, title: `${p.title}, step ${s.n}` } });
-    }
-    if (t.closest('[data-ptdone]')) {
-      const p = (await loadPaths()).find((x) => x.id === v39.pathId);
-      const pp = pathProgress(p.id);
-      if (!pp.done[pp.cur]) {
-        pp.done[pp.cur] = todayStr();
-        state.walk.days[todayStr()] = state.walk.days[todayStr()] || 1;
-        saveUser(['walk']);
-        toast(pp.cur < p.steps.length ? 'Step complete. Well done.' : `You have finished ${p.title}. Praise the Lord!`);
-        return openPathStep(p.id, pp.cur, 'do');
-      }
-      v39.pathTab = 'read';
-      return pp.cur < p.steps.length ? openPathStep(p.id, pp.cur + 1) : openPaths();
-    }
-    if (t.closest('[data-ptprint]')) return printPathStep();
-    if (t.closest('[data-ptlisten]')) {
-      const p = (await loadPaths()).find((x) => x.id === v39.pathId);
-      const s = p.steps[pathProgress(p.id).cur - 1];
-      const list = s.passages.flatMap((x) => x.verses.map((v) => ({ id: v.id, t: v.t, label: `${x.ref.replace(/:.*/, '')}:${v.v}` })));
-      return listenToVerses(list, 'Discipleship', '#modal');
-    }
   });
   modal.addEventListener('input', (e) => {
     const f = e.target.closest('[data-smf]');
@@ -1752,8 +1236,7 @@ function wireV39() {
     }
   });
   tsk.onMenu((cmd) => {
-    if (cmd === 'paths' && FEATURES.paths) openPaths();
-    else if (cmd === 'study') openStudyChooser();
+    if (cmd === 'study') openStudyChooser();
   });
 }
 

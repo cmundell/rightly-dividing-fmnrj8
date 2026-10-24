@@ -49,7 +49,7 @@ async function swipeChapter(d) {
 function openWhatsNew() {
   const theme = document.documentElement.dataset.theme || 'light';
   const src = `${tsk.web ? '' : '../'}CHANGELOG.html?theme=${encodeURIComponent(theme)}`;
-  openModal(`<div class="kicker">Search the Scriptures</div><h2 class="m-title">What's new</h2>
+  openModal(`<div class="kicker">The Bible Study App</div><h2 class="m-title">What's new</h2>
     <iframe class="wn-frame" src="${src}" title="What's new"></iframe>`, 'm-whatsnew');
 }
 window.openWhatsNew = openWhatsNew;
@@ -100,7 +100,6 @@ const MEDALS = [
   { id: 'nt', group: 'whole', short: 'NT', title: 'The New Testament, read through', verse: ['2 Timothy 3:16', 'All scripture is given by inspiration of God'] },
   { id: 'ot', group: 'whole', short: 'OT', title: 'The Old Testament, read through', verse: ['Luke 24:27', 'And beginning at Moses and all the prophets, he expounded unto them in all the scriptures the things concerning himself.'] },
   { id: 'bible', group: 'whole', short: '66', title: 'The whole Bible, read through', verse: ['Matthew 4:4', 'Man shall not live by bread alone, but by every word that proceedeth out of the mouth of God.'] },
-  { id: 'first-walk', group: 'first', short: '1', title: 'First time with God', verse: ['Psalm 46:10', 'Be still, and know that I am God'] },
   { id: 'first-study', group: 'first', short: '1', title: 'First verse studied step by step', verse: ['2 Timothy 2:15', 'Study to shew thyself approved unto God, a workman that needeth not to be ashamed, rightly dividing the word of truth.'] },
   { id: 'first-note', group: 'first', short: '1', title: 'First note written', verse: ['Habakkuk 2:2', 'Write the vision, and make it plain upon tables'] },
   { id: 'early', group: 'first', short: '6', title: 'In the Word early in the morning', verse: ['Psalm 5:3', 'My voice shalt thou hear in the morning, O LORD; in the morning will I direct my prayer unto thee, and will look up.'] },
@@ -115,7 +114,7 @@ const MEDAL_GROUPS = {
   book: { name: 'Books', fill: ['#3f8a4a', '#295e31'], icon: 'scroll' },
 };
 
-// the days you were in the Word (a chapter read, or time with God)
+// the days you were in the Word (a chapter read; days kept from earlier versions still count)
 const wordDays = () => new Set([...Object.keys(state.readlog.days || {}), ...Object.keys(state.walk.days || {}), ...Object.values((state.walk.family || {}).done || {})]);
 const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 // the current run counts back from today (or from yesterday, until today's reading); a missed day starts it again
@@ -154,7 +153,6 @@ function medalProgress() {
   return {
     mem, days: days.size, run: run.longest, books,
     law: has(1, 5), psalms: has(19, 19), gospels: has(40, 43), nt: has(40, 66), ot: has(1, 39), bible: has(1, 66),
-    'first-walk': Object.keys(state.walk.days || {}).length > 0,
     'first-study': !!(state.walk && state.walk.guided),
     'first-note': Object.values(state.notes || {}).some(Boolean),
     early: !!(state.walk && state.walk.early),
@@ -266,10 +264,10 @@ function openMedals() {
     ${group('memory', (m) => `${Math.min(p.mem, m.n)} of ${m.n} learned`)}
     <p class="hint">A verse counts as learned when you have said it correctly from memory three times, on separate days (Notes › Memory).</p>
     ${group('run', (m) => `${Math.min(run.current, m.n)} of ${m.n} days in a row`)}
-    <p class="hint">Any day you read a chapter or spend time with God. Miss a day and the count starts again — the medallions you have earned stay.</p>
+    <p class="hint">Any day you read a chapter. Miss a day and the count starts again — the medallions you have earned stay.</p>
     ${group('days', (m) => `${Math.min(p.days, m.n)} of ${m.n} days`)}
     ${group('whole', () => 'Keep reading')}
-    ${group('first', (m) => (m.id === 'early' ? 'Read or spend time with God before 7 in the morning' : m.id === 'first-study' ? 'Tap a verse › Study this verse, step by step' : 'Not yet'))}
+    ${group('first', (m) => (m.id === 'early' ? 'Read before 7 in the morning' : m.id === 'first-study' ? 'Tap a verse › Study this verse, step by step' : 'Not yet'))}
     <div class="section-title">Books read through <span class="hint">· ${p.books.length} of 66</span></div>
     <div class="md-books">${bookCards}</div>
     <p class="md-v">“${esc(BOOK_VERSE[1])}” <i>${esc(BOOK_VERSE[0])}</i></p>`, 'm-medals');
@@ -349,7 +347,7 @@ async function shareMedal(id) {
   const file = new File([blob], `${m.title.replace(/[^A-Za-z0-9 ]/g, '').replace(/ +/g, '-')}.png`, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: m.title, text: `${m.title} — Search the Scriptures` });
+      await navigator.share({ files: [file], title: m.title, text: `${m.title} — The Bible Study App` });
     } catch { /* cancelled */ }
     return;
   }
@@ -391,7 +389,7 @@ async function shareMedal(id) {
 /* v3.13: gentle reminders set aside; Morning and Evening moved off the toolbar (it stays on Today, in the Go menu
    and in the phone's Menu). Switches for the Today screen and the prayer list (FEATURES.today, FEATURES.prayer).
    Loaded after v41.js. */
-/* global tsk, state, $, $$, FEATURES, COMMANDS, TOUR, beginWalk, switchTab, v32, renderMarks */
+/* global tsk, state, $, $$, FEATURES, COMMANDS, TOUR, switchTab, v32, renderMarks */
 
 const dropCommand = (label) => {
   for (let i = COMMANDS.length - 1; i >= 0; i--) if (COMMANDS[i][0] === label) COMMANDS.splice(i, 1);
@@ -415,27 +413,6 @@ if (FEATURES.prayer === false) {
 }
 
 // ---------------------------------------------------------------- the prayer list switch (FEATURES.prayer)
-{
-  // Time with God: no prayer list in the Pray step when it is switched off
-  const prevWalk = window.renderWalk;
-  window.renderWalk = async function () {
-    await prevWalk();
-    if (FEATURES.prayer === false) {
-      $$('#modal .wk-plist, #modal [data-wk-form="prayer"]').forEach((e) => e.remove());
-      $$('#modal .section-title').forEach((e) => /prayer list/i.test(e.textContent) && e.remove());
-      $$('#modal .hint').forEach((e) => /prayer list is empty/i.test(e.textContent) && e.remove());
-    }
-  };
-}
-
-// ---------------------------------------------------------------- Today screen switch: Time with God opens directly
-if (FEATURES.today === false) {
-  const t = $('#btnToday');
-  if (t) t.hidden = true;
-  window.openToday = () => beginWalk();
-  dropCommand('Today — time with God');
-  for (let i = TOUR.length - 1; i >= 0; i--) if (TOUR[i].el === '#btnToday') TOUR.splice(i, 1);
-}
 
 // =====================================================================================================
 // from v43.js
@@ -447,7 +424,7 @@ if (FEATURES.today === false) {
 
 // ---------------------------------------------------------------- your name, asked once on the very first open
 function askName(then) {
-  openModal(`<h2 class="m-title nm-title">Welcome to Search the Scriptures, friend!</h2>
+  openModal(`<h2 class="m-title nm-title">Welcome to The Bible Study App, friend!</h2>
     <p class="nm-q">What is your name?</p>
     <p class="hint">So we can greet you each day. It stays on this device.</p>
     <form class="nm-form"><input id="nmInput" type="text" autocomplete="given-name" maxlength="40" placeholder="Your first name" />
@@ -557,70 +534,23 @@ const toReading = () => typeof setView === 'function' && onPhone() && setView('r
 
 
 // ---------------------------------------------------------------- About this book
-// The five questions, answered only in quotations: Scripture where the book speaks for itself, then the published
-// introductions (tools/build_bookabout.py). Then Matthew Henry's outline.
-const BA_QS = [
-  ['who', 'Who wrote it?', ''],
-  ['to', 'Who received it?', 'The original audience'],
-  ['rel', 'How do the author and readers relate?', ''],
-  ['occ', 'Occasion', 'What prompted the author to write'],
-  ['purpose', 'Purpose', 'What the author meant it to do'],
-];
-const BA_SRC = { jfb: 'Jamieson, Fausset & Brown', berkhof: 'Louis Berkhof' };
+// C. I. Scofield's introduction to the book (1917, public domain), word for word
 async function openBookIntro(bookId) {
-  const [d, mh, ba] = await Promise.all([tsk.bookIntro(bookId), tsk.mhIntro(bookId), tsk.bookAbout(bookId)]);
   const bk = state.books[bookId - 1];
   if (!bk) return;
-  const label = (k) => BA_QS.find((q) => q[0] === k)[1];
-  const order = BA_QS.map((q) => q[0]);
-  const answer = (k, items) => {
-    if (!items.length) return '<p class="ba-none">Not stated in Scripture or these introductions.</p>';
-    const out = [];
-    let run = null;
-    for (const x of items) {
-      if (x.src === 'kjv') {
-        run = null;
-        out.push(`<blockquote class="ba-kjv">“${esc(x.text)}” <button class="linkish" data-bi-go="${x.s}" data-bi-end="${x.e}">${esc(x.ref)}</button></blockquote>`);
-      } else if (x.src === 'see') {
-        run = null;
-        out.push(`<p class="ba-see">See “${esc(label(x.q))}” ${order.indexOf(x.q) < order.indexOf(k) ? 'above' : 'below'}.</p>`);
-      } else {
-        // consecutive sentences from the same introduction read as one quotation
-        if (!run || run.src !== x.src || !x.join) out.push((run = { src: x.src, paras: [[]] }));
-        else if (x.join === 'para') run.paras.push([]);
-        else if (x.join === 'gap') run.paras[run.paras.length - 1].push('…');
-        run.paras[run.paras.length - 1].push(x.text);
-      }
-    }
-    return out.map((o) => (typeof o === 'string' ? o : `<blockquote class="ba-intro">${o.paras.map((p, i) => `<p>${i ? '' : '“'}${p.map(esc).join(' ')}${i === o.paras.length - 1 ? '”' : ''}</p>`).join('')}<cite>${esc(BA_SRC[o.src] || o.src)}</cite></blockquote>`)).join('');
-  };
-  const outline = mh ? Object.entries(mh.outline || {}).map(([c, items]) => [Number(c), items]).sort((x, y) => x[0] - y[0]) : [];
-  const allChapters = Array.from({ length: bk.chapters }, (_, i) => i + 1);
-  const single = bk.chapters === 1;
-  const used = ba ? [...new Set(Object.values(ba.q).flat().map((x) => x.src))] : [];
+  const html = await tsk.scofield(bookId).catch(() => null);
   openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2>
-    ${ba ? `<div class="ba-qs">${BA_QS.map(([k, t, sub]) => `<section class="ba-q${ba.q[k].length ? '' : ' empty'}"><h3>${esc(t)}${sub ? ` <span>${esc(sub)}</span>` : ''}</h3>${answer(k, ba.q[k])}</section>`).join('')}</div>` : ''}
-    <div class="section-title">Outline <span class="bi-by">Matthew Henry</span></div>
-    <ol class="bi-outline bi-mh-outline">${allChapters.map((c) => {
-      const items = (outline.find((o) => o[0] === c) || [])[1] || [];
-      return `<li value="${c}"><button data-bi-ch="${c}" class="bi-chh">${single ? 'The whole book' : `${bookId === 19 ? 'Psalm' : 'Chapter'} ${c}`}</button>${items.length ? `<ul>${items.map(([t, a, z]) => `<li><button data-bi-ch="${c}" data-bi-vs="${a || ''}">${esc(t)}${a ? ` <span class="bi-vs">${a === z ? `v. ${a}` : `vv. ${a}–${z}`}</span>` : ''}</button></li>`).join('')}</ul>` : ''}</li>`;
-    }).join('')}</ol>
-    <p class="hint bi-note">Every answer is a quotation, word for word: the King James Version${used.includes('jfb') ? `; Jamieson, Fausset & Brown, <i>Commentary Critical and Explanatory on the Whole Bible</i> (1871), ${esc(ba.jfb === 'Introduction' ? 'introduction to this book' : ba.jfb.replace(/^Introduction/, 'introduction'))}` : ''}${used.includes('berkhof') ? '; Louis Berkhof, <i>Introduction to the New Testament</i> (1915)' : ''}. Outline from Matthew Henry's Concise Commentary.</p>`, 'm-bookintro');
+    <div class="bi-sco">${html || '<p class="hint">Not found.</p>'}</div>
+    <p class="hint bi-note">C. I. Scofield's introduction to ${esc(bk.name)}, from the Scofield Reference Bible notes (1917, public domain), word for word. Tap a reference to read it.</p>`, 'm-bookintro');
   $('#modal').dataset.book = bookId;
 }
 $('#modal').addEventListener('click', (e) => {
   if (!$('#modal').classList.contains('m-bookintro')) return;
-  const book = Number($('#modal').dataset.book);
-  const c = e.target.closest('[data-bi-ch]');
-  const v = e.target.closest('[data-bi-go]');
   const r = e.target.closest('.bi-sco .ref');
-  if (!c && !v && !r) return;
+  if (!r) return;
   closeModal();
   toReading();
-  if (c && c.dataset.biVs) go({ book, ch: Number(c.dataset.biCh), vs: Number(c.dataset.biVs) });
-  else if (c) go({ book, ch: Number(c.dataset.biCh) });
-  else if (v) go({ id: Number(v.dataset.biGo), endId: v.dataset.biEnd ? Number(v.dataset.biEnd) : undefined });
-  else go({ id: Number(r.dataset.s), endId: Number(r.dataset.e) });
+  go({ id: Number(r.dataset.s), endId: Number(r.dataset.e) });
 });
 // a quiet link under each chapter heading
 new MutationObserver(() => {
@@ -637,17 +567,6 @@ $('#readerInner').addEventListener('click', (e) => {
 });
 if (ABOUT_ON) COMMANDS.push(['About this book', 'introduction writer author date theme outline book scofield', () => openBookIntro(state.cur.book)]);
 window.openBookIntro = openBookIntro;
-// 3.17.1: while the five-question pages are set aside, About this book is C. I. Scofield's introduction, word for word
-async function openScofieldIntro(bookId) {
-  const bk = state.books[bookId - 1];
-  if (!bk) return;
-  const html = await tsk.scofield(bookId).catch(() => null);
-  openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2>
-    <div class="bi-sco">${html || '<p class="hint">Not found.</p>'}</div>
-    <p class="hint bi-note">C. I. Scofield's introduction to ${esc(bk.name)}, from the Scofield Reference Bible notes (1917, public domain), word for word. Tap a reference to read it.</p>`, 'm-bookintro');
-  $('#modal').dataset.book = bookId;
-}
-if (!FEATURES.about && FEATURES.scofield) window.openBookIntro = openScofieldIntro;
 
 // ---------------------------------------------------------------- Settings (the page is built in study.js): your name and backups
 async function paintNotesSection() {
@@ -1012,7 +931,6 @@ $('#modal').addEventListener('click', (e) => {
   let phrases = null;
   let timer = null;
   let seq = 0;
-  let introCache = {};
   const norm = (s) => s.toLowerCase().replace(/^(first|i)\s+/, '1 ').replace(/^(second|ii)\s+/, '2 ').replace(/^(third|iii)\s+/, '3 ').replace(/[^a-z0-9]/g, '');
   const findBooks = (q) => {
     const n = norm(q);
@@ -1034,18 +952,12 @@ $('#modal').addEventListener('click', (e) => {
     return h;
   };
   async function bookCard(b, ch) {
-    if (!(b.id in introCache)) introCache[b.id] = FEATURES.about ? await tsk.mhIntro(b.id).catch(() => null) : null;
-    const mh = introCache[b.id];
-    // the first sentence of Matthew Henry's introduction
-    const first = mh && mh.intro && mh.intro[0] ? (mh.intro[0].replace(/<[^>]+>/g, '').match(/^.{20,220}?[.;:](\s|$)/) || [mh.intro[0].slice(0, 160) + '…'])[0].trim() : '';
-    const intro = first ? { th: first } : null;
     const read = state.readlog && state.readlog.chapters ? state.readlog.chapters : {};
     const nRead = Array.from({ length: b.chapters }, (_, i) => read[`${b.id}:${i + 1}`]).filter(Boolean).length;
     const label = b.id === 19 ? 'Psalm' : 'Chapter';
     return `<div class="sg-book">
       <div class="sg-book-h"><span class="sg-book-n">${esc(b.name)}</span><span class="sg-book-c">${b.chapters} chapter${b.chapters === 1 ? '' : 's'}${nRead ? ` · ${nRead} read` : ''}</span>
         ${ABOUT_ON ? `<button type="button" class="sg-about" data-sg-about="${b.id}" tabindex="-1">About ${esc(b.name)} ›</button>` : ''}</div>
-      ${intro ? `<div class="sg-book-t">${esc(intro.th)}</div>` : ''}
       <div class="sg-chs" role="group" aria-label="${esc(b.name)} chapters">${Array.from({ length: b.chapters }, (_, i) => i + 1).map((c) => `<button type="button" class="sg-ch${read[`${b.id}:${c}`] ? ' read' : ''}${c === ch ? ' on' : ''}" data-sg-go="${b.id}:${c}" title="${label} ${c}${read[`${b.id}:${c}`] ? ' — read' : ''}">${c}</button>`).join('')}</div></div>`;
   }
   async function suggest() {
@@ -1185,7 +1097,7 @@ function homeScreenHelpHtml() {
 }
 function openHomeScreenHelp() {
   openModal(`<div class="kicker">On your phone</div><h2 class="m-title">Put it on your Home Screen</h2>
-    <p class="wk-lead">Then Search the Scriptures opens like any other app, with its own icon.</p>${homeScreenHelpHtml()}`, 'm-a2hs');
+    <p class="wk-lead">Then The Bible Study App opens like any other app, with its own icon.</p>${homeScreenHelpHtml()}`, 'm-a2hs');
 }
 window.openHomeScreenHelp = openHomeScreenHelp;
 
@@ -1219,7 +1131,7 @@ async function nextNudge() {
   if (tsk.web && isIOS() && !isInstalled() && !s.homeScreenHelped) {
     s.homeScreenHelped = new Date().toISOString();
     saveUser(['settings']);
-    return showNudge(`<b>Put Search the Scriptures on your Home Screen</b>${homeScreenHelpHtml()}`, [['Got it', () => {}]]);
+    return showNudge(`<b>Put The Bible Study App on your Home Screen</b>${homeScreenHelpHtml()}`, [['Got it', () => {}]]);
   }
   // notes worth keeping, and no backup in the last month: remind, at most once a month
   if (marksCount() < 3 || since(s.backupNudged) < 30 * DAY) return;

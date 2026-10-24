@@ -1,6 +1,6 @@
 {
- "name": "Search the Scriptures",
- "short_name": "Search the Scriptures",
+ "name": "The Bible Study App",
+ "short_name": "The Bible Study App",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",

@@ -205,7 +205,7 @@ async function lessonHtml(l) {
       return `<li><div class="ref">${esc(p.label)}</div><div class="text">${p.verses.map((v) => (multi ? `<sup>${v.vs}</sup>` : '') + esc(v.text)).join(' ')}${p.truncated ? ' …' : ''}</div>${it.note ? `<div class="note">${esc(it.note)}</div>` : ''}</li>`;
     })
     .join('')}</ol>
-<div class="credits">Scripture: King James Version (public domain). Made with Search the Scriptures.</div></body></html>`;
+<div class="credits">Scripture: King James Version (public domain). Made with The Bible Study App.</div></body></html>`;
 }
 
 // ===================================================================== reading plans
@@ -299,7 +299,7 @@ function openPlan() {
 // ===================================================================== Quick Start guide
 const dblClick = () => (typeof isPhone === 'function' && isPhone() ? 'Double-tap' : 'Double-click'); // a phone has no double-click
 function openQuickStart() {
-  openModal(`<div class="kicker">Search the Scriptures</div><h2 class="m-title">Quick start</h2>
+  openModal(`<div class="kicker">The Bible Study App</div><h2 class="m-title">Quick start</h2>
   <div class="qs">
     <section><h3>Getting around</h3><ul>
       <li>Type a reference in the top box and press Enter: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</li>
@@ -332,7 +332,7 @@ ${ABOUT_ON ? '      <li><b>About this book</b>, under each chapter heading: the 
 
 // ===================================================================== guided tour
 const TOUR = [
-  { title: 'Welcome to Search the Scriptures', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
+  { title: 'Welcome to The Bible Study App', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
   { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Highlighted verses keep their color; small marks in the left margin show your notes (✎) and tags (#).' },
   ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: the writer, the date, the theme and the divisions of the book, from C. I. Scofield\'s introductions (1917).' },
   { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
@@ -719,7 +719,7 @@ function openReadingOptions() {
     `<div class="ro-seg">${opts.map(([v, t]) => `<button data-ro="${name}" data-v="${v}" class="${String(cur) === String(v) ? 'on' : ''}">${t}</button>`).join('')}</div>`;
   const ui = Number(s.uiScale) || 1;
   // Settings: the text, you (your name and the start screen), and your notes (backups)
-  openModal(`<div class="kicker">Search the Scriptures</div><h2 class="m-title">Settings</h2>
+  openModal(`<div class="kicker">The Bible Study App</div><h2 class="m-title">Settings</h2>
     <div class="section-title st-first">The text</div>
     <div class="ro-grid">
       <label>Font</label>
@@ -1065,7 +1065,7 @@ async function notesDoc() {
     title: 'My Bible study notes',
     subtitle: `${verses.length} verses · exported ${date} · King James Version`,
     groups,
-    footer: 'Scripture: King James Version (public domain). Made with Search the Scriptures.',
+    footer: 'Scripture: King James Version (public domain). Made with The Bible Study App.',
   };
 }
 

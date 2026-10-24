@@ -1,17 +1,17 @@
 'use strict';
-/* Search the Scriptures — web (iPhone / any browser) edition.
+/* The Bible Study App — web (iPhone / any browser) edition.
    Stands in for the Windows app's back end: opens the same Bible database in the browser with sql.js,
    keeps your notes on this device (IndexedDB), and turns printing and saving into the browser's own. */
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '3.17.1';
+  const VERSION = '3.17.2';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
   const splash = document.createElement('div');
   splash.id = 'webSplash';
-  splash.innerHTML = `<div class="ws-card"><div class="ws-title">Search the Scriptures</div>
+  splash.innerHTML = `<div class="ws-card"><div class="ws-title">The Bible Study App</div>
     <div class="ws-verse">“Search the scriptures; for in them ye think ye have eternal life: and they are they which testify of me.” <span>John 5:39</span></div>
     <div class="ws-bar"><i></i></div><div class="ws-msg">Opening…</div></div>`;
   const showSplash = () => document.body.appendChild(splash);
@@ -110,7 +110,7 @@
   }
 
   // a simple passcode, asked once per device, to keep casual visitors out (not real security)
-  const PASS_HASH = 'ae18de0546092422a2afd95d8e939c2ac599881bdf80513fa46976758641f3ee';
+  const PASS_HASH = '71944447f3c98add9e5668d3369128f3b92586d0626d0137a8ac3531fe4fc578';
   const sha = async (t) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map((b) => b.toString(16).padStart(2, '0')).join('');
   const passed = (() => {
     try {
@@ -123,7 +123,7 @@
     const show = () => {
       const g = document.createElement('div');
       g.id = 'webGate';
-      g.innerHTML = `<form class="wg-card"><div class="ws-title">Search the Scriptures</div>
+      g.innerHTML = `<form class="wg-card"><div class="ws-title">The Bible Study App</div>
         <p>Enter the passcode you were given.</p>
         <p class="wg-note">The first time, the app downloads the Bible and its study tools (about 42 MB), so Wi‑Fi is best. After that it works without the internet.</p>
         <input type="password" autocomplete="off" autocapitalize="off" aria-label="Passcode" placeholder="Passcode" />
@@ -285,15 +285,10 @@
     basemap: () => loadJson('basemap.json', { bbox: [8, 21, 53, 46], land: [], lakes: [], rivers: [] }),
     journeys: () => loadJson('journeys.json', { journeys: [] }).then((j) => j.journeys || []),
     landmarks: () => loadJson('landmarks.json', []),
-    family: () => loadJson('family.json', { stories: [] }),
     gospel: () => loadJson('gospel.json', { steps: [], next: [] }),
     // the book introductions (3.14)
-    bookIntro: async (id) => (await loadJson('bookintro.json', {}))[id] || null,
     phrases: () => loadJson('phrases.json', []),
-    mhIntro: async (id) => (await loadJson('mhintro.json', {}))[id] || null,
-    bookAbout: async (id) => (await loadJson('bookabout.json', {}))[id] || null,
     scofield: async (id) => (await loadJson('scofield.json', {}))[id] || null,
-    paths: () => loadJson('paths.json', { paths: [] }),
     // after an update reaches this phone, show What's New once (not on a first install)
     whatsNewPending: async () => {
       const u = (await kvGet('user')) || {};
@@ -339,9 +334,9 @@
     // web only: back up and restore your notes
     backup: async () => {
       const u = (await kvGet('user')) || {};
-      const out = { app: 'Search the Scriptures', exported: new Date().toISOString() };
+      const out = { app: 'The Bible Study App', exported: new Date().toISOString() };
       for (const k of USER_KEYS) if (u[k] !== undefined) out[k] = u[k];
-      return download(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }), `Search the Scriptures notes ${new Date().toISOString().slice(0, 10)}.json`);
+      return download(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }), `The Bible Study App notes ${new Date().toISOString().slice(0, 10)}.json`);
     },
     restore: async (text) => {
       const data = JSON.parse(text);
