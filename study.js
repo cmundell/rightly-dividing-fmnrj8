@@ -155,7 +155,7 @@ async function renderLessons() {
           .map((l) => `<div class="lesson-card" data-lesson="${l.id}"><div class="lc-name">${esc(l.name)}</div>
             <div class="lc-meta">${l.items.length} passage${l.items.length === 1 ? '' : 's'} · ${new Date(l.created).toLocaleDateString()}</div></div>`)
           .join('')
-      : '<div class="empty">A lesson collects verses in the order you want to teach or study them, each with its own note, and exports as one PDF.<br><br>Create one above, then use <b>+ Lesson</b> on the Refs tab to add verses.</div>'}`;
+      : '<div class="empty">A lesson collects verses in the order you want to teach or study them, each with its own note, and exports as one PDF.<br><br>Create one above, then select a verse and choose <b>More › Add to a lesson</b> below it.</div>'}`;
 }
 
 async function renderLesson(l) {
@@ -168,7 +168,7 @@ async function renderLesson(l) {
       <button data-act="lessonPdf">Export PDF</button><button data-act="lessonPrint">Print</button>
       <button data-act="lessonDelete" class="danger">Delete lesson</button>
     </div>
-    ${l.items.length ? '' : '<div class="empty">No verses yet. Select a verse, then use <b>+ Lesson</b> on the Refs tab.</div>'}
+    ${l.items.length ? '' : '<div class="empty">No verses yet. Select a verse, then choose <b>More › Add to a lesson</b> below it.</div>'}
     <ol class="lesson-items">${l.items
       .map((it, i) => {
         const p = passages[i];
@@ -307,8 +307,9 @@ function openQuickStart() {
       <li><kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> go back and forward. The <b>trail</b> under the toolbar lists every verse you've studied — click one to return.</li>
       <li>Highlighted verses keep their color; marks in the left margin show verses you've noted (✎) or tagged (#).</li></ul></section>
     <section><h3>Studying a verse</h3><ul>
-      <li><b>Refs</b> — Treasury of Scripture Knowledge cross-references, grouped by key word. Hover to preview, click to go.</li>
-      <li><b>Words</b> — every Hebrew/Greek word with Strong's number and grammar. Click a number for its full entry and every verse that uses it.</li>
+      <li>New to Bible study? Select a verse and choose <b>Study this verse, step by step</b>: read it, related verses, one word up close, what a trusted teacher said, and what God is saying to you.</li>
+      <li><b>Related verses</b> — the Treasury of Scripture Knowledge cross-references, grouped by key word. Hover to preview, click to go.</li>
+      <li><b>Original words</b> — every Hebrew/Greek word with Strong's number and grammar. Click a number for its full entry and every verse that uses it.</li>
       <li><b>Commentary</b> — Matthew Henry's Concise Commentary on the passage. <b>Topics</b> — Nave's topics that cite the verse.</li>
       <li>${dblClick()} any word in the text for its Webster's 1828 definition, the original word, and Easton's Bible Dictionary.</li>
       <li><b>About this book</b>, under each chapter heading: who wrote it, when, to whom, its theme, a key verse and an outline.</li></ul></section>
@@ -317,7 +318,7 @@ function openQuickStart() {
       <li><code>grace -law</code> leave a word out · <code>redeem*</code> word beginnings</li>
       <li><code>G25</code> every verse using Greek <i>agapaō</i> · <code>H2617 mercy</code> Hebrew <i>hesed</i> where the KJV says “mercy”</li></ul></section>
     <section><h3>Your notes</h3><ul>
-      <li>On the Refs tab: write a note, pick a highlight color, <b>Memorize</b> it, or open <b>More</b> for tags, <b>Add to lesson</b>, <b>Pin</b> and copying the references.</li>
+      <li>On the Related verses tab: write a note, pick a highlight color, <b>Memorize</b> it, or open <b>More</b> for tags, <b>Add to lesson</b>, <b>Pin</b> and copying the references.</li>
       <li><b>Notes</b> tab: everything you've marked, filterable by tag; switch to <b>Lessons</b> to build ordered collections you can export as PDF.</li>
       <li><b>Study sheet</b> (<kbd>Ctrl</kbd>+<kbd>P</kbd>) saves one verse with all its study material as a PDF.</li>
       <li>File › Set backup folder… keeps automatic copies of your notes (e.g. in OneDrive).</li></ul></section>
@@ -335,8 +336,8 @@ const TOUR = [
   { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Highlighted verses keep their color; small marks in the left margin show your notes (✎) and tags (#).' },
   { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: who wrote the book, when, to whom, its theme, a key verse and an outline you can click to move around the book, with Easton\'s Bible Dictionary article.' },
   { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
-  { el: '#pane-refs', tab: 'refs', title: 'Cross-references', text: 'The Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
-  { el: '#pane-words', tab: 'words', title: 'Word study', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
+  { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
+  { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
   { el: '#pane-comm', tab: 'comm', title: 'Commentary and topics', text: 'Matthew Henry\'s Concise Commentary on the passage, with clickable scripture references. The Topics tab lists Nave\'s topics that cite the verse, and lets you browse any topic.' },
   { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. Click any one to go back to it.' },
   { el: '[data-tab="marks"]', tab: 'marks', title: 'Notes and lessons', text: 'Your notes (filter by tag), highlights, memory verses, prayer list and journal. Lessons collect verses in teaching order and export them as a PDF.' },
@@ -732,6 +733,7 @@ function openReadingOptions() {
         <label><input type="checkbox" data-ro="red" ${s.red !== false ? 'checked' : ''}/> <span>Words of Christ in <span class="wj-sample">red</span></span></label>
         <label><input type="checkbox" data-ro="paras" ${s.paras !== false ? 'checked' : ''}/> <span>¶ Paragraph marks</span></label>
       </div>
+      <label>Grammar</label><div class="ro-seg"><button data-gt="0" class="${s.grammarTerms ? '' : 'on'}">Plain words</button><button data-gt="1" class="${s.grammarTerms ? 'on' : ''}">Grammar terms</button></div>
       <label>Interface size</label><div class="ro-seg">${UI_STEPS.map((v) => `<button data-ui="${v}" class="${Math.abs(v - ui) < 0.01 ? 'on' : ''}">${Math.round(v * 100)}%</button>`).join('')}</div>
       <label>Contrast</label><div class="ro-seg"><button data-hc="off" class="${s.contrast === 'on' ? '' : 'on'}">Standard</button><button data-hc="on" class="${s.contrast === 'on' ? 'on' : ''}">High contrast</button></div>
     </div>
@@ -893,7 +895,7 @@ async function renderMemory() {
             <div class="t">${esc(v.text)}</div></div>`;
           })
           .join('')
-      : '<div class="empty">No memory verses yet. Select a verse and click <b>Memorize</b> on the Refs tab.<br><br>Each verse comes back for practice at growing intervals — 1, 2, 4, 7, 14, 30 and 60 days — as you get it right.</div>'}`;
+      : '<div class="empty">No memory verses yet. Select a verse and choose <b>Memorize</b>.<br><br>Each verse comes back for practice at growing intervals — 1, 2, 4, 7, 14, 30 and 60 days — as you get it right.</div>'}`;
 }
 
 function startPractice(all) {
@@ -1116,8 +1118,8 @@ TOUR.splice(2, 0, {
   text: 'Aa opens Settings: the font, text size, spacing and a light, sepia or dark theme; the KJV’s italic words, red letters and ¶ marks; your name; the start screen; and backing up your notes.',
 });
 {
-  const refs = TOUR.find((t) => t.title === 'Cross-references');
-  if (refs) refs.text = 'The Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go, or Shift-click to pin it above the text for comparing. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.';
+  const refs = TOUR.find((t) => t.title === 'Related verses');
+  if (refs) refs.text = 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go, or Shift-click to pin it above the text for comparing. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.';
   const notes = TOUR.find((t) => t.title === 'Notes and lessons');
   if (notes) {
     notes.title = 'Notes, lessons and memory';

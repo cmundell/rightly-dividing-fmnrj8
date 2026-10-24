@@ -3,7 +3,7 @@
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
 /* global tsk, state, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
    openProgress, openPaths, openStudyChooser, openFamily, openGospel, showMarksView, openReadingOptions, toggleTheme,
-   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES, beginWalk, openBadges */
+   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES, beginWalk, openMedals */
 
 const isPhone = () => window.matchMedia('(max-width: 760px)').matches;
 document.documentElement.classList.add('web');
@@ -16,7 +16,7 @@ document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria
   <button data-mn="notes"><span class="mi">&#9998;</span>Notes</button>
   <button data-mn="menu"><span class="mi">&#9776;</span>Menu</button></nav>
   <div id="mStudyPill" class="m-vbar" hidden role="toolbar" aria-label="This verse">
-    <div class="vb-head"><span class="vb-ref"></span><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
+    <div class="vb-head"><span class="vb-ref"></span><button class="vb-guide" data-va="guide">Study it step by step ›</button><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
     <div class="vb-hl" hidden>${HL_COLORS.map((c) => `<button class="dot hl-${c}" data-va="hl" data-c="${c}" aria-label="${c}"></button>`).join('')}<button class="dot none" data-va="hl" data-c="" aria-label="No highlight">&times;</button></div>
     <div class="vb-row">
       <button data-va="highlight"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-9 9H6v-5z"/><path d="M4 21h16"/></svg>Highlight</button>
@@ -150,6 +150,9 @@ vbar.addEventListener('click', async (e) => {
   const text = `${v.label} (KJV) ${v.text}`;
   switch (b.dataset.va) {
     case 'close': return hideVerseBar();
+    case 'guide':
+      hideVerseBar();
+      return startGuide(v.id);
     case 'highlight': $('.vb-hl', vbar).hidden = !$('.vb-hl', vbar).hidden; return;
     case 'hl':
       setHighlight(v.id, b.dataset.c);
@@ -209,7 +212,7 @@ document.addEventListener('click', (e) => {
 // ---------------------------------------------------------------- Menu
 const MENU = [
   ['Study', [
-    ...(FEATURES.today === false ? [['Time with God', () => beginWalk()], ['Memory verses', () => showMarksView('memory')], ['Badges', () => openBadges()]] : []),
+    ...(FEATURES.today === false ? [['Time with God', () => beginWalk()], ['Memory verses', () => showMarksView('memory')], ['Medallions', () => openMedals()]] : []),
     ['The gospel', () => openGospel()],
     ['Study methods', () => openStudyChooser()],
     ['About this book', () => openBookIntro(state.cur.book)],
@@ -276,7 +279,7 @@ function openAbout() {
 const PHONE_TOUR = [
   { title: 'Welcome to Search the Scriptures', text: 'A quick tour of the app — about a minute. Tap Next, or Skip. You can take it again any time from Menu › Tutorial.', before: () => setView('read') },
   { el: '#readerInner .verse', title: 'Read', text: 'Tap any verse to select it. Double-tap any word to see what it means, with the original Hebrew or Greek. Swipe left or right on the text to go to the next or previous chapter.', before: () => setView('read') },
-  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, copy or share it, add it to your memory verses, or Study it in depth.', before: () => {
+  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, copy or share it, add it to your memory verses, or Study it in depth. New to Bible study? “Study it step by step” walks you through.', before: () => {
     paintVerseBar();
     vbar.hidden = false;
   } },
@@ -285,9 +288,9 @@ const PHONE_TOUR = [
   { el: '#study .tabs', title: 'Study', text: 'Cross-references for the verse you selected, then Words (Hebrew and Greek) and Commentary. More holds Topics, Places, People and your search results.', before: () => { setView('study'); switchTab('refs'); } },
   FEATURES.today === false
     ? { el: '#mNav [data-mn="search"]', title: 'Search', text: 'Search the whole Bible for words or phrases, and see the results with a chart of where they occur.', before: () => setView('read') }
-    : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Time with God, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'} and badges.`, before: () => setView('read') },
+    : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Time with God, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'} and medallions.`, before: () => setView('read') },
   { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from Menu › Settings now and then.' },
-  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Time with God, memory verses, badges, ' : ''}The gospel, study methods, an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
+  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Time with God, memory verses, medallions, ' : ''}The gospel, study methods, an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
   { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },
 ];
 if (isPhone()) {

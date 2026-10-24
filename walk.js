@@ -77,23 +77,6 @@ function walkedOn(k) {
   return !!(state.walk.days[k] || (state.readlog && state.readlog.days[k]) || Object.values(state.walk.family.done).includes(k));
 }
 /** Days in a row with God's Word, with grace: one missed day in any seven doesn't break the walk. */
-function graceStreak() {
-  const d = new Date();
-  if (!walkedOn(dkey(d))) d.setDate(d.getDate() - 1);
-  let n = 0;
-  const misses = [];
-  for (let i = 0; i < 3650; i++) {
-    const k = dkey(d);
-    if (walkedOn(k)) n += 1;
-    else {
-      misses.push(i);
-      if (misses.length > 1 && misses[misses.length - 1] - misses[misses.length - 2] < 7) break;
-      if (i === 0) break;
-    }
-    d.setDate(d.getDate() - 1);
-  }
-  return n;
-}
 function weekSummary() {
   const d = new Date();
   let days = 0, chapters = 0, family = 0;
@@ -113,7 +96,6 @@ const inviteFor = (k) => INVITES[[...k].reduce((a, c) => a + c.charCodeAt(0), 0)
 async function openToday() {
   const today = todayStr();
   const w = weekSummary();
-  const streak = graceStreak();
   const [ref, text] = inviteFor(today);
   const due = Object.values(state.memory || {}).filter((m) => m.due <= today).length;
   const open = state.prayers.filter((p) => !p.answered).length;
@@ -133,6 +115,7 @@ async function openToday() {
     <h2 class="m-title">${hello}${name ? `, ${esc(name)}` : ''}</h2>
     <blockquote class="td-invite">“${esc(text)}” <span>${esc(ref)}</span></blockquote>
     ${bk ? `<button class="td-open" data-td4="open">Open your Bible<span>Continue in ${esc(bk.name)} ${state.cur.ch}</span></button>` : ''}
+    ${typeof showcaseHtml === 'function' ? showcaseHtml() : ''}
     <button class="td-begin primary-btn" data-wk="begin">${done ? 'Spend more time with God' : 'Begin time with God'}<span>Pray · Read · Reflect · Pray · Remember</span></button>
     <div class="td-tiles">
       ${FEATURES.paths ? `<button data-td2="paths"><b>Discipleship paths</b><span>${going ? `${esc(going.title)}: step ${pathProgress(going.id).cur}` : 'First Steps, Growing in Christ, Leading Your Family'}</span></button>` : ''}
@@ -144,10 +127,10 @@ async function openToday() {
       <button data-td="daily"><b>Devotional</b><span>Spurgeon's Morning and Evening for today</span></button>
       <button data-td="journal"><b>Journal</b><span>${state.journal.length ? `${state.journal.length} entr${state.journal.length === 1 ? 'y' : 'ies'}` : 'Your time with God, written down'}</span></button>
       <button data-td="gospel"><b>The gospel</b><span>How to be saved — to read, print or share</span></button>
-      <button data-td3="badges"><b>Badges</b><span>${badges ? `${badges} earned` : 'Milestones in memorizing and reading'}</span></button>
+      <button data-td3="badges"><b>Medallions</b><span>${badges ? `${badges} collected` : 'Milestones in memorizing and reading'}</span></button>
     </div>
     <div class="td-quiet" title="Days with God's Word: Time with God, or a chapter read">
-      This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word · ${w.chapters} chapter${w.chapters === 1 ? '' : 's'} ${FEATURES.family ? `· ${w.family} family devotion${w.family === 1 ? '' : 's'}` : ''}${streak > 1 ? ` · walking ${streak} days` : ''}
+      This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word · ${w.chapters} chapter${w.chapters === 1 ? '' : 's'} ${FEATURES.family ? `· ${w.family} family devotion${w.family === 1 ? '' : 's'}` : ''}
       ${FEATURES.reminders ? '<button class="linkish" data-td="remind">Gentle reminders…</button>' : ''}
     </div>`, 'm-today');
 }

@@ -186,7 +186,7 @@ async function chapterExtras() {
     if (!vn || vn.parentElement.querySelector('.pmark')) continue;
     const kinds = p.kinds.split(',');
     const quote = kinds.includes('quote');
-    vn.insertAdjacentHTML('afterend', `<span class="pmark${quote ? ' q' : ''}" title="${quote ? 'Old Testament quotation' : 'Parallel passage'} — see the Refs tab" aria-hidden="true">${quote ? '“' : '∥'}</span>`);
+    vn.insertAdjacentHTML('afterend', `<span class="pmark${quote ? ' q' : ''}" title="${quote ? 'Old Testament quotation' : 'Parallel passage'} — see Related verses" aria-hidden="true">${quote ? '“' : '∥'}</span>`);
   }
   const head = $('#readerInner .chapter-head');
   if (head && evs.length && !$('.ch-date', head)) {
@@ -713,7 +713,7 @@ function labelControls() {
     if (first) first.insertAdjacentHTML('afterend', `<section><h3>Study tools</h3><ul>
       <li><b>Ctrl+K</b> opens the command box: type a reference, a feature, a person, a journey or words from your notes.</li>
       <li><b>Devotional</b> (Today, or ${tsk.web ? 'Menu' : 'Go menu'}): Spurgeon's <i>Morning and Evening</i> for today. <b>Timeline</b>: Bible history in order; the chapter you are reading is marked.</li>
-      <li><b>‖</b> beside a verse number means the same event is told elsewhere; <b>“</b> means the New Testament quotes it or it quotes the Old. See the Refs tab, and <i>Side by side</i>.</li>
+      <li><b>‖</b> beside a verse number means the same event is told elsewhere; <b>“</b> means the New Testament quotes it or it quotes the Old. See Related verses, and <i>Side by side</i>.</li>
       <li><b>People</b> tab: the family of anyone named in the verse, with the verse for every link.</li>
       <li>Notes: <i>SOAP study</i> and <i>Prayer journal</i> templates; references you type (e.g. Rom 8:28) become links, and a verse shows which of your notes mention it.</li>
       <li><b>Plan › Reading progress</b>: every chapter you have read, as a map of the Bible.</li></ul></section>`);

@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '3.15.0';
+  const VERSION = '3.16.0';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -296,6 +296,7 @@
     },
     eastonEntry: async (key) => (await loadJson('easton.json', {}))[key] || null,
     bookIntro: async (id) => (await loadJson('bookintro.json', {}))[id] || null,
+    phrases: () => loadJson('phrases.json', []),
     paths: () => loadJson('paths.json', { paths: [] }),
     // after an update reaches this phone, show What's New once (not on a first install)
     whatsNewPending: async () => {

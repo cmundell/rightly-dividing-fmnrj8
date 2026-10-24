@@ -1142,6 +1142,57 @@ function shortGrammar(exp) {
   return vals.join(' · ');
 }
 
+// 3.16: the same grammar in plain words, for anyone who has not studied Greek or Hebrew
+// (Settings › Grammar shows the grammar terms instead: Aorist, Qal, Nominative …)
+function plainGrammar(exp) {
+  if (!exp) return '';
+  const g = {};
+  for (const m of exp.matchAll(/([A-Za-z][A-Za-z .]*?)\s*=\s*([^;()]+)/g)) g[m[1].trim()] = m[2].trim();
+  const fn = g.Function || '';
+  const who = (() => {
+    const p = { First: 1, '1st': 1, '1st Person': 1, Second: 2, '2nd': 2, '2nd Person': 2, '2nd Singular': 2, Third: 3, '3rd': 3 }[g.Person];
+    if (!p) return '';
+    const pl = g.Number === 'Plural';
+    return p === 1 ? (pl ? 'we' : 'I') : p === 2 ? (pl ? 'you (more than one)' : 'you (one person)') : pl ? 'they' : 'he, she or it';
+  })();
+  const parts = [];
+  if (fn === 'Verb') {
+    const form = g.Form || '';
+    const tense = { Present: 'happening now, or going on', Imperfect: 'going on in the past', Aorist: 'an action seen as a whole (often past)', '2nd Aorist': 'an action seen as a whole (often past)', Perfect: 'done, with results that last', '2nd Perfect': 'done, with results that last', Pluperfect: 'already done in the past', '2nd Pluperfect': 'already done in the past', Future: 'will happen', '2nd Future': 'will happen' }[g.Tense];
+    const hform = { Perfect: 'a completed action', Imperfect: 'an unfinished or future action', 'Consecutive Imperfect': '“and then …” — telling what happened next', 'Consecutive Perfect': '“and …” — what will follow', 'Conjunction+Imperfect': '“and …”, unfinished or future' }[form];
+    const stem = { Niphal: 'done to the subject (or to itself)', Piel: 'done with intensity', Pual: 'done with intensity, to the subject', Hiphil: 'causing it to happen', Hophal: 'caused to happen', Hithpael: 'done to oneself', Hitpael: 'done to oneself', Hitpaal: 'done to oneself', Hitpeel: 'done to oneself', Hishtaphel: 'done to oneself (bowing down)', Haphel: 'causing it to happen', Aphel: 'causing it to happen', Shaphel: 'causing it to happen', Tiphil: 'causing it to happen', Peil: 'done to the subject', Hothpaal: 'done to oneself', Nithpael: 'done to oneself', Ishtaphel: 'done to oneself' }[g.Stem];
+    if (form === 'Infinitive') parts.push('“to …”');
+    else if (form === 'Participle') parts.push(/Passive/.test(g.Voice || '') ? 'an “-ed” word' : 'an “-ing” word');
+    else if (form === 'Participle passive') parts.push('an “-ed” word');
+    else if (form === 'Imperative' || /^Imperative/.test(g.Mood || '')) parts.push('a command');
+    if (hform) parts.push(hform);
+    if (tense) parts.push(tense);
+    if (stem) parts.push(stem);
+    else if (!g.Stem) {
+      const v = (g.Voice || '').replace(')', '');
+      if (/^Passive$/.test(v)) parts.push('done to the subject');
+      else if (/^Middle$/.test(v)) parts.push('done by the subject, for itself');
+      else if (/^Middle or Passive$/.test(v)) parts.push('done by or to the subject');
+    }
+    const mood = { Subjunctive: 'what may or should happen', Optative: 'a wish or prayer', 'Jussive)': 'a wish: “let it …”', 'Cohortative)': '“let us …” or “let me …”' }[g.Mood];
+    if (mood) parts.push(mood);
+    if (who) parts.push(`subject: ${who}`);
+    return `Verb (an action word)${parts.length ? `: ${parts.join(' · ')}` : ''}`;
+  }
+  const kind = /pronoun/i.test(fn) ? 'Pronoun (stands for someone)' : fn === 'Noun' ? (g['Name type'] || g.Form === 'Proper' ? 'A name' : 'Noun (a naming word)')
+    : fn === 'Adjective' ? 'Adjective (a describing word)' : fn === 'Definite article' ? '“the”' : fn === 'Adverb' ? 'Adverb (how, when or where)'
+      : fn === 'Conjunction' ? 'Joining word' : fn === 'Preposition' ? 'Preposition (in, on, to, from …)' : /Particle/.test(fn) ? 'A small word (particle)' : fn === 'Interjection' ? 'An exclamation' : fn;
+  const cs = { Nominative: 'the subject', Accusative: 'the object', Genitive: '“of …”', Dative: '“to”, “for” or “with …”', Vocative: 'someone spoken to' }[g.Case];
+  if (cs) parts.push(cs);
+  if (g.State === 'Construct') parts.push('“… of”');
+  if (g.Number === 'Plural') parts.push('more than one');
+  else if (g.Number === 'Dual') parts.push('two');
+  if (g.Extra === 'Comparative') parts.push('“more …”');
+  if (g.Extra === 'Superlative') parts.push('“most …”');
+  return `${kind}${parts.length ? `: ${parts.join(' · ')}` : ''}`;
+}
+const grammarLine = (exp) => (state.settings.grammarTerms ? shortGrammar(exp) : plainGrammar(exp));
+
 // Override: word list with a grammar line per word
 function renderWordsPane() {
   const pane = $('#pane-words');
@@ -1162,7 +1213,7 @@ function renderWordsPane() {
       html.push(`<div class="wsrow${ws.selPos === w.pos ? ' on' : ''}" data-pos="${w.pos}" data-sn="${esc(w.strongs || '')}" title="${esc(w.def || '')}">
         <span class="gl">${esc(w.gloss)}</span><span class="og ${w.lang}">${esc(w.word)}</span>
         <span class="tl">${esc(w.translit)}</span>${strongChip(w.strongs)}
-        ${w.grammar ? `<span class="gr" title="${esc(w.morph || '')}: ${esc(w.grammar)}">${esc(shortGrammar(w.grammar))}</span>` : ''}</div>`);
+        ${w.grammar ? `<span class="gr" title="${esc(w.morph || '')}: ${esc(shortGrammar(w.grammar))}">${esc(grammarLine(w.grammar))}</span>` : ''}</div>`);
     }
   }
   html.push(`<div class="section-title">Webster's 1828 Dictionary</div>
@@ -1182,7 +1233,7 @@ async function showWordCard(word, rect, verseId, tokenIndex, tokenCount) {
     ${match ? `<div class="wc-label">Original word (best match)</div>
       <div class="wc-strong"><span class="og">${esc(match.word)}</span><i>${esc(match.translit)}</i>${strongChip(match.strongs)}
       <span class="d"><b>${esc(match.gloss)}</b> — ${esc(match.def || '')}</span>
-      ${match.grammar ? `<span class="d gr2">${esc(shortGrammar(match.grammar))}</span>` : ''}</div>` : ''}
+      ${match.grammar ? `<span class="d gr2" title="${esc(shortGrammar(match.grammar))}">${esc(grammarLine(match.grammar))}</span>` : ''}</div>` : ''}
     <div class="wc-label">Webster's 1828</div>
     ${d.headword ? `${d.headword !== word.toLowerCase() ? `<div class="hint">Entry: ${esc(d.headword.toUpperCase())}</div>` : ''}<div class="dict">${sanitize(d.html)}</div>` : `<div class="hint">No 1828 entry for “${esc(word)}”.</div>`}
     ${match && match.strongs ? `<button class="more" data-sn="${esc(match.strongs)}">Open ${esc(match.strongs)} word study</button>` : ''}`;
@@ -1277,7 +1328,7 @@ async function renderMarks() {
       .join('')}</div>` : '');
   const empty = view === 'hl'
     ? (lit.size ? 'Nothing matches.' : 'No highlights yet. Select a verse and pick a highlight color — highlighted verses are kept here, like bookmarks.')
-    : (noted.size ? 'Nothing matches.' : 'No notes yet. Select a verse and write a note on the Refs tab.');
+    : (noted.size ? 'Nothing matches.' : 'No notes yet. Tap a verse and choose Note — or write in the box under Related verses.');
   pane.innerHTML = `${head}
     <input id="markSearch" class="marksearch" placeholder="${view === 'hl' ? 'Search your highlighted verses' : 'Search your notes and tags'}" value="${esc(v3.markQuery)}" />` +
     (shown.length

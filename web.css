@@ -3,8 +3,8 @@
 #webSplash.done { opacity: 0; pointer-events: none; }
 .ws-card { max-width: 420px; text-align: center; }
 .ws-title { font-family: var(--scripture); font-size: 28px; color: var(--accent); margin-bottom: 14px; }
-.ws-verse { font-family: var(--scripture); font-size: 16px; line-height: 1.5; color: var(--ink); margin-bottom: 22px; }
-.ws-verse span { display: block; font: 12px var(--ui); color: var(--ink-soft); margin-top: 4px; }
+#webSplash .ws-verse { font-family: var(--scripture); font-size: 16px; line-height: 1.5; color: var(--ink); margin-bottom: 22px; }
+#webSplash .ws-verse span { display: block; font: 12px var(--ui); color: var(--ink-soft); margin-top: 4px; }
 .ws-bar { height: 6px; background: var(--chip); border-radius: 3px; overflow: hidden; }
 .ws-bar i { display: block; height: 100%; width: 2%; background: var(--accent); transition: width .2s; }
 .ws-msg { margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
@@ -112,3 +112,35 @@
 .wg-msg { color: #b3261e; min-height: 1.2em; font-size: 14px; }
 
 @keyframes wcUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 760px) {
+  .vb-guide { margin-left: auto; border: 0; background: color-mix(in srgb, var(--accent) 10%, var(--paper)); color: var(--accent); font: 600 12.5px var(--ui); border-radius: 14px; padding: 5px 10px; }
+  :root[data-theme='dark'] .vb-guide { color: var(--ink); }
+  .vb-head .vb-x { margin-left: 4px; }
+  .modal.m-guide .gd-foot { position: sticky; bottom: 0; background: var(--paper); padding: 10px 0 calc(6px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 760px) {
+  .tabs .t-long { display: none; }
+  .tabs .t-short { display: inline; }
+}
+/* 3.16: easier to tap on a phone — bigger buttons and chips */
+@media (max-width: 760px) {
+  .tabs button, .tabs .m-more { font-size: 14px; padding: 12px 10px; }
+  .xhead .actions button { min-height: 38px; padding: 6px 12px; font-size: 14px; border-radius: 8px; }
+  .xhead .actions .va-menu button { min-height: 42px; font-size: 15px; }
+  #pane-refs .ref, #pane-topics .ref, .wc-easton .ref { font-size: 14px; padding: 5px 9px; display: inline-block; margin: 2px 0; }
+  .v3tools .dot { width: 30px; height: 30px; }
+  .v3tools .tagin { font-size: 16px; min-height: 40px; }
+  .tagbar .tag { font-size: 14px; padding: 6px 11px; }
+  .linkbtn, .linkish { font-size: 14.5px; }
+  .comm-nav button, .ro-seg button, .ro-fonts button, .ro-size button { min-height: 40px; font-size: 14px; }
+  .tab-help { font-size: 13.5px; padding: 8px 14px; }
+  .tab-help .th-i { width: 28px; height: 28px; font-size: 15px; }
+  .modal-x { min-width: 44px; min-height: 44px; }
+}
+@media (max-width: 760px) {
+  .sg { position: fixed; left: 8px; right: 8px; width: auto; top: auto; max-height: 62vh; }
+  .sg-ch { height: 42px; font-size: 15px; }
+  .sg-chs { grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; }
+  .sg-item { padding: 11px 10px; font-size: 15.5px; }
+  .sg-foot { display: none; }
+}

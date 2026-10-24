@@ -336,7 +336,7 @@ function decorateWordsPane() {
     .map((w) => `<div class="ilw wsrow${ws.selPos === w.pos ? ' on' : ''}" data-pos="${w.pos}" data-sn="${esc(w.strongs || '')}" title="${esc(w.def || '')}">
       <div class="il-o ${w.lang}">${esc(w.word)}</div><div class="il-t">${esc(w.translit)}</div>
       <div class="il-g">${esc(w.gloss)}</div>${w.strongs ? `<div class="il-s">${esc(w.strongs)}</div>` : ''}
-      ${w.grammar ? `<div class="il-p">${esc(shortGrammar(w.grammar))}</div>` : ''}</div>`)
+      ${w.grammar ? `<div class="il-p" title="${esc(shortGrammar(w.grammar))}">${esc(grammarLine(w.grammar))}</div>` : ''}</div>`)
     .join('');
   const grid = `<div class="ilgrid${rtl ? ' rtl' : ''}">${cards}</div>${rtl ? '<div class="hint">Hebrew reads right to left.</div>' : ''}`;
   if (rows.length) {
@@ -350,10 +350,10 @@ function decorateWordsPane() {
   const placesStep = { el: '[data-tab="places"]', tab: 'places', title: 'Bible maps', text: 'The Places tab maps every place named in the chapter — places in the selected verse are highlighted. Scroll to zoom, drag to move, and click a place to see every verse that names it.' };
   const i = TOUR.findIndex((t) => t.title === 'Your trail');
   TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0, placesStep);
-  const refs = TOUR.find((t) => t.title === 'Cross-references');
+  const refs = TOUR.find((t) => t.title === 'Related verses');
   if (refs) refs.text += ' Switch to Map to see the references as a web, including the verses where they converge.';
-  const words = TOUR.find((t) => t.title === 'Word study');
-  if (words) words.text = 'Every Hebrew or Greek word with its Strong\'s number and grammar — as a list, or switch to Interlinear to see each word stacked with its meaning. Click a Strong\'s number for every verse that uses it. Double-click any word in the text for Webster\'s 1828 definition and Easton\'s Bible Dictionary.';
+  const words = TOUR.find((t) => t.title === 'Original words');
+  if (words) words.text = 'The Hebrew or Greek behind each English word: every word with its Strong\'s number and its grammar in plain words — as a list, or switch to Interlinear to see each word stacked with its meaning. Click a Strong\'s number for every verse that uses it. Double-click any word in the text for Webster\'s 1828 definition and Easton\'s Bible Dictionary.';
 }
 {
   const prevQS = window.openQuickStart;
@@ -362,8 +362,8 @@ function decorateWordsPane() {
     const first = $('#modal .qs section');
     if (first) first.insertAdjacentHTML('afterend', `<section><h3>Maps and views</h3><ul>
       <li><b>Places</b> tab: a map of every place named in the chapter; click a place for all the verses that name it.</li>
-      <li><b>Refs › Map</b>: the cross-references as a web around the verse, plus the verses where they converge. Click any verse to re-center.</li>
-      <li><b>Words › Interlinear</b>: each Hebrew or Greek word stacked with transliteration, meaning, Strong's number and grammar.</li></ul></section>`);
+      <li><b>Related verses › Map</b>: the cross-references as a web around the verse, plus the verses where they converge. Click any verse to re-center.</li>
+      <li><b>Original words › Interlinear</b>: each Hebrew or Greek word stacked with transliteration, meaning, Strong's number and grammar.</li></ul></section>`);
   };
 }
 
