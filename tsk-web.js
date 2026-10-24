@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '3.13.0';
+  const VERSION = '3.14.0';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -286,6 +286,16 @@
     landmarks: () => loadJson('landmarks.json', []),
     family: () => loadJson('family.json', { stories: [] }),
     gospel: () => loadJson('gospel.json', { steps: [], next: [] }),
+    // Easton's Bible Dictionary and the book introductions (3.14)
+    easton: async (word) => {
+      const d = await loadJson('easton.json', {});
+      const w = String(word || '').toLowerCase().replace(/[’']s$/, '').trim();
+      const tries = [w, w.replace(/ies$/, 'y'), w.replace(/es$/, ''), w.replace(/s$/, ''), `${w}s`, `${w}, book of`];
+      for (const k of tries) if (k && d[k]) return { key: k, ...d[k] };
+      return null;
+    },
+    eastonEntry: async (key) => (await loadJson('easton.json', {}))[key] || null,
+    bookIntro: async (id) => (await loadJson('bookintro.json', {}))[id] || null,
     paths: () => loadJson('paths.json', { paths: [] }),
     // after an update reaches this phone, show What's New once (not on a first install)
     whatsNewPending: async () => {

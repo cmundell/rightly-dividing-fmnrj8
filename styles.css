@@ -1202,3 +1202,38 @@ body.listening #readerInner { padding-bottom: 80px; }
 .nm-btns .primary-btn { font-size: 16px; padding: 9px 20px; }
 .nm-q { font-family: var(--scripture); font-size: 21px; margin: 6px 0 2px; color: var(--ink); }
 .nm-title { padding-right: 36px; margin-top: 8px; }
+
+/* v3.14: Easton's in the word card */
+.wordcard .wc-easton { font-family: var(--scripture); font-size: 15px; line-height: 1.55; }
+.wordcard .wc-easton p { margin: 0 0 8px; }
+.wordcard .wc-easton .ref, .bi-easton .ref { color: var(--link); cursor: pointer; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--link) 35%, transparent); text-underline-offset: 2px; white-space: nowrap; }
+.wordcard .wc-easton .linkish { font-family: var(--ui); font-size: 13px; }
+/* v3.14: About this book */
+.bi-link { display: block; border: 0; background: none; padding: 0; margin: -10px 0 16px; color: var(--link); font: 13px var(--ui); cursor: pointer; letter-spacing: .02em; }
+.bi-link:hover { text-decoration: underline; }
+.modal.m-bookintro .modal-card { width: min(680px, 100%); }
+.bi-facts { display: grid; grid-template-columns: 110px 1fr; gap: 8px 16px; margin: 8px 0 14px; }
+.bi-facts dt { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); font-weight: 700; padding-top: 2px; }
+.bi-facts dd { margin: 0; line-height: 1.5; }
+.bi-key .linkish { font: inherit; }
+.bi-outline { margin: 6px 0 14px; padding-left: 22px; }
+.bi-outline li { margin: 2px 0; }
+.bi-outline button { border: 0; background: none; padding: 5px 0; text-align: left; color: var(--ink); font: inherit; cursor: pointer; line-height: 1.4; }
+.bi-outline button:hover { color: var(--accent); }
+.bi-ch { display: block; font-size: 12px; color: var(--ink-soft); letter-spacing: .03em; }
+.bi-easton { margin: 4px 0 10px; }
+.bi-easton summary { cursor: pointer; color: var(--link); font-size: 14px; padding: 6px 0; }
+.bi-easton .eb-body { font-family: var(--scripture); line-height: 1.6; }
+.bi-note { margin-top: 14px; }
+/* v3.14: Settings */
+.section-title.st-first { margin-top: 4px; }
+.st-name input { width: 100%; max-width: 320px; box-sizing: border-box; font-size: 15px; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); color: var(--ink); }
+.st-notes .hint { margin: 4px 0 10px; }
+.st-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.st-btns button { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 7px 12px; cursor: pointer; font: inherit; font-size: 14px; }
+.st-btns button:hover { background: var(--sel); }
+@media (max-width: 760px) {
+  .bi-facts { grid-template-columns: 1fr; gap: 2px; }
+  .bi-facts dd { margin-bottom: 8px; }
+  .ro-grid.st-grid { grid-template-columns: 1fr; }
+}
