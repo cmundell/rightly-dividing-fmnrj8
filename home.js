@@ -598,25 +598,56 @@ const eastonHtml = (entry, all) => {
 }
 
 // ---------------------------------------------------------------- About this book
+// The five questions, answered only in quotations: Scripture where the book speaks for itself, then the published
+// introductions (tools/build_bookabout.py). Then Matthew Henry's outline and Easton's article.
+const BA_QS = [
+  ['who', 'Who wrote it?', ''],
+  ['to', 'Who received it?', 'The original audience'],
+  ['rel', 'How do the author and readers relate?', ''],
+  ['occ', 'Occasion', 'What prompted the author to write'],
+  ['purpose', 'Purpose', 'What the author meant it to do'],
+];
+const BA_SRC = { jfb: 'Jamieson, Fausset & Brown', berkhof: 'Louis Berkhof' };
 async function openBookIntro(bookId) {
-  const d = await tsk.bookIntro(bookId);
+  const [d, mh, ba] = await Promise.all([tsk.bookIntro(bookId), tsk.mhIntro(bookId), tsk.bookAbout(bookId)]);
   const bk = state.books[bookId - 1];
-  if (!d || !bk) return;
-  const [kv] = d.k ? await tsk.versesByIds([d.k]) : [];
-  const ch = (a, b) => (a === b ? `${a}` : `${a}–${b}`);
+  if (!bk) return;
+  const label = (k) => BA_QS.find((q) => q[0] === k)[1];
+  const order = BA_QS.map((q) => q[0]);
+  const answer = (k, items) => {
+    if (!items.length) return '<p class="ba-none">Not stated in Scripture or these introductions.</p>';
+    const out = [];
+    let run = null;
+    for (const x of items) {
+      if (x.src === 'kjv') {
+        run = null;
+        out.push(`<blockquote class="ba-kjv">“${esc(x.text)}” <button class="linkish" data-bi-go="${x.s}" data-bi-end="${x.e}">${esc(x.ref)}</button></blockquote>`);
+      } else if (x.src === 'see') {
+        run = null;
+        out.push(`<p class="ba-see">See “${esc(label(x.q))}” ${order.indexOf(x.q) < order.indexOf(k) ? 'above' : 'below'}.</p>`);
+      } else {
+        // consecutive sentences from the same introduction read as one quotation
+        if (!run || run.src !== x.src || !x.join) out.push((run = { src: x.src, paras: [[]] }));
+        else if (x.join === 'para') run.paras.push([]);
+        else if (x.join === 'gap') run.paras[run.paras.length - 1].push('…');
+        run.paras[run.paras.length - 1].push(x.text);
+      }
+    }
+    return out.map((o) => (typeof o === 'string' ? o : `<blockquote class="ba-intro">${o.paras.map((p, i) => `<p>${i ? '' : '“'}${p.map(esc).join(' ')}${i === o.paras.length - 1 ? '”' : ''}</p>`).join('')}<cite>${esc(BA_SRC[o.src] || o.src)}</cite></blockquote>`)).join('');
+  };
+  const outline = mh ? Object.entries(mh.outline || {}).map(([c, items]) => [Number(c), items]).sort((x, y) => x[0] - y[0]) : [];
+  const allChapters = Array.from({ length: bk.chapters }, (_, i) => i + 1);
   const single = bk.chapters === 1;
+  const used = ba ? [...new Set(Object.values(ba.q).flat().map((x) => x.src))] : [];
   openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2>
-    <dl class="bi-facts">
-      <dt>Written by</dt><dd>${esc(d.a)}</dd>
-      <dt>When</dt><dd>${esc(d.w)}</dd>
-      <dt>Written to</dt><dd>${esc(d.to)}</dd>
-      <dt>Theme</dt><dd>${esc(d.th)}</dd>
-    </dl>
-    ${kv ? `<blockquote class="td-invite bi-key">“${esc(kv.text)}” <span><button class="linkish" data-bi-go="${kv.id}">${esc(kv.label)}</button></span></blockquote>` : ''}
-    <div class="section-title">Outline</div>
-    <ol class="bi-outline">${d.o.map(([a, b, t]) => `<li><button data-bi-ch="${a}">${single ? '' : `<span class="bi-ch">${bookId === 19 ? (a === b ? 'Psalm' : 'Psalms') : a === b ? 'Chapter' : 'Chapters'} ${ch(a, b)}</span>`}${esc(t)}</button></li>`).join('')}</ol>
-    ${d.e ? `<details class="bi-easton"><summary>Read more in Easton's Bible Dictionary</summary><div class="eb-body" data-key="${esc(d.e)}"><p class="hint">Loading…</p></div></details>` : ''}
-    <p class="hint bi-note">Where Scripture does not name the writer, this says so and gives the traditional view.</p>`, 'm-bookintro');
+    ${ba ? `<div class="ba-qs">${BA_QS.map(([k, t, sub]) => `<section class="ba-q${ba.q[k].length ? '' : ' empty'}"><h3>${esc(t)}${sub ? ` <span>${esc(sub)}</span>` : ''}</h3>${answer(k, ba.q[k])}</section>`).join('')}</div>` : ''}
+    <div class="section-title">Outline <span class="bi-by">Matthew Henry</span></div>
+    <ol class="bi-outline bi-mh-outline">${allChapters.map((c) => {
+      const items = (outline.find((o) => o[0] === c) || [])[1] || [];
+      return `<li value="${c}"><button data-bi-ch="${c}" class="bi-chh">${single ? 'The whole book' : `${bookId === 19 ? 'Psalm' : 'Chapter'} ${c}`}</button>${items.length ? `<ul>${items.map(([t, a, z]) => `<li><button data-bi-ch="${c}" data-bi-vs="${a || ''}">${esc(t)}${a ? ` <span class="bi-vs">${a === z ? `v. ${a}` : `vv. ${a}–${z}`}</span>` : ''}</button></li>`).join('')}</ul>` : ''}</li>`;
+    }).join('')}</ol>
+    ${d && d.e ? `<details class="bi-easton"><summary>Read more in Easton's Bible Dictionary</summary><div class="eb-body" data-key="${esc(d.e)}"><p class="hint">Loading…</p></div></details>` : ''}
+    <p class="hint bi-note">Every answer is a quotation, word for word: the King James Version${used.includes('jfb') ? `; Jamieson, Fausset & Brown, <i>Commentary Critical and Explanatory on the Whole Bible</i> (1871), ${esc(ba.jfb === 'Introduction' ? 'introduction to this book' : ba.jfb.replace(/^Introduction/, 'introduction'))}` : ''}${used.includes('berkhof') ? '; Louis Berkhof, <i>Introduction to the New Testament</i> (1915)' : ''}. Outline from Matthew Henry's Concise Commentary; Easton's Bible Dictionary (1897).</p>`, 'm-bookintro');
   $('#modal').dataset.book = bookId;
 }
 $('#modal').addEventListener('click', (e) => {
@@ -628,8 +659,9 @@ $('#modal').addEventListener('click', (e) => {
   if (!c && !v && !r) return;
   closeModal();
   toReading();
-  if (c) go({ book, ch: Number(c.dataset.biCh) });
-  else if (v) go({ id: Number(v.dataset.biGo) });
+  if (c && c.dataset.biVs) go({ book, ch: Number(c.dataset.biCh), vs: Number(c.dataset.biVs) });
+  else if (c) go({ book, ch: Number(c.dataset.biCh) });
+  else if (v) go({ id: Number(v.dataset.biGo), endId: v.dataset.biEnd ? Number(v.dataset.biEnd) : undefined });
   else go({ id: Number(r.dataset.s), endId: Number(r.dataset.e) });
 });
 $('#modal').addEventListener('toggle', async (e) => {
@@ -1041,8 +1073,11 @@ $('#modal').addEventListener('click', (e) => {
     return h;
   };
   async function bookCard(b, ch) {
-    if (!(b.id in introCache)) introCache[b.id] = await tsk.bookIntro(b.id).catch(() => null);
-    const intro = introCache[b.id];
+    if (!(b.id in introCache)) introCache[b.id] = await tsk.mhIntro(b.id).catch(() => null);
+    const mh = introCache[b.id];
+    // the first sentence of Matthew Henry's introduction
+    const first = mh && mh.intro && mh.intro[0] ? (mh.intro[0].replace(/<[^>]+>/g, '').match(/^.{20,220}?[.;:](\s|$)/) || [mh.intro[0].slice(0, 160) + '…'])[0].trim() : '';
+    const intro = first ? { th: first } : null;
     const read = state.readlog && state.readlog.chapters ? state.readlog.chapters : {};
     const nRead = Array.from({ length: b.chapters }, (_, i) => read[`${b.id}:${i + 1}`]).filter(Boolean).length;
     const label = b.id === 19 ? 'Psalm' : 'Chapter';

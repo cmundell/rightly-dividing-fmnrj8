@@ -213,7 +213,7 @@ document.addEventListener('click', (e) => {
 const MENU = [
   ['Study', [
     ...(FEATURES.today === false ? [['Time with God', () => beginWalk()], ['Memory verses', () => showMarksView('memory')], ['Medallions', () => openMedals()]] : []),
-    ['The gospel', () => openGospel()],
+    ['The Gospel', () => openGospel()],
     ['Study methods', () => openStudyChooser()],
     ['About this book', () => openBookIntro(state.cur.book)],
     ['Timeline', () => openTimeline()],
@@ -263,6 +263,8 @@ function openAbout() {
       <li>Strong's dictionaries: James Strong (1894, public domain); JSON edition by Open Scriptures, CC BY-SA.</li>
       <li>Webster's American Dictionary of the English Language (1828, public domain); transcription by akaitsurugi, CC BY-SA 4.0.</li>
       <li>Easton's Bible Dictionary (1897, public domain); CCEL text as prepared by NEUU (github.com/neuu-org/bible-dictionary-dataset), CC BY 4.0.</li>
+      <li>About this book: Jamieson, Fausset &amp; Brown, Commentary Critical and Explanatory (1871, public domain), CrossWire SWORD module JFB; Louis Berkhof, Introduction to the New Testament (1915, public domain).</li>
+      <li>The Gospel: "Witness Assist", Teays Valley Baptist (teaysvalleybaptist.com/witnessassist.html).</li>
       <li>Nave's Topical Bible (public domain), and Hitchcock's Bible Names: BibleData by Brady Stephenson, CC BY 4.0.</li>
       <li>Matthew Henry's Concise Commentary (public domain), CrossWire SWORD module.</li>
       <li>Morning and Evening: C. H. Spurgeon (1866, public domain).</li>
@@ -290,7 +292,7 @@ const PHONE_TOUR = [
     ? { el: '#mNav [data-mn="search"]', title: 'Search', text: 'Search the whole Bible for words or phrases, and see the results with a chart of where they occur.', before: () => setView('read') }
     : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Time with God, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'} and medallions.`, before: () => setView('read') },
   { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from Menu › Settings now and then.' },
-  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Time with God, memory verses, medallions, ' : ''}The gospel, study methods, an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
+  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Time with God, memory verses, medallions, ' : ''}The Gospel, study methods, an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
   { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },
 ];
 if (isPhone()) {
