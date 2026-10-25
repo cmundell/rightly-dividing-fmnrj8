@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -81,8 +81,8 @@
   }
 
   // the database is kept in its own offline cache, saved once after the first download
-  const DBFILE = 'data/tsk-db-7aa6a5a59f.gz';
-  const DBPARTS = ["data/tsk-db-7aa6a5a59f.gz.1", "data/tsk-db-7aa6a5a59f.gz.2", "data/tsk-db-7aa6a5a59f.gz.3"];
+  const DBFILE = 'data/tsk-db-00995440ba.gz';
+  const DBPARTS = ["data/tsk-db-00995440ba.gz.1", "data/tsk-db-00995440ba.gz.2", "data/tsk-db-00995440ba.gz.3"];
   async function loadDbFile() {
     const cached = 'caches' in window ? await caches.match(DBFILE) : null;
     if (cached) {

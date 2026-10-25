@@ -1,7 +1,7 @@
 'use strict';
 /* Web edition front end: a phone layout (one screen at a time, a bar of five buttons at the bottom),
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
-/* global tsk, state, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
+/* global tsk, state, go, dataTr, multi, clearMulti, highlightSelected, markSelection, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
    openProgress, openStudyChooser, openGospel, showMarksView, openReadingOptions, toggleTheme,
    openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES */
 
@@ -16,7 +16,7 @@ document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria
   <button data-mn="notes"><span class="mi">&#9998;</span>Notes</button>
   <button data-mn="menu"><span class="mi">&#9776;</span>Menu</button></nav>
   <div id="mStudyPill" class="m-vbar" hidden role="toolbar" aria-label="This verse">
-    <div class="vb-head"><span class="vb-ref"></span><button class="vb-guide" data-va="guide">Study it step by step ›</button><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
+    <div class="vb-head"><span class="vb-ref"></span><button class="vb-guide" data-va="guide">Study it step by step ›</button><button class="vb-more" data-va="multi">Select more</button><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
     <div class="vb-hl" hidden>${HL_COLORS.map((c) => `<button class="dot hl-${c}" data-va="hl" data-c="${c}" aria-label="${c}"></button>`).join('')}<button class="dot none" data-va="hl" data-c="" aria-label="No highlight">&times;</button></div>
     <div class="vb-row">
       <button data-va="highlight"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-9 9H6v-5z"/><path d="M4 21h16"/></svg>Highlight</button>
@@ -104,7 +104,11 @@ function paintVerseBar() {
   const x = state.xref;
   if (!x) return;
   const id = x.verse.id;
-  $('.vb-ref', vbar).textContent = x.verse.label;
+  const n = multi.ids.size || 1;
+  vbar.classList.toggle('vb-multi', multi.mode);
+  $('.vb-ref', vbar).textContent = multi.mode ? `${n} verse${n === 1 ? '' : 's'} — tap more` : x.verse.label;
+  $('.vb-more', vbar).textContent = multi.mode ? 'Done' : 'Select more';
+  if (multi.mode) $('.vb-hl', vbar).hidden = false;
   const hl = state.highlights[id];
   $$('.vb-hl .dot', vbar).forEach((d) => d.classList.toggle('on', d.dataset.c === (hl || '')));
   $('[data-va="memory"]', vbar).classList.toggle('on', !!state.memory[id]);
@@ -113,6 +117,7 @@ function paintVerseBar() {
   $('[data-va="note"]', vbar).classList.toggle('on', !!state.notes[id]);
 }
 const hideVerseBar = () => {
+  if (multi.mode) clearMulti();
   vbar.hidden = true;
   $('.vb-hl', vbar).hidden = true;
 };
@@ -137,7 +142,7 @@ const hideVerseBar = () => {
     }
   }).observe(vbar, { attributes: true, attributeFilter: ['hidden'] });
   $('#reader').addEventListener('scroll', () => {
-    if (vbar.hidden || Date.now() - shownAt < 900) return;
+    if (vbar.hidden || multi.mode || Date.now() - shownAt < 900) return;
     const y = $('#reader').scrollTop;
     if (y0 === null) y0 = y;
     else if (Math.abs(y - y0) > 160) hideVerseBar();
@@ -149,16 +154,30 @@ vbar.addEventListener('click', async (e) => {
   const v = state.xref.verse;
   const text = `${v.label} (KJV) ${v.text}`;
   switch (b.dataset.va) {
-    case 'close': return hideVerseBar();
+    case 'close':
+      if (multi.ids.size) clearMulti();
+      return hideVerseBar();
+    case 'multi':
+      if (multi.mode) {
+        clearMulti();
+        return paintVerseBar();
+      }
+      multi.mode = true;
+      multi.ids.clear();
+      multi.ids.add(v.id);
+      markSelection();
+      return paintVerseBar();
     case 'guide':
       hideVerseBar();
       return startGuide(v.id);
     case 'highlight': $('.vb-hl', vbar).hidden = !$('.vb-hl', vbar).hidden; return;
-    case 'hl':
-      setHighlight(v.id, b.dataset.c);
+    case 'hl': {
+      const n = highlightSelected(v.id, b.dataset.c);
+      if (multi.ids.size) clearMulti();
       paintVerseBar();
       $('.vb-hl', vbar).hidden = true;
-      return toast(b.dataset.c ? 'Highlighted' : 'Highlight removed');
+      return toast(b.dataset.c ? (n > 1 ? `${n} verses highlighted` : 'Highlighted') : (n > 1 ? `Highlight removed from ${n} verses` : 'Highlight removed'));
+    }
     case 'note':
       hideVerseBar();
       setView('study');
@@ -202,11 +221,76 @@ vbar.addEventListener('click', async (e) => {
       switchTab(studyTab === 'marks' ? 'refs' : studyTab);
   }
 });
+document.addEventListener('multisel', () => !vbar.hidden && paintVerseBar());
+// a passage chosen in Compare opens on the reading screen
+document.addEventListener('click', (e) => {
+  if (isPhone() && e.target.closest('#modal.m-cmp [data-dvgo]')) setTimeout(() => setView('read'), 50);
+}, true);
 // following a reference from the study screen goes back to the text
 document.addEventListener('click', (e) => {
   if (!isPhone() || !document.body.classList.contains('m-study')) return;
   const r = e.target.closest('#study .hit, #study [data-go], #study .mark .lab, #study .mem-go');
   if (r) setTimeout(() => setView('read'), 50);
+}, true);
+
+// ---------------------------------------------------------------- following references on the study screen
+// Related: tapping a reference studies that verse; a button at the top goes back to the verse you came from
+// (and back again, one step at a time).
+{
+  const back = []; // verse ids, most recent last
+  let following = false;
+  document.addEventListener('click', (e) => {
+    if (!isPhone() || !state.xref) return;
+    const sb = e.target.closest('.study-back');
+    if (sb) {
+      e.stopPropagation();
+      following = true;
+      go({ id: back.pop() });
+      return;
+    }
+    if (e.target.closest('#pane-refs .ref')) {
+      back.push(state.xref.verse.id);
+      following = true;
+    }
+  }, true);
+  const prev = window.v3OnVerse;
+  window.v3OnVerse = (id, x) => {
+    if (prev) prev(id, x);
+    if (!following) back.length = 0; // a verse chosen some other way starts afresh
+    following = false;
+    while (back.length && back[back.length - 1] === id) back.pop();
+    if (!back.length) return;
+    const to = back[back.length - 1];
+    tsk.versesByIds([to]).then(([v]) => {
+      if (!v || !state.xref || state.xref.verse.id !== id || $('#pane-refs .study-back')) return;
+      $('#pane-refs').insertAdjacentHTML('afterbegin', `<button class="study-back">&#8249; Back to ${esc(v.label)}</button>`);
+    });
+  };
+}
+// Topics: tapping a reference opens its words right there, with a way to read it in the Bible
+document.addEventListener('click', async (e) => {
+  if (!isPhone()) return;
+  const go1 = e.target.closest('#pane-topics .t-go');
+  const r = e.target.closest('#pane-topics .ref');
+  if (!go1 && !r) return;
+  e.stopPropagation();
+  if (go1 || r.closest('.refrow')) {
+    const el = go1 || r;
+    await go({ id: Number(el.dataset.s), endId: Number(el.dataset.e) });
+    switchTab('topics');
+    return setView('read');
+  }
+  const line = r.closest('.tline');
+  const open = line.querySelector('.t-open');
+  const same = open && open.dataset.s === r.dataset.s;
+  if (open) open.remove();
+  $$('#pane-topics .ref.on').forEach((x) => x.classList.remove('on'));
+  if (same) return;
+  r.classList.add('on');
+  const p = await tsk.passage(Number(r.dataset.s), Number(r.dataset.e), dataTr());
+  const multi = p.verses.length > 1;
+  line.insertAdjacentHTML('beforeend', `<div class="refrow t-open" data-s="${r.dataset.s}"><b>${esc(p.label)}</b> ${p.verses.map((v) => (multi ? `<sup>${v.vs}</sup>` : '') + esc(v.text)).join(' ')}${p.truncated ? ' …' : ''}
+    <button class="t-go" data-s="${r.dataset.s}" data-e="${r.dataset.e}">Read it in the Bible &#8250;</button></div>`);
 }, true);
 
 // ---------------------------------------------------------------- Menu
@@ -216,6 +300,7 @@ const MENU = [
     ['The Gospel', () => openGospel()],
     ['Study methods', () => openStudyChooser()],
     ...(ABOUT_ON ? [['About this book', () => openBookIntro(state.cur.book)]] : []),
+    ['Compare passages', () => openCompare()],
     ['Timeline', () => openTimeline()],
     ['Reading progress', () => openProgress()],
     ['Search everything…', () => openCmdk()],

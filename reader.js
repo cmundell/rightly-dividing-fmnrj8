@@ -140,6 +140,7 @@ async function go(loc, { push = true } = {}) {
   const changed = book !== state.cur.book || ch !== state.cur.ch || !state.chapter;
   state.cur = { book, ch, sel: selId, range };
   if (changed) {
+    if (multi.ids.size) clearMulti();
     fillChapters();
     await renderChapter();
   } else {
@@ -208,11 +209,44 @@ function refreshMarkIcons(id) {
   ($('.kjvcol', el) || el).insertAdjacentHTML('beforeend', markIcons(id));
 }
 
+// Several verses at once: Ctrl+click on Windows, or "Select more" on a phone. A highlight then colours them all.
+const multi = { ids: new Set(), mode: false };
+const hlTargets = (id) => (multi.ids.size > 1 && multi.ids.has(id) ? [...multi.ids].sort((a, b) => a - b) : [id]);
+function highlightSelected(id, color) {
+  const ids = hlTargets(id);
+  ids.forEach((i) => setHighlight(i, color));
+  return ids.length;
+}
+function clearMulti() {
+  multi.ids.clear();
+  multi.mode = false;
+  markSelection();
+  document.dispatchEvent(new CustomEvent('multisel'));
+}
+function toggleMulti(id) {
+  if (!multi.ids.size && state.cur.sel) multi.ids.add(state.cur.sel);
+  if (multi.ids.has(id) && multi.ids.size > 1) {
+    multi.ids.delete(id);
+    if (id === state.cur.sel) {
+      state.cur.sel = Math.max(...multi.ids);
+      showRefs(state.cur.sel);
+    }
+  } else if (!multi.ids.has(id)) {
+    multi.ids.add(id);
+    state.cur.sel = id;
+    showRefs(id);
+  }
+  state.cur.range = null;
+  markSelection();
+  document.dispatchEvent(new CustomEvent('multisel'));
+}
+
 function markSelection() {
   const { sel, range } = state.cur;
   $$('.verse').forEach((el) => {
     const id = Number(el.dataset.id);
     el.classList.toggle('sel', id === sel);
+    el.classList.toggle('msel', multi.ids.size > 1 && multi.ids.has(id) && id !== sel);
     el.classList.toggle('range', !!range && id >= range[0] && id <= range[1] && id !== sel);
   });
 }
@@ -274,6 +308,7 @@ async function showRefs(id) {
         <button data-act="copyRefs">Copy references</button>
         <button data-act="expandAll" class="${state.settings.expandAll ? 'on' : ''}">Show verse text for all references</button>
         <button data-act="addTags">Add tags…</button>
+        <button data-act="compare">Compare with other passages…</button>
         <a class="va-link" href="${blbUrl(v.label)}" target="_blank" rel="noopener" title="Opens in your web browser (needs the internet)">Commentary at Blue Letter Bible ↗</a>
       </div>
     </div>`);
@@ -428,6 +463,13 @@ function wire() {
     const v = e.target.closest('.verse');
     if (v) {
       const id = Number(v.dataset.id);
+      if ((e.ctrlKey || e.metaKey || multi.mode) && state.cur.sel) {
+        const first = multi.ids.size < 2;
+        toggleMulti(id);
+        if (first && multi.ids.size === 2 && !multi.mode) toast('2 verses chosen — pick a highlight colour to mark them all');
+        return;
+      }
+      if (multi.ids.size) clearMulti();
       state.cur.sel = id;
       state.cur.range = null;
       markSelection();
@@ -491,6 +533,7 @@ function wire() {
       navigator.clipboard.writeText(`${state.xref.verse.label} (${trLabel()}) ${state.xref.verse.text}`);
       toast('Verse copied');
     }
+    if (act.dataset.act === 'compare') return openCompare(id);
     if (act.dataset.act === 'copyRefs') {
       const lines = [state.xref.verse.label];
       state.xref.groups.forEach((g, i) => lines.push(`${i + 1}. ${g.anchor}: ${g.refs.map((r) => r.label).join('; ')}`));
@@ -565,6 +608,7 @@ function wire() {
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
     if (e.key === 'Escape') {
       hidePreview();
+      if (multi.ids.size) clearMulti();
       if (typing) document.activeElement.blur();
       return;
     }
@@ -1070,23 +1114,38 @@ function topicChip(t) {
 async function openTopic(id) {
   v3.topic = await tsk.naveTopic(id);
   v3.topicView = 'topic';
+  await renderTopic();
+  $('#pane-topics').scrollTop = 0;
+  switchTab('topics');
+}
+
+// A topic's references as chips, or (Show verse text) each with the words of its first verse.
+async function renderTopic() {
   const t = v3.topic;
+  const showText = !!state.settings.topicText;
+  let texts = new Map();
+  if (showText) {
+    const ids = [...new Set(t.lines.flatMap((l) => l.refs.map((r) => r.start)))];
+    texts = new Map((await tsk.versesByIds(ids)).map((v) => [v.id, v.text]));
+    if (v3.topic !== t) return; // moved on
+  }
   const lines = t.lines
     .map((l) => {
-      const refs = l.refs.map((r) => `<span class="ref" data-s="${r.start}" data-e="${r.end}">${esc(r.label)}</span>`).join('');
+      const refs = showText
+        ? l.refs.map((r) => `<div class="refrow">${chip(r)}${esc(texts.get(r.start) || '')}${r.end > r.start ? ' …' : ''}</div>`).join('')
+        : l.refs.map(chip).join('');
       const head = !l.refs.length;
       return `<div class="tline${head ? ' head' : ''}" style="margin-left:${Math.min(l.depth, 4) * 18}px">
-        ${l.text ? `<span class="tt">${esc(l.text)}</span>` : ''}${refs ? `<span class="refs">${refs}</span>` : ''}</div>`;
+        ${l.text ? `<span class="tt">${esc(l.text)}</span>` : ''}${refs ? `<span class="${showText ? 'reflist' : 'refs'}">${refs}</span>` : ''}</div>`;
     })
     .join('');
   $('#pane-topics').innerHTML = `
     <button class="backlink" data-act="topicBack">&#8592; Back to topics</button>
     <div class="kicker">Nave’s Topical Bible</div>
     <h2 class="topic-title">${esc(t.subject)}</h2>
-    <div class="sub">${t.refs.toLocaleString()} references · hover to preview, click to read</div>
+    <div class="sub">${t.refs.toLocaleString()} references · <span class="t-hint">${window.matchMedia('(max-width: 760px)').matches ? 'tap one to read it' : 'hover to preview, click to read'}</span>
+      <button class="exp t-exp" data-act="topicText">${showText ? 'hide text' : 'show text'}</button></div>
     <div class="tlines">${lines}</div>`;
-  $('#pane-topics').scrollTop = 0;
-  switchTab('topics');
 }
 
 // ===================================================================== grammar in word study
@@ -1249,7 +1308,7 @@ function helpHtml() {
     <p><code>G26 -love</code> — where <i>agapē</i> is translated some other way (e.g. “charity”)</p>
     <p>Word endings are matched loosely, so <code>love</code> also finds <i>loved</i> and <i>loveth</i>.</p>
     <p><b>Go to</b> box: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</p>
-    <p><b>Keys</b>: ↑/↓ verses · Ctrl+←/→ chapter · Alt+←/→ back/forward · Ctrl+1–7 tabs · Ctrl+P study sheet · double-click a word for its card.</p>
+    <p><b>Keys</b>: ↑/↓ verses · Ctrl+←/→ chapter · Alt+←/→ back/forward · Ctrl+click to choose several verses · Ctrl+1–7 tabs · Ctrl+P study sheet · double-click a word for its card.</p>
   </div>`;
 }
 
@@ -1396,7 +1455,7 @@ function wireV3() {
   // highlight + tags (refs pane)
   $('#pane-refs').addEventListener('click', (e) => {
     const d = e.target.closest('.v3tools .dot');
-    if (d && state.xref) setHighlight(state.xref.verse.id, d.dataset.hl);
+    if (d && state.xref) highlightSelected(state.xref.verse.id, d.dataset.hl);
   });
   $('#pane-refs').addEventListener('change', (e) => {
     if (e.target.classList.contains('tagin')) setTags(Number(e.target.dataset.id), e.target.value);
@@ -1437,6 +1496,12 @@ function wireV3() {
     const t = e.target.closest('[data-topic]');
     if (t) return openTopic(Number(t.dataset.topic));
     if (e.target.closest('[data-act="topicBack"]')) return renderTopicList();
+    if (e.target.closest('[data-act="topicText"]')) {
+      state.settings.topicText = !state.settings.topicText;
+      saveUser(['settings']);
+      const y = $('#pane-topics').scrollTop;
+      return renderTopic().then(() => ($('#pane-topics').scrollTop = y));
+    }
     const r = e.target.closest('.ref');
     if (r) {
       hidePreview();

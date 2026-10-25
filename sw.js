@@ -1,6 +1,6 @@
 'use strict';
 // Keeps Rightly Dividing working offline. The cache name changes with every release.
-const CACHE = 'sts-1.0.0-8537d8b690';
+const CACHE = 'sts-1.1.0-1924384f66';
 const SHELL = ["./", "CHANGELOG.html", "data/basemap.json", "data/gospel.json", "data/journeys.json", "data/landmarks.json", "data/phrases.json", "data/relief.jpg", "data/tidwell.json", "features.js", "home.js", "icon-180.png", "icon-192.png", "icon-512.png", "index.html", "lib/cjs-shim.js", "lib/db.js", "lib/docx.js", "lib/jszip.min.js", "lib/sql-wasm-browser.js", "lib/sql-wasm-browser.wasm", "manifest.webmanifest", "maps.js", "reader.js", "refparse.js", "robots.txt", "study.js", "styles.css", "tools.js", "tsk-web.js", "walk.js", "web.css", "web.js"];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

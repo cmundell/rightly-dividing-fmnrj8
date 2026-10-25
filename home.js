@@ -217,6 +217,20 @@ const toReading = () => typeof setView === 'function' && onPhone() && setView('r
 // silent, C. I. Scofield's line (1917); where neither says, "Not stated." (data: tools/build_tidwell.py)
 const BK_Q = [['author', 'Author'], ['audience', 'Audience'], ['relationship', 'Relationship'], ['occasion', 'Occasion'], ['purpose', 'Purpose']];
 const bkJoin = (xs) => (xs.length < 2 ? xs[0] : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+// Author and Audience at a glance: the Bible's own answer with its verse; where the book does not say, the traditional
+// view from Easton's Bible Dictionary (1897). (data: tools/build_glance.py)
+const bkRefs = (rs) => (rs.length ? ` <span class="bk-grefs">${rs.map((r) => `<span class="ref" data-s="${r.s}" data-e="${r.e}">${esc(r.label)}</span>`).join('')}</span>` : '');
+function bkGlance(g) {
+  if (!g) return '';
+  const line = (label, said, refs, trad) => {
+    const tr = (t) => (/^(Uncertain|Unknown)/.test(t) ? `${esc(t)}.` : `Traditionally ${esc(t)}.`);
+    const ans = said
+      ? `${esc(said)}${bkRefs(refs)}${trad ? `<div class="bk-trad">${tr(trad)} <span class="bk-by">(Easton)</span></div>` : ''}`
+      : `<span class="bk-none">Not named in the book.</span>${trad ? ` ${tr(trad)} <span class="bk-by">(Easton)</span>` : ''}${refs.length ? `<div class="bk-trad">See${bkRefs(refs)}</div>` : ''}`;
+    return `<div class="bk-gl"><div class="bk-gk">${label}</div><div class="bk-gv">${ans}</div></div>`;
+  };
+  return `<div class="bk-glance">${line('Author', g.author, g.authorRefs, g.authorTrad)}${line('Audience', g.audience, g.audienceRefs, g.audienceTrad)}</div>`;
+}
 const bkSec = (s) => `<p>${s.h ? `<b class="bk-h">${esc(s.h)}${esc(s.sep || '.')}</b> ` : ''}${s.html}</p>`;
 async function openBookIntro(bookId) {
   const bk = state.books[bookId - 1];
@@ -242,6 +256,8 @@ async function openBookIntro(bookId) {
     } else if (d.sco && d.sco[k]) {
       done.add(k);
       qs.push(`<section class="bk-q"><h3>${label}</h3><p>${d.sco[k]}</p><div class="bk-src">C. I. Scofield</div></section>`);
+    } else if (d.glance && (k === 'author' || k === 'audience')) {
+      done.add(k); // answered at a glance, above
     } else {
       done.add(k);
       qs.push(`<section class="bk-q none"><h3>${label}</h3><p>Not stated.</p></section>`);
@@ -253,11 +269,12 @@ async function openBookIntro(bookId) {
     : `<div class="bk-study">${s.html.replace(/^(For Study (and|mid) +[Dd]iscussion[.,]?)/, '<b class="bk-h">$1</b>').replace(/^/, '<p>')}</p></div>`)).join('');
   openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2>
     <div class="bk">
+      ${bkGlance(d.glance)}
       <div class="bk-qs">${qs.join('')}</div>
       ${more.length ? `<div class="section-title">More from Tidwell</div><div class="bk-more">${more.map(bkSec).join('')}</div>` : ''}
       ${rest}
     </div>
-    <p class="hint bi-note">From J. B. Tidwell, <i>The Bible Book by Book</i> (Baylor University Press, 1916), word for word. Where he does not say, the line marked Scofield is from C. I. Scofield's introduction (1917). Tap a reference to read it.</p>`, 'm-bookintro');
+    <p class="hint bi-note">From J. B. Tidwell, <i>The Bible Book by Book</i> (Baylor University Press, 1916), word for word. Where he does not say, the line marked Scofield is from C. I. Scofield's introduction (1917). Author and Audience at the top: the book's own words where it names them; otherwise the traditional view from M. G. Easton's <i>Illustrated Bible Dictionary</i> (1897). Tap a reference to read it.</p>`, 'm-bookintro');
   $('#modal').dataset.book = bookId;
 }
 $('#modal').addEventListener('click', (e) => {
@@ -348,10 +365,12 @@ async function paintNotesSection() {
     if (!v) return;
     e.preventDefault();
     const id = Number(v.dataset.id);
-    if (state.cur.sel !== id || !state.xref || state.xref.verse.id !== id) v.click(); // select it, as a click does
+    if (!(multi.ids.size > 1 && multi.ids.has(id)) && (state.cur.sel !== id || !state.xref || state.xref.verse.id !== id)) v.click(); // select it, as a click does
+    if (multi.ids.has(id) && state.cur.sel !== id) { state.cur.sel = id; markSelection(); showRefs(id); }
     if (!(await ready(id))) return;
     const hl = state.highlights[id];
-    vm.innerHTML = `<div class="vm-head">${esc(state.xref.verse.label)}</div>
+    const many = hlTargets(id).length;
+    vm.innerHTML = `<div class="vm-head">${many > 1 ? `${many} verses chosen` : esc(state.xref.verse.label)}</div>
       <div class="vm-hl" role="group" aria-label="Highlight">${HL_COLORS.map((c) => `<button class="dot hl-${c}${hl === c ? ' on' : ''}" data-vm="hl" data-c="${c}" title="Highlight ${c}" aria-label="Highlight ${c}"></button>`).join('')}<button class="dot none${hl ? '' : ' on'}" data-vm="hl" data-c="" title="No highlight" aria-label="No highlight">&times;</button></div>
       <button role="menuitem" data-vm="guide" class="vm-guide">Study it step by step</button>
       <button role="menuitem" data-vm="note">Write a note</button>
@@ -360,6 +379,7 @@ async function paintNotesSection() {
       <div class="vm-sep"></div>
       <button role="menuitem" data-vm="lesson" data-act="lessonAdd">Add to a lesson…</button>
       <button role="menuitem" data-vm="pin">Pin above the text</button>
+      <button role="menuitem" data-vm="compare">Compare with other passages…</button>
       <div class="vm-sep"></div>
       <button role="menuitem" data-vm="blb" title="Opens in your web browser (needs the internet)">Commentary at Blue Letter Bible ↗</button>`;
     vm.hidden = false;
@@ -377,12 +397,13 @@ async function paintNotesSection() {
       return setTimeout(hideVm, 0);
     }
     hideVm();
-    if (k === 'hl') setHighlight(v.id, b.dataset.c);
+    if (k === 'hl') highlightSelected(v.id, b.dataset.c);
     else if (k === 'copy') {
       navigator.clipboard.writeText(`${v.label} (KJV) ${v.text}`);
       toast('Verse copied');
     } else if (k === 'memory') toggleMemory(v.id);
     else if (k === 'pin') pinCurrent();
+    else if (k === 'compare') openCompare(v.id);
     else if (k === 'guide') startGuide(v.id);
     else if (k === 'blb') window.open(blbUrl(v.label), '_blank');
     else if (k === 'note') {

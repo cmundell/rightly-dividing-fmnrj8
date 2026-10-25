@@ -106,6 +106,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .verse:hover { background: var(--sel); }
 .verse.sel { background: var(--selbg); box-shadow: inset 4px 0 0 var(--accent); }
 .verse.range { background: var(--range); box-shadow: inset 2px 0 0 var(--accent-soft); }
+.verse.msel { background: var(--selbg); box-shadow: inset 4px 0 0 var(--accent); }
 .verse .vn {
   position: absolute; left: 8px; top: 0.45em; width: 24px; text-align: right;
   font-family: var(--ui); font-size: 11px; font-weight: 700; color: var(--accent);
@@ -299,7 +300,7 @@ button.icon.text { font-size: 12px; font-weight: 600; padding: 0 12px; }
 .verse.hl-blue { background: var(--hl-blue); }
 .verse.hl-pink { background: var(--hl-pink); }
 .verse.hl-purple { background: var(--hl-purple); }
-.verse.sel[class*='hl-'] { box-shadow: inset 4px 0 0 var(--accent); }
+.verse.sel[class*='hl-'], .verse.msel[class*='hl-'] { box-shadow: inset 4px 0 0 var(--accent); }
 .v3tools { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .v3tools .lbl { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 2px; }
 .dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--rule); cursor: pointer; padding: 0; font-size: 12px; line-height: 18px; color: var(--ink-soft); background: var(--paper); }
@@ -326,6 +327,12 @@ button.icon.text { font-size: 12px; font-weight: 600; padding: 0 12px; }
 .tline .tt { margin-right: 8px; }
 .tline .refs { display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle; }
 .tline .ref { font-size: 12px; padding: 1px 7px; }
+.tline .reflist { margin-top: 4px; }
+.t-exp { margin-left: 8px; font-family: var(--ui); font-size: 12px; border: 1px solid var(--rule); border-radius: 999px; padding: 2px 10px; background: none; color: var(--link); cursor: pointer; }
+.t-open { margin: 6px 0 4px; }
+.tline .ref.on { border-color: var(--link); box-shadow: inset 0 0 0 1px var(--link); }
+.t-open .t-go { display: block; margin-top: 6px; border: 0; background: none; padding: 0; font-family: var(--ui); font-size: 13px; color: var(--link); cursor: pointer; }
+.study-back { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); color: var(--link); font-family: var(--ui); font-size: 15px; text-align: left; cursor: pointer; }
 
 /* notes manager */
 .filter { flex-wrap: wrap; }
@@ -486,7 +493,7 @@ kbd { font-family: var(--ui); font-size: 11.5px; border: 1px solid var(--rule); 
 body.no-ital .kit { font-style: normal; }
 .wj { color: var(--wj); }
 body.no-red .wj { color: inherit; }
-.verse.sel .wj, .verse.range .wj { color: var(--wj); }
+.verse.sel .wj, .verse.msel .wj, .verse.range .wj { color: var(--wj); }
 body.show-paras .verse.para .vn::before { content: '¶'; color: var(--gold); font-weight: 400; margin-right: 3px; font-family: var(--scripture); font-size: 13px; }
 .m-mem { color: var(--accent); font-size: 9px; }
 
@@ -1256,3 +1263,28 @@ body.reduce-motion .j-halo { animation: none; }
 .bk-onote { font-style: italic; color: var(--ink-soft); margin: 4px 0 6px; }
 .bk .ref, .bk .ref:hover { display: inline; color: var(--link); cursor: pointer; background: none; border: 0; border-bottom: 1px dotted currentColor; border-radius: 0; padding: 0; margin: 0; font: inherit; box-shadow: none; }
 .bk .ref:hover { border-bottom-style: solid; }
+
+/* About this book: Author and Audience at a glance */
+.bk-glance { border: 1px solid var(--rule); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--paper); padding: 10px 14px; margin: 4px 0 16px; }
+.bk-gl { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; padding: 6px 0; }
+.bk-gl + .bk-gl { border-top: 1px solid var(--rule); }
+.bk-gk { font-weight: 700; color: var(--accent); }
+.bk-gv { line-height: 1.5; }
+.bk-grefs { display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle; margin-left: 4px; }
+.bk-grefs .ref { font-size: 12px; padding: 1px 7px; }
+.bk-trad { margin-top: 4px; font-size: .92em; color: var(--ink-soft); }
+.bk-none { color: var(--ink-soft); }
+.bk-by { font-size: .9em; color: var(--ink-soft); }
+
+/* compare passages */
+.cmp-pick { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 12px; }
+.cmp-slot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cmp-slot select { font: inherit; padding: 4px 6px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
+.cmp-slot select[data-cmp="book"] { min-width: 9em; }
+.cmp-n { width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.cmp-to, .cmp-colon { color: var(--ink-soft); font-size: 13px; }
+.cmp-x { border: 0; background: none; font-size: 20px; line-height: 1; color: var(--ink-soft); cursor: pointer; padding: 0 4px; }
+.cmp-add { align-self: flex-start; border: 1px dashed var(--rule); border-radius: 6px; background: none; color: var(--link); padding: 5px 12px; cursor: pointer; font: inherit; font-size: 14px; }
+.cmp-out .sbs-t p { margin-bottom: 4px; }
+@media (max-width: 760px) { .cmp-out { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .cmp-slot select[data-cmp="book"] { flex: 1 1 calc(100% - 3em); } }

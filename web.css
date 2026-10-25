@@ -147,3 +147,8 @@
 }
 /* 3.17.1: the help card sits above the bottom buttons on the phone */
 @media (max-width: 760px) { #nudge { left: 16px; right: 16px; width: auto; bottom: calc(92px + env(safe-area-inset-bottom)); } }
+
+/* choosing several verses: only the highlight colours are offered */
+.m-vbar .vb-more { border: 1px solid var(--rule); border-radius: 999px; background: none; color: var(--link); font: inherit; font-size: 13px; padding: 3px 10px; margin-left: 6px; }
+.m-vbar.vb-multi .vb-row, .m-vbar.vb-multi .vb-guide { display: none; }
+.m-vbar.vb-multi .vb-more { margin-left: auto; }

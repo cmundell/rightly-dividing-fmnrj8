@@ -176,6 +176,95 @@ async function openSideBySide(gids, focusId) {
     <div class="hint">Highlighted verses are the parallel; the faded verses around them give the context. Click a reference to open it.</div>`, 'm-sbs');
 }
 
+// ===================================================================== compare passages: any 2 to 4, side by side
+// Each passage has its own book, chapter and verse pickers. Columns on a wide screen; one above another on a phone.
+// The last comparison is remembered (Settings), so it is there again next time.
+const cmpCounts = new Map(); // "book:ch" -> number of verses
+async function cmpVerses(book, ch) {
+  const k = `${book}:${ch}`;
+  if (!cmpCounts.has(k)) cmpCounts.set(k, (await tsk.chapter(book, ch, dataTr())).verses.length);
+  return cmpCounts.get(k);
+}
+async function cmpSlotFor(id) {
+  const l = await tsk.locate(id);
+  const [v] = await tsk.versesByIds([id]);
+  const vs = Number(String(v.label).split(':').pop());
+  return { book: l.book, ch: l.ch, vs, ve: vs };
+}
+async function openCompare(seedId) {
+  let slots = Array.isArray(state.settings.compare) ? state.settings.compare.map((x) => ({ ...x })) : [];
+  if (seedId) {
+    const first = await cmpSlotFor(seedId);
+    slots = [first, ...slots.filter((x) => !(x.book === first.book && x.ch === first.ch && x.vs === first.vs))];
+  }
+  if (!slots.length) slots.push(state.cur.sel ? await cmpSlotFor(state.cur.sel) : { book: state.cur.book || 43, ch: state.cur.ch || 1, vs: 1, ve: 1 });
+  if (slots.length < 2) slots.push({ ...slots[0] });
+  slots = slots.slice(0, 4);
+  await renderCompare(slots);
+}
+async function renderCompare(slots) {
+  state.settings.compare = slots;
+  saveUser(['settings']);
+  const opts = (n, cur) => Array.from({ length: n }, (_, i) => `<option value="${i + 1}"${i + 1 === cur ? ' selected' : ''}>${i + 1}</option>`).join('');
+  const counts = await Promise.all(slots.map((x) => cmpVerses(x.book, x.ch)));
+  const passages = await Promise.all(slots.map(async (x, i) => {
+    x.vs = Math.min(x.vs, counts[i]);
+    x.ve = Math.min(Math.max(x.ve, x.vs), counts[i]);
+    const s = await tsk.verseId(x.book, x.ch, x.vs);
+    const e = await tsk.verseId(x.book, x.ch, x.ve);
+    return { s, vs: await tsk.passageVerses(s, e, 0) };
+  }));
+  const label = (x) => `${state.books[x.book - 1].name} ${x.ch}:${x.vs}${x.ve > x.vs ? `–${x.ve}` : ''}`;
+  const pickers = slots.map((x, i) => `<div class="cmp-slot" data-i="${i}">
+      <span class="cmp-n">${i + 1}</span>
+      <select data-cmp="book" aria-label="Book">${state.books.map((b) => `<option value="${b.id}"${b.id === x.book ? ' selected' : ''}>${esc(b.name)}</option>`).join('')}</select>
+      <select data-cmp="ch" aria-label="Chapter">${opts(state.books[x.book - 1].chapters, x.ch)}</select>
+      <span class="cmp-colon">:</span>
+      <select data-cmp="vs" aria-label="From verse">${opts(counts[i], x.vs)}</select>
+      <span class="cmp-to">to</span>
+      <select data-cmp="ve" aria-label="To verse">${opts(counts[i], x.ve)}</select>
+      ${slots.length > 2 ? `<button class="cmp-x" data-cmp="remove" aria-label="Remove this passage" title="Remove">&times;</button>` : ''}
+    </div>`).join('');
+  const cols = slots.map((x, i) => `<div class="sbs-col"><div class="sbs-h"><button class="pl-vs" data-dvgo="${passages[i].s}">${esc(label(x))}</button></div>
+      <div class="sbs-t">${passages[i].vs.map((v) => `<p><sup>${v.vs}</sup> ${esc(v.text)}</p>`).join('')}</div></div>`).join('');
+  const html = `<div class="kicker">Compare passages</div><h2 class="m-title">Side by side</h2>
+    <div class="cmp-pick">${pickers}${slots.length < 4 ? '<button class="cmp-add" data-cmp="add">+ Add a passage</button>' : ''}</div>
+    <div class="sbs cmp-out" style="--cols:${slots.length}">${cols}</div>
+    <div class="hint">Choose up to four passages. Tap a reference to open it in the Bible.</div>`;
+  const m = $('#modal');
+  if (!m.hidden && m.classList.contains('m-cmp')) {
+    const card = $('.modal-card', m);
+    const y = card.scrollTop;
+    $('#modalBody').innerHTML = html; // keep the place while choosing
+    card.scrollTop = y;
+  } else openModal(html, 'm-sbs m-cmp');
+}
+{
+  const cur = () => (Array.isArray(state.settings.compare) ? state.settings.compare.map((x) => ({ ...x })) : []);
+  $('#modal').addEventListener('change', (e) => {
+    const sel = e.target.closest('.cmp-slot select');
+    if (!sel) return;
+    const slots = cur();
+    const x = slots[Number(sel.closest('.cmp-slot').dataset.i)];
+    const n = Number(sel.value);
+    const k = sel.dataset.cmp;
+    if (k === 'book') Object.assign(x, { book: n, ch: 1, vs: 1, ve: 1 });
+    else if (k === 'ch') Object.assign(x, { ch: n, vs: 1, ve: 1 });
+    else if (k === 'vs') Object.assign(x, { vs: n, ve: Math.max(n, x.ve) });
+    else x.ve = Math.max(n, x.vs);
+    renderCompare(slots);
+  });
+  $('#modal').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-cmp="add"], [data-cmp="remove"]');
+    if (!b) return;
+    const slots = cur();
+    if (b.dataset.cmp === 'add' && slots.length < 4) slots.push({ ...slots[slots.length - 1] });
+    if (b.dataset.cmp === 'remove' && slots.length > 2) slots.splice(Number(b.closest('.cmp-slot').dataset.i), 1);
+    renderCompare(slots);
+  });
+}
+window.openCompare = openCompare;
+
 // margin marks in the reading pane, the chapter's place in history, and reading progress
 async function chapterExtras() {
   const { book, ch } = state.cur;
@@ -572,6 +661,7 @@ const COMMANDS = [
   ['Timeline of Bible history', 'dates history chronology', () => openTimeline()],
   ['Reading progress', 'chapters read heat map stats', () => openProgress()],
   ['Reading plan', 'schedule today', () => openPlan()],
+  ['Compare passages side by side', 'compare parallel side by side two three four passages', () => openCompare()],
   ['Cross-references tab', 'refs tsk', () => switchTab('refs')],
   ['Word study tab', 'hebrew greek strongs interlinear', () => switchTab('words')],
   ['Commentary at Blue Letter Bible', 'commentary blue letter bible online', () => state.xref && window.open(blbUrl(state.xref.verse.label), '_blank')],
@@ -881,6 +971,7 @@ function wireV37() {
   tsk.onMenu((cmd) => {
     if (cmd === 'daily') openDaily(0, null);
     else if (cmd === 'timeline') openTimeline();
+    else if (cmd === 'compare') openCompare();
     else if (cmd === 'progress') openProgress();
     else if (cmd === 'cmdk') ($('#cmdk').hidden ? openCmdk() : closeCmdk());
     else if (cmd === 'uiUp') stepUi(1);
