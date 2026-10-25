@@ -133,7 +133,7 @@
   .v3tools .tagin { font-size: 16px; min-height: 40px; }
   .tagbar .tag { font-size: 14px; padding: 6px 11px; }
   .linkbtn, .linkish { font-size: 14.5px; }
-  .comm-nav button, .ro-seg button, .ro-fonts button, .ro-size button { min-height: 40px; font-size: 14px; }
+  .ro-seg button, .ro-fonts button, .ro-size button { min-height: 40px; font-size: 14px; }
   .tab-help { font-size: 13.5px; padding: 8px 14px; }
   .tab-help .th-i { width: 28px; height: 28px; font-size: 15px; }
   .modal-x { min-width: 44px; min-height: 44px; }

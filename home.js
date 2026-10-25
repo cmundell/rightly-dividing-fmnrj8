@@ -1,5 +1,5 @@
 'use strict';
-/* Later additions: swiping between chapters, What's New, medallions, the start screen and your name, Settings and the book introductions.
+/* Later additions: swiping between chapters, What's New, the start screen and your name, Settings and the book introductions.
    Merged in 3.15 from the per-release layers (v40.js, v41.js, v42.js, v43.js, v44.js), kept in their original order: later
    sections still extend earlier ones by wrapping window.X. */
 
@@ -49,7 +49,7 @@ async function swipeChapter(d) {
 function openWhatsNew() {
   const theme = document.documentElement.dataset.theme || 'light';
   const src = `${tsk.web ? '' : '../'}CHANGELOG.html?theme=${encodeURIComponent(theme)}`;
-  openModal(`<div class="kicker">The Bible Study App</div><h2 class="m-title">What's new</h2>
+  openModal(`<div class="kicker">Rightly Dividing</div><h2 class="m-title">What's new</h2>
     <iframe class="wn-frame" src="${src}" title="What's new"></iframe>`, 'm-whatsnew');
 }
 window.openWhatsNew = openWhatsNew;
@@ -67,326 +67,9 @@ tsk.onMenu((cmd) => {
 });
 
 // =====================================================================================================
-// Medallions (3.16; badges before): milestones in memorizing Scripture and reading the Bible, each with a verse,
-// to collect. Days in a row are counted too: the current run starts again if a day is missed, but your longest
-// run is kept and a medallion, once earned, is never taken away. Pin three to Today, or share a picture of one.
-// =====================================================================================================
-/* global tsk, state, $, $$, esc, openModal, toast, saveUser, todayStr, COMMANDS */
-
-// a memory verse counts as learned once you have said it correctly from memory three times, on separate days
-const LEARNED_BOX = 3;
-
-// every Scripture quotation here is checked word for word against the KJV by tools/check_quotes.py
-const MEDALS = [
-  { id: 'mem1', group: 'memory', n: 1, title: 'First verse hidden in your heart', verse: ['Psalm 119:11', 'Thy word have I hid in mine heart, that I might not sin against thee.'] },
-  { id: 'mem5', group: 'memory', n: 5, title: 'Five verses learned', verse: ['Colossians 3:16', 'Let the word of Christ dwell in you richly in all wisdom'] },
-  { id: 'mem10', group: 'memory', n: 10, title: 'Ten verses learned', verse: ['Deuteronomy 6:6', 'And these words, which I command thee this day, shall be in thine heart'] },
-  { id: 'mem25', group: 'memory', n: 25, title: 'Twenty-five verses learned', verse: ['Psalm 119:97', 'O how love I thy law! it is my meditation all the day.'] },
-  { id: 'mem50', group: 'memory', n: 50, title: 'Fifty verses learned', verse: ['Joshua 1:8', 'This book of the law shall not depart out of thy mouth; but thou shalt meditate therein day and night'] },
-  { id: 'mem100', group: 'memory', n: 100, title: 'One hundred verses learned', verse: ['Psalm 1:2', 'But his delight is in the law of the LORD; and in his law doth he meditate day and night.'] },
-  { id: 'run3', group: 'run', n: 3, title: 'Three days in a row', verse: ['Psalm 55:17', 'Evening, and morning, and at noon, will I pray, and cry aloud: and he shall hear my voice.'] },
-  { id: 'run7', group: 'run', n: 7, title: 'A week in a row', verse: ['Psalm 119:164', 'Seven times a day do I praise thee because of thy righteous judgments.'] },
-  { id: 'run30', group: 'run', n: 30, title: 'Thirty days in a row', verse: ['Psalm 92:2', 'To shew forth thy loving-kindness in the morning, and thy faithfulness every night'] },
-  { id: 'run100', group: 'run', n: 100, title: 'One hundred days in a row', verse: ['Galatians 6:9', 'And let us not be weary in well doing: for in due season we shall reap, if we faint not.'] },
-  { id: 'run365', group: 'run', n: 365, title: 'A whole year in a row', verse: ['Hebrews 12:1', 'let us run with patience the race that is set before us'] },
-  { id: 'day7', group: 'days', n: 7, title: 'Seven days in the Word', verse: ['Psalm 119:105', 'Thy word is a lamp unto my feet, and a light unto my path.'] },
-  { id: 'day30', group: 'days', n: 30, title: 'Thirty days in the Word', verse: ['Lamentations 3:23', 'They are new every morning: great is thy faithfulness.'] },
-  { id: 'day100', group: 'days', n: 100, title: 'One hundred days in the Word', verse: ['Acts 17:11', 'they received the word with all readiness of mind, and searched the scriptures daily'] },
-  { id: 'day365', group: 'days', n: 365, title: 'A year of days in the Word', verse: ['Psalm 119:103', 'How sweet are thy words unto my taste! yea, sweeter than honey to my mouth!'] },
-  { id: 'day1000', group: 'days', n: 1000, title: 'A thousand days in the Word', verse: ['Isaiah 40:8', 'The grass withereth, the flower fadeth: but the word of our God shall stand for ever.'] },
-  { id: 'law', group: 'whole', short: '5', title: 'The books of Moses, read through', verse: ['Deuteronomy 32:47', 'For it is not a vain thing for you; because it is your life'] },
-  { id: 'psalms', group: 'whole', short: '150', title: 'The Psalms, read through', verse: ['Psalm 150:6', 'Let every thing that hath breath praise the LORD. Praise ye the LORD.'] },
-  { id: 'gospels', group: 'whole', short: '4', title: 'The four Gospels, read through', verse: ['John 20:31', 'But these are written, that ye might believe that Jesus is the Christ, the Son of God'] },
-  { id: 'nt', group: 'whole', short: 'NT', title: 'The New Testament, read through', verse: ['2 Timothy 3:16', 'All scripture is given by inspiration of God'] },
-  { id: 'ot', group: 'whole', short: 'OT', title: 'The Old Testament, read through', verse: ['Luke 24:27', 'And beginning at Moses and all the prophets, he expounded unto them in all the scriptures the things concerning himself.'] },
-  { id: 'bible', group: 'whole', short: '66', title: 'The whole Bible, read through', verse: ['Matthew 4:4', 'Man shall not live by bread alone, but by every word that proceedeth out of the mouth of God.'] },
-  { id: 'first-study', group: 'first', short: '1', title: 'First verse studied step by step', verse: ['2 Timothy 2:15', 'Study to shew thyself approved unto God, a workman that needeth not to be ashamed, rightly dividing the word of truth.'] },
-  { id: 'first-note', group: 'first', short: '1', title: 'First note written', verse: ['Habakkuk 2:2', 'Write the vision, and make it plain upon tables'] },
-  { id: 'early', group: 'first', short: '6', title: 'In the Word early in the morning', verse: ['Psalm 5:3', 'My voice shalt thou hear in the morning, O LORD; in the morning will I direct my prayer unto thee, and will look up.'] },
-];
-const BOOK_VERSE = ['John 5:39', 'Search the scriptures; for in them ye think ye have eternal life: and they are they which testify of me.'];
-const MEDAL_GROUPS = {
-  memory: { name: 'Memory verses', fill: ['#c2414b', '#8e2430'], icon: 'heart' },
-  run: { name: 'Days in a row', fill: ['#2f6fb5', '#1c4a80'], icon: 'lamp' },
-  days: { name: 'Days in the Word', fill: ['#d9a32c', '#a8761a'], icon: 'sun' },
-  whole: { name: 'Reading the Bible through', fill: ['#6b4fa8', '#46317a'], icon: 'book' },
-  first: { name: 'Firsts', fill: ['#1f8a7a', '#135e53'], icon: 'star' },
-  book: { name: 'Books', fill: ['#3f8a4a', '#295e31'], icon: 'scroll' },
-};
-
-// the days you were in the Word (a chapter read; days kept from earlier versions still count)
-const wordDays = () => new Set([...Object.keys(state.readlog.days || {}), ...Object.keys(state.walk.days || {}), ...Object.values((state.walk.family || {}).done || {})]);
-const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-// the current run counts back from today (or from yesterday, until today's reading); a missed day starts it again
-function runOfDays() {
-  const days = wordDays();
-  const d = new Date();
-  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1);
-  let current = 0;
-  while (days.has(dayKey(d))) {
-    current += 1;
-    d.setDate(d.getDate() - 1);
-  }
-  let longest = 0;
-  let run = 0;
-  let prev = null;
-  for (const k of [...days].sort()) {
-    const t = new Date(`${k}T12:00`);
-    run = prev && Math.round((t - prev) / 864e5) === 1 ? run + 1 : 1;
-    longest = Math.max(longest, run);
-    prev = t;
-  }
-  longest = Math.max(longest, current, (state.walk && state.walk.bestRun) || 0);
-  return { current, longest, today: days.has(dayKey(new Date())) };
-}
-
-function medalProgress() {
-  const mem = Object.values(state.memory || {}).filter((m) => (m.box || 0) >= LEARNED_BOX).length;
-  const days = wordDays();
-  const chs = state.readlog.chapters || {};
-  const books = state.books.filter((b) => {
-    for (let c = 1; c <= b.chapters; c++) if (!chs[`${b.id}:${c}`]) return false;
-    return true;
-  });
-  const has = (from, to) => books.filter((b) => b.id >= from && b.id <= to).length === to - from + 1;
-  const run = runOfDays();
-  return {
-    mem, days: days.size, run: run.longest, books,
-    law: has(1, 5), psalms: has(19, 19), gospels: has(40, 43), nt: has(40, 66), ot: has(1, 39), bible: has(1, 66),
-    'first-study': !!(state.walk && state.walk.guided),
-    'first-note': Object.values(state.notes || {}).some(Boolean),
-    early: !!(state.walk && state.walk.early),
-  };
-}
-
-function earnedNow(p) {
-  const out = [];
-  for (const m of MEDALS) {
-    const ok = m.group === 'memory' ? p.mem >= m.n : m.group === 'days' ? p.days >= m.n : m.group === 'run' ? p.run >= m.n : p[m.id];
-    if (ok) out.push(m.id);
-  }
-  for (const bk of p.books) out.push(`book${bk.id}`);
-  return out;
-}
-
-const medalInfo = (id) => {
-  if (id.startsWith('book')) {
-    const b = state.books[Number(id.slice(4)) - 1] || {};
-    return { id, group: 'book', short: b.abbr || '', title: `${b.name || ''}, read through`, verse: BOOK_VERSE };
-  }
-  return MEDALS.find((m) => m.id === id) || null;
-};
-
-let medalTimer = null;
-let medalFirst = true;
-function checkMedals() {
-  if (!state.walk || !state.readlog || !state.books.length) return;
-  // reading early in the morning (before 7)
-  if (new Date().getHours() < 7 && wordDays().has(dayKey(new Date())) && !state.walk.early) state.walk.early = todayStr();
-  const run = runOfDays();
-  if (run.longest > (state.walk.bestRun || 0)) state.walk.bestRun = run.longest;
-  state.walk.badges = state.walk.badges || {}; // where earned medallions are kept (named before 3.16)
-  const got = state.walk.badges;
-  const fresh = earnedNow(medalProgress()).filter((id) => !got[id]);
-  if (!fresh.length) {
-    medalFirst = false;
-    return;
-  }
-  const quiet = medalFirst && !Object.keys(got).length; // progress made before medallions existed is recorded quietly
-  for (const id of fresh) got[id] = todayStr();
-  saveUser(['walk']);
-  medalFirst = false;
-  if (!quiet) toast(fresh.length > 1 ? `${fresh.length} new medallions! See Today › Medallions.` : `New medallion: ${medalInfo(fresh[0]).title}. See Today › Medallions.`);
-}
-// look again whenever reading, memory, notes or your walk is saved
-{
-  const prevSave = window.saveUser;
-  window.saveUser = function (keys) {
-    prevSave(keys);
-    if ((keys || []).some((k) => k === 'readlog' || k === 'memory' || k === 'walk' || k === 'notes')) {
-      clearTimeout(medalTimer);
-      medalTimer = setTimeout(checkMedals, 900);
-    }
-  };
-  const prevInit = window.v3Init;
-  window.v3Init = (u) => {
-    if (prevInit) prevInit(u);
-    setTimeout(checkMedals, 2500);
-  };
-}
-
-// the medallion itself: a coin in its group's colors with an engraved sign and a word or number
-const MEDAL_ICONS = {
-  heart: '<path d="M32 46s-13-8-13-17a7 7 0 0 1 13-3.5A7 7 0 0 1 45 29c0 9-13 17-13 17z"/>',
-  lamp: '<path d="M19 38h22l-4 6H23z"/><path d="M41 38c4 0 6-3 6-5h-6"/><path d="M30 37c-3-3-2-7 2-11 1 4 4 6 2 11"/>',
-  sun: '<circle cx="32" cy="33" r="7"/><path d="M32 19v5M32 42v5M18 33h5M41 33h5M22 23l3.5 3.5M38.5 39.5 42 43M42 23l-3.5 3.5M25.5 39.5 22 43"/>',
-  book: '<path d="M18 26c5-2 10-2 14 1 4-3 9-3 14-1v17c-5-2-10-2-14 1-4-3-9-3-14-1z"/><path d="M32 27v17"/>',
-  star: '<path d="M32 21l3.4 7 7.6 1.1-5.5 5.4 1.3 7.6L32 38.5l-6.8 3.6 1.3-7.6-5.5-5.4 7.6-1.1z"/>',
-  scroll: '<path d="M22 22h18a4 4 0 0 1 0 8h-2v14H24a4 4 0 0 1 0-8h2V22"/><path d="M26 30h10M26 35h8"/>',
-};
-function medalSvg(m, on, size = 64) {
-  const g = MEDAL_GROUPS[m.group];
-  const [a, b] = on ? g.fill : ['#c9c4b8', '#a39d90'];
-  const uid = `${m.id}-${on ? 1 : 0}-${Math.random().toString(36).slice(2, 7)}`;
-  const label = m.short || String(m.n || '');
-  return `<svg class="md-svg${on ? ' on' : ''}" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">
-    <defs><radialGradient id="g${uid}" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffffff" stop-opacity=".55"/><stop offset=".35" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></radialGradient></defs>
-    <circle cx="32" cy="32" r="30" fill="${b}"/><circle cx="32" cy="32" r="27.5" fill="url(#g${uid})"/>
-    <circle cx="32" cy="32" r="23.5" fill="none" stroke="#ffffff" stroke-opacity="${on ? '.55' : '.4'}" stroke-width="1.2" stroke-dasharray="${on ? '0' : '2 2'}"/>
-    <g fill="none" stroke="#ffffff" stroke-opacity="${on ? '.95' : '.75'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 -6)">${MEDAL_ICONS[g.icon]}</g>
-    <text x="32" y="54.5" text-anchor="middle" font-family="Georgia, serif" font-size="${label.length > 3 ? 9 : label.length > 2 ? 10.5 : 12}" font-weight="700" fill="#ffffff" fill-opacity="${on ? '1' : '.85'}">${esc(label)}</text></svg>`;
-}
-
-const fmtDate = (k) => new Date(`${k}T00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-function openMedals() {
-  const p = medalProgress();
-  const run = runOfDays();
-  const got = (state.walk && state.walk.badges) || {};
-  const pins = (state.walk && state.walk.showcase) || [];
-  const card = (m, sub) => {
-    const on = !!got[m.id];
-    return `<div class="md-card${on ? ' on' : ''}" data-md="${m.id}">${medalSvg(m, on)}<div class="md-t"><b>${esc(m.title)}</b>
-      <span class="md-sub">${on ? `Earned ${esc(fmtDate(got[m.id]))}` : esc(sub)}</span>
-      ${on ? `<span class="md-v">“${esc(m.verse[1])}” <i>${esc(m.verse[0])}</i></span>
-      <span class="md-acts"><button class="linkish" data-md-pin="${m.id}">${pins.includes(m.id) ? 'Unpin from Today' : 'Pin to Today'}</button><button class="linkish" data-md-share="${m.id}">Share a picture</button></span>` : ''}</div></div>`;
-  };
-  const group = (key, sub) => `<div class="section-title">${MEDAL_GROUPS[key].name}</div><div class="md-grid">${MEDALS.filter((m) => m.group === key).map((m) => card(m, sub(m))).join('')}</div>`;
-  const n = Object.keys(got).length;
-  const bookCards = state.books.map((b) => {
-    const m = medalInfo(`book${b.id}`);
-    const on = !!got[m.id];
-    return `<span class="md-book${on ? ' on' : ''}" title="${esc(b.name)}${on ? ' — read through' : ''}" data-md="${m.id}">${medalSvg(m, on, 40)}</span>`;
-  }).join('');
-  openModal(`<div class="kicker">Medallions</div><h2 class="m-title">Faithful in the Word</h2>
-    <p class="hint">${n ? `${n} collected. ` : ''}A medallion, once earned, is yours to keep.</p>
-    <div class="md-run"><div><b>${run.current}</b><span>day${run.current === 1 ? '' : 's'} in a row${run.current && !run.today ? ' — read today to keep it going' : ''}</span></div>
-      <div><b>${run.longest}</b><span>your longest run</span></div><div><b>${p.days}</b><span>days in the Word in all</span></div></div>
-    ${group('memory', (m) => `${Math.min(p.mem, m.n)} of ${m.n} learned`)}
-    <p class="hint">A verse counts as learned when you have said it correctly from memory three times, on separate days (Notes › Memory).</p>
-    ${group('run', (m) => `${Math.min(run.current, m.n)} of ${m.n} days in a row`)}
-    <p class="hint">Any day you read a chapter. Miss a day and the count starts again — the medallions you have earned stay.</p>
-    ${group('days', (m) => `${Math.min(p.days, m.n)} of ${m.n} days`)}
-    ${group('whole', () => 'Keep reading')}
-    ${group('first', (m) => (m.id === 'early' ? 'Read before 7 in the morning' : m.id === 'first-study' ? 'Tap a verse › Study this verse, step by step' : 'Not yet'))}
-    <div class="section-title">Books read through <span class="hint">· ${p.books.length} of 66</span></div>
-    <div class="md-books">${bookCards}</div>
-    <p class="md-v">“${esc(BOOK_VERSE[1])}” <i>${esc(BOOK_VERSE[0])}</i></p>`, 'm-medals');
-}
-
-// pin up to three to Today
-function toggleShowcase(id) {
-  const list = (state.walk.showcase = state.walk.showcase || []);
-  const i = list.indexOf(id);
-  if (i >= 0) list.splice(i, 1);
-  else {
-    if (list.length >= 3) list.shift();
-    list.push(id);
-  }
-  saveUser(['walk']);
-  toast(i >= 0 ? 'Unpinned' : 'Pinned to Today');
-}
-const showcaseHtml = () => {
-  const got = (state.walk && state.walk.badges) || {};
-  const pins = ((state.walk && state.walk.showcase) || []).filter((id) => got[id] && medalInfo(id));
-  const run = runOfDays();
-  return `<div class="td-medals"><button class="td-run" data-md-open="" title="Medallions">${medalSvg({ id: 'run', group: 'run', short: String(run.current) }, run.current > 0, 44)}<span><b>${run.current} day${run.current === 1 ? '' : 's'} in a row</b>${run.longest > run.current ? `Longest: ${run.longest}` : run.current ? 'Your best yet' : 'Read today to begin'}</span></button>
-    ${pins.map((id) => `<button class="td-medal" data-md-open="${id}" title="${esc(medalInfo(id).title)}">${medalSvg(medalInfo(id), true, 44)}</button>`).join('')}</div>`;
-};
-
-// a picture of a medallion to share (phone: the share sheet; computer: saved as a file)
-async function shareMedal(id) {
-  const m = medalInfo(id);
-  const got = (state.walk && state.walk.badges) || {};
-  if (!m || !got[id]) return;
-  const W = 1080;
-  const cv = document.createElement('canvas');
-  cv.width = W;
-  cv.height = W;
-  const c = cv.getContext('2d');
-  c.fillStyle = '#fbf8f1';
-  c.fillRect(0, 0, W, W);
-  c.fillStyle = '#1f3a6b';
-  c.fillRect(0, 0, W, 14);
-  const img = new Image();
-  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(medalSvg(m, true, 64).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '))}`;
-  await img.decode();
-  c.drawImage(img, W / 2 - 200, 110, 400, 400);
-  c.textAlign = 'center';
-  c.fillStyle = '#1f3a6b';
-  c.font = 'bold 54px Georgia, serif';
-  c.fillText(m.title, W / 2, 600, W - 120);
-  c.fillStyle = '#6b6457';
-  c.font = '32px system-ui, sans-serif';
-  c.fillText(`Earned ${fmtDate(got[id])}`, W / 2, 655);
-  // the verse, wrapped
-  c.fillStyle = '#2b2a27';
-  c.font = 'italic 40px Georgia, serif';
-  const words = `“${m.verse[1]}”`.split(' ');
-  const lines = [];
-  let line = '';
-  for (const w of words) {
-    const t = line ? `${line} ${w}` : w;
-    if (c.measureText(t).width > W - 200 && line) {
-      lines.push(line);
-      line = w;
-    } else line = t;
-  }
-  lines.push(line);
-  let y = 750;
-  for (const l of lines.slice(0, 5)) {
-    c.fillText(l, W / 2, y);
-    y += 54;
-  }
-  c.fillStyle = '#8a6d1f';
-  c.font = '34px system-ui, sans-serif';
-  c.fillText(`${m.verse[0]} (KJV)`, W / 2, y + 10);
-  c.fillStyle = '#6b6457';
-  c.font = '28px Georgia, serif';
-  c.fillText('SEARCH THE SCRIPTURES', W / 2, W - 50);
-  const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
-  const file = new File([blob], `${m.title.replace(/[^A-Za-z0-9 ]/g, '').replace(/ +/g, '-')}.png`, { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: m.title, text: `${m.title} — The Bible Study App` });
-    } catch { /* cancelled */ }
-    return;
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  toast('Picture saved');
-}
-
-// Today: the Medallions tile (built in walk.js) and the pinned ones; the command box knows them too
-{
-  COMMANDS.push(['Medallions', 'rewards milestones awards badges streak days in a row memory reading', () => openMedals()]);
-  $('#modal').addEventListener('click', (e) => {
-    if (e.target.closest('[data-td3="badges"]')) return openMedals();
-    const o = e.target.closest('[data-md-open]');
-    if (o) return openMedals();
-    const pin = e.target.closest('[data-md-pin]');
-    if (pin) {
-      toggleShowcase(pin.dataset.mdPin);
-      const y = $('#modal .modal-card') ? $('#modal .modal-card').scrollTop : 0;
-      openMedals();
-      if ($('#modal .modal-card')) $('#modal .modal-card').scrollTop = y;
-      return;
-    }
-    const sh = e.target.closest('[data-md-share]');
-    if (sh) shareMedal(sh.dataset.mdShare);
-  });
-  window.openMedals = openMedals;
-  window.openBadges = openMedals; // older name
-}
-
-// =====================================================================================================
 // from v42.js
 // =====================================================================================================
-/* v3.13: gentle reminders set aside; Morning and Evening moved off the toolbar (it stays on Today, in the Go menu
+/* v3.13: Morning and Evening moved off the toolbar (it stays on Today, in the Go menu
    and in the phone's Menu). Switches for the Today screen and the prayer list (FEATURES.today, FEATURES.prayer).
    Loaded after v41.js. */
 /* global tsk, state, $, $$, FEATURES, COMMANDS, TOUR, switchTab, v32, renderMarks */
@@ -397,12 +80,6 @@ const dropCommand = (label) => {
 
 // (Morning and Evening has no toolbar button: index.html; it is on Today and in the Go menu)
 
-// ---------------------------------------------------------------- gentle reminders set aside
-if (!FEATURES.reminders) {
-  dropCommand('Gentle reminders');
-  // nothing left switched on from before: the app no longer opens itself at sign-in
-  tsk.openAtLogin(false).catch(() => {});
-}
 
 // ---------------------------------------------------------------- prayer list switch
 if (FEATURES.prayer === false) {
@@ -424,7 +101,9 @@ if (FEATURES.prayer === false) {
 
 // ---------------------------------------------------------------- your name, asked once on the very first open
 function askName(then) {
-  openModal(`<h2 class="m-title nm-title">Welcome to The Bible Study App, friend!</h2>
+  openModal(`<h2 class="m-title nm-title">Welcome to Rightly Dividing, Friend!</h2>
+    <blockquote class="nm-verse">“Study to shew thyself approved unto God, a workman that needeth not to be ashamed, rightly dividing the word of truth.” <span>2 Timothy 2:15</span></blockquote>
+    <p class="nm-about">Rightly Dividing is for reading the Bible and studying it to understand the hidden treasures of God's Word.</p>
     <p class="nm-q">What is your name?</p>
     <p class="hint">So we can greet you each day. It stays on this device.</p>
     <form class="nm-form"><input id="nmInput" type="text" autocomplete="given-name" maxlength="40" placeholder="Your first name" />
@@ -534,19 +213,56 @@ const toReading = () => typeof setView === 'function' && onPhone() && setView('r
 
 
 // ---------------------------------------------------------------- About this book
-// C. I. Scofield's introduction to the book (1917, public domain), word for word
+// J. B. Tidwell, The Bible Book by Book (1916), word for word, under the five questions of observation; where he is
+// silent, C. I. Scofield's line (1917); where neither says, "Not stated." (data: tools/build_tidwell.py)
+const BK_Q = [['author', 'Author'], ['audience', 'Audience'], ['relationship', 'Relationship'], ['occasion', 'Occasion'], ['purpose', 'Purpose']];
+const bkJoin = (xs) => (xs.length < 2 ? xs[0] : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+const bkSec = (s) => `<p>${s.h ? `<b class="bk-h">${esc(s.h)}${esc(s.sep || '.')}</b> ` : ''}${s.html}</p>`;
 async function openBookIntro(bookId) {
   const bk = state.books[bookId - 1];
   if (!bk) return;
-  const html = await tsk.scofield(bookId).catch(() => null);
+  const d = await tsk.tidwell(bookId).catch(() => null);
+  if (!d) return openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2><p class="hint">Not found.</p>`, 'm-bookintro');
+  const secs = d.secs || [];
+  const done = new Set();
+  const qs = [];
+  for (const [k, label] of BK_Q) {
+    if (done.has(k)) continue;
+    const mine = secs.filter((s) => s.kind === 'sec' && (s.fields || [])[0] === k);
+    // a section that answers several questions at once is shown once, under all of them
+    const also = secs.filter((s) => s.kind === 'sec' && (s.fields || []).indexOf(k) > 0 && !(s.fields || []).some((f) => done.has(f)));
+    if (mine.length) {
+      for (const s of mine) {
+        const labels = s.fields.map((f) => BK_Q.find((q) => q[0] === f)[1]);
+        s.fields.forEach((f) => done.add(f));
+        qs.push(`<section class="bk-q"><h3>${esc(bkJoin(labels))}</h3>${bkSec(s)}</section>`);
+      }
+    } else if (also.length) {
+      continue; // shown with the question it is listed under first
+    } else if (d.sco && d.sco[k]) {
+      done.add(k);
+      qs.push(`<section class="bk-q"><h3>${label}</h3><p>${d.sco[k]}</p><div class="bk-src">C. I. Scofield</div></section>`);
+    } else {
+      done.add(k);
+      qs.push(`<section class="bk-q none"><h3>${label}</h3><p>Not stated.</p></section>`);
+    }
+  }
+  const more = secs.filter((s) => s.kind === 'sec' && !(s.fields || []).length);
+  const rest = secs.filter((s) => s.kind !== 'sec').map((s) => (s.kind === 'analysis'
+    ? `<div class="section-title">${esc(s.h || 'Analysis')}</div><div class="bk-outline">${s.items.map((it) => `<div class="${it.lvl < 0 ? 'bk-onote' : `bk-o${it.lvl > 2 ? 2 : it.lvl > 0 ? 1 : 0}`}">${it.html}</div>`).join('')}</div>`
+    : `<div class="bk-study">${s.html.replace(/^(For Study (and|mid) +[Dd]iscussion[.,]?)/, '<b class="bk-h">$1</b>').replace(/^/, '<p>')}</p></div>`)).join('');
   openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2>
-    <div class="bi-sco">${html || '<p class="hint">Not found.</p>'}</div>
-    <p class="hint bi-note">C. I. Scofield's introduction to ${esc(bk.name)}, from the Scofield Reference Bible notes (1917, public domain), word for word. Tap a reference to read it.</p>`, 'm-bookintro');
+    <div class="bk">
+      <div class="bk-qs">${qs.join('')}</div>
+      ${more.length ? `<div class="section-title">More from Tidwell</div><div class="bk-more">${more.map(bkSec).join('')}</div>` : ''}
+      ${rest}
+    </div>
+    <p class="hint bi-note">From J. B. Tidwell, <i>The Bible Book by Book</i> (Baylor University Press, 1916), word for word. Where he does not say, the line marked Scofield is from C. I. Scofield's introduction (1917). Tap a reference to read it.</p>`, 'm-bookintro');
   $('#modal').dataset.book = bookId;
 }
 $('#modal').addEventListener('click', (e) => {
   if (!$('#modal').classList.contains('m-bookintro')) return;
-  const r = e.target.closest('.bi-sco .ref');
+  const r = e.target.closest('.bk .ref');
   if (!r) return;
   closeModal();
   toReading();
@@ -565,7 +281,7 @@ $('#readerInner').addEventListener('click', (e) => {
   const b = e.target.closest('[data-bi-open]');
   if (b) openBookIntro(Number(b.dataset.biOpen));
 });
-if (ABOUT_ON) COMMANDS.push(['About this book', 'introduction writer author date theme outline book scofield', () => openBookIntro(state.cur.book)]);
+if (ABOUT_ON) COMMANDS.push(['About this book', 'introduction writer author audience occasion purpose date outline book tidwell', () => openBookIntro(state.cur.book)]);
 window.openBookIntro = openBookIntro;
 
 // ---------------------------------------------------------------- Settings (the page is built in study.js): your name and backups
@@ -643,7 +359,9 @@ async function paintNotesSection() {
       <button role="menuitem" data-vm="memory">${state.memory[id] ? 'Remove from memory verses' : 'Memorize'}</button>
       <div class="vm-sep"></div>
       <button role="menuitem" data-vm="lesson" data-act="lessonAdd">Add to a lesson…</button>
-      <button role="menuitem" data-vm="pin">Pin above the text</button>`;
+      <button role="menuitem" data-vm="pin">Pin above the text</button>
+      <div class="vm-sep"></div>
+      <button role="menuitem" data-vm="blb" title="Opens in your web browser (needs the internet)">Commentary at Blue Letter Bible ↗</button>`;
     vm.hidden = false;
     const w = vm.offsetWidth, h = vm.offsetHeight;
     vm.style.left = `${Math.min(e.clientX, window.innerWidth - w - 8)}px`;
@@ -666,6 +384,7 @@ async function paintNotesSection() {
     } else if (k === 'memory') toggleMemory(v.id);
     else if (k === 'pin') pinCurrent();
     else if (k === 'guide') startGuide(v.id);
+    else if (k === 'blb') window.open(blbUrl(v.label), '_blank');
     else if (k === 'note') {
       switchTab('refs');
       setTimeout(() => {
@@ -692,9 +411,8 @@ const GUIDE_STEPS = [
   { key: 'read', title: 'Read it slowly', what: 'Start with the verse itself. Read it twice, slowly. Notice who is speaking, to whom, and what is happening just before and after.' },
   { key: 'related', title: 'Other verses that say something similar', what: 'The Bible explains the Bible. These are cross-references: other places that speak about the same thing (from the Treasury of Scripture Knowledge).' },
   { key: 'word', title: 'Look closer at one word', what: 'The Bible was first written in Hebrew and Greek. Pick a word to see the word behind the English and what it means.' },
-  { key: 'teacher', title: 'What a trusted teacher said', what: 'Matthew Henry (1662–1714), a pastor, wrote short notes on the whole Bible. Here is what he said about this passage.' },
   { key: 'apply', title: 'What is God saying to you?', what: 'Write a sentence or two in your own words: what you learned, and what you will do. It is saved as your note on this verse.' },
-].filter((s) => s.key !== 'teacher' || FEATURES.commentary);
+];
 const FUNCTION_WORDS = /^(Function=(Conjunction|Article|Preposition|Particle|Pronoun|Adverb)|.*(Article|Conjunction|Preposition))/;
 const guide = { id: null, step: 0, data: null, word: null };
 
@@ -704,7 +422,7 @@ async function startGuide(id) {
   guide.id = id;
   guide.step = 0;
   guide.word = null;
-  const [x, words, comm] = await Promise.all([tsk.xrefs(id, 'kjv'), tsk.words(id).catch(() => []), FEATURES.commentary ? tsk.commentary(id).catch(() => null) : null]);
+  const [x, words] = await Promise.all([tsk.xrefs(id, 'kjv'), tsk.words(id).catch(() => [])]);
   const v = x.verse;
   const around = await tsk.versesByIds([id - 1, id + 1]).catch(() => []);
   // a few related verses, with their text
@@ -719,36 +437,12 @@ async function startGuide(id) {
     .filter((w) => w.gloss && /[a-z]{3}/i.test(w.gloss) && /^Function=(Verb|Noun|Adjective)/.test((w.grammar || '').replace(/\s+;/, ';')) && !FUNCTION_WORDS.test(w.grammar || ''))
     .filter((w) => !seen.has(w.strongs) && seen.add(w.strongs));
   const keyWords = content.sort((a, b) => (a.uses || 0) - (b.uses || 0)).slice(0, 8).sort((a, b) => a.i - b.i);
-  // Matthew Henry: the part on this verse — his section for it, or else the sentences that speak of it
-  let teacher = '';
-  if (comm && comm.html) {
-    const vs = v.label.split(':')[1] ? Number(v.label.split(':')[1].split('-')[0]) : 0;
-    const parts = comm.html.split(/(?=<p><b>Verses? \d)/);
-    const hit = parts.find((p) => {
-      const m = p.match(/^<p><b>Verses? (\d+)(?:[-–](\d+))?/);
-      return m && vs >= Number(m[1]) && vs <= Number(m[2] || m[1]);
-    });
-    if (hit && hit.replace(/<[^>]+>/g, '').length < 2500) teacher = hit;
-    else {
-      const text = (hit || comm.html).replace(/<h4>[^]*?<\/h4>/g, ' ').replace(/<p><b>[^<]*<\/b><\/p>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-      const sents = text.match(/[^.!?]+[.!?]+["”’]?/g) || [];
-      const STOP = /^(that|this|with|from|unto|they|them|their|there|which|shall|have|hath|were|what|when|whom|whose|also|into|upon|said|saith|thee|thou|thine|your|ye|and|the|for|but|not|him|his|her|all|was|are|our|out)$/i;
-      const keys = [...new Set((v.text.toLowerCase().match(/[a-z]{4,}/g) || []).filter((w) => !STOP.test(w)))];
-      let best = -1, at = -1;
-      sents.forEach((t, i) => {
-        const low = t.toLowerCase();
-        const n = keys.filter((k) => low.includes(k.slice(0, Math.max(4, k.length - 2)))).length;
-        if (n > best) [best, at] = [n, i];
-      });
-      if (at >= 0 && best >= 2) teacher = `<p>${esc(sents.slice(Math.max(0, at - 1), at + 3).join(' ').trim())}</p><p class="hint">From his notes on ${esc(comm.label || 'this passage')}.</p>`;
-    }
-  }
-  guide.data = { v, around, picks: picks.map((p) => ({ ...p, text: texts.get(p.start) || '' })), keyWords, teacher };
+  guide.data = { v, around, picks: picks.map((p) => ({ ...p, text: texts.get(p.start) || '' })), keyWords };
   renderGuide();
 }
 
 function renderGuide() {
-  const { v, around, picks, keyWords, teacher } = guide.data;
+  const { v, around, picks, keyWords } = guide.data;
   const s = GUIDE_STEPS[guide.step];
   let body = '';
   if (s.key === 'read') {
@@ -775,8 +469,6 @@ function renderGuide() {
           <p class="hint">Used ${Number(w.uses || 0).toLocaleString()} time${w.uses === 1 ? '' : 's'} in the Bible.</p>
           <button class="linkish" data-gd-strong="${esc(w.strongs)}">See every verse that uses it</button></div>` : '<p class="hint">Tap a word above.</p>'}`
       : '<p class="hint">No original-language words for this verse. Go on to the next step.</p>';
-  } else if (s.key === 'teacher') {
-    body = teacher ? `<div class="gd-teacher">${typeof commHtml === 'function' ? commHtml(teacher) : teacher}</div>` : '<p class="hint">Matthew Henry has no note on this verse on its own. The Commentary tab has his notes on the whole passage.</p>';
   } else {
     body = `<textarea class="gd-note" placeholder="In my own words…">${esc(guide.apply || '')}</textarea>
       <p class="hint">Saved with this verse in Notes. You can change it any time.</p>`;
@@ -806,8 +498,6 @@ function finishGuide() {
       if (n) n.value = state.notes[v.id];
     }
   }
-  state.walk.guided = state.walk.guided || todayStr();
-  saveUser(['walk']);
   guide.apply = '';
   closeModal();
   toast(text ? 'Saved in your notes. Well done!' : 'Well done!');
@@ -833,12 +523,6 @@ $('#modal').addEventListener('click', (e) => {
     if (typeof setView === 'function' && onPhone()) setView('study');
     return openStrong(st.dataset.gdStrong);
   }
-  const r = e.target.closest('.gd-teacher .ref');
-  if (r) {
-    closeModal();
-    toReading();
-    go({ id: Number(r.dataset.s), endId: Number(r.dataset.e) });
-  }
 });
 // where to start it: under the verse (Related verses), the right-click menu, the phone's verse bar, and Today
 {
@@ -862,7 +546,6 @@ $('#modal').addEventListener('click', (e) => {
 const TAB_HELP = {
   refs: { line: 'Other verses that speak about the same thing.', tip: 'The Bible explains the Bible. Under the verse you selected are other verses on the same words and ideas, grouped by key word. Point to one (or tap it) to read it; click to go there.', eg: 'Try it: select John 3:16 and look under “loved”.' },
   words: { line: 'The Hebrew or Greek behind each English word.', tip: 'The Old Testament was written in Hebrew and the New Testament in Greek. Choose a word to see what it means, and every other verse that uses the same word — the KJV sometimes translates it differently.', eg: 'In John 3:16, “loved” is agapaō, the love of God.' },
-  comm: FEATURES.commentary ? { line: 'Notes on this passage by Matthew Henry, a pastor (1662–1714).', tip: 'Matthew Henry wrote short notes on the whole Bible. Read the passage for yourself first, then see what he noticed — a teacher to learn from, with Scripture as the final word.', eg: '' } : { line: 'Commentaries, online at Blue Letter Bible.', tip: 'This app keeps to the Bible itself. If you want to read what commentators have written about a verse, this tab opens the verse at Blue Letter Bible, where you can choose a commentary. It needs the internet.', eg: '' },
   topics: { line: 'Bible subjects this verse is listed under.', tip: 'Nave’s Topical Bible gathers verses by subject — prayer, faith, forgiveness, marriage, money. Open a topic to read every verse on it, in order.', eg: '' },
   places: { line: 'Where it happened, on a map.', tip: 'Every place named in the chapter is on the map, and places in the selected verse are marked. Tap a place to see every verse that names it, or follow one of the journeys.', eg: '' },
   people: { line: 'Who is named in this verse, and their family.', tip: 'Everyone named in the verse, with parents, husband or wife, children, brothers and sisters — each with the verse that says so. Follow a line back to Adam.', eg: '' },
@@ -1097,7 +780,7 @@ function homeScreenHelpHtml() {
 }
 function openHomeScreenHelp() {
   openModal(`<div class="kicker">On your phone</div><h2 class="m-title">Put it on your Home Screen</h2>
-    <p class="wk-lead">Then The Bible Study App opens like any other app, with its own icon.</p>${homeScreenHelpHtml()}`, 'm-a2hs');
+    <p class="wk-lead">Then Rightly Dividing opens like any other app, with its own icon.</p>${homeScreenHelpHtml()}`, 'm-a2hs');
 }
 window.openHomeScreenHelp = openHomeScreenHelp;
 
@@ -1131,7 +814,7 @@ async function nextNudge() {
   if (tsk.web && isIOS() && !isInstalled() && !s.homeScreenHelped) {
     s.homeScreenHelped = new Date().toISOString();
     saveUser(['settings']);
-    return showNudge(`<b>Put The Bible Study App on your Home Screen</b>${homeScreenHelpHtml()}`, [['Got it', () => {}]]);
+    return showNudge(`<b>Put Rightly Dividing on your Home Screen</b>${homeScreenHelpHtml()}`, [['Got it', () => {}]]);
   }
   // notes worth keeping, and no backup in the last month: remind, at most once a month
   if (marksCount() < 3 || since(s.backupNudged) < 30 * DAY) return;

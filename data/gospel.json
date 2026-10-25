@@ -1,308 +1,54 @@
 {
-"title": "The Gospel",
-"source": "Teays Valley Baptist",
-"sourceUrl": "https://www.teaysvalleybaptist.com/witnessassist.html",
-"film": {
-"title": "The Gospel Film",
-"by": "The Gospel Film Project",
-"url": "https://youtu.be/mIeRU12STNw"
-},
-"sections": [
-{
-"ref": "Romans 3:23",
-"b": 45,
-"c": 3,
-"s": 28015,
-"e": 28015,
-"quote": [
-"\"For all have sinned, and come short of the glory of God;\""
-],
-"verses": [
-{
-"id": 28015,
-"v": 23,
-"t": "For all have sinned, and come short of the glory of God;"
-}
-],
-"blocks": [
-{
-"k": "p",
-"t": "The Bible makes it clear that everyone has sinned. Because of sin, we are no longer pure and spotless. We have been corrupted. God being righteous and holy, cannot dwell with any unrighteousness or unholiness. Therefore, our sin has caused us to fall short of God and His glory. The first thing a person must realize in order to be saved is that they are a sinner in need of saving."
-},
-{
-"k": "ask",
-"t": "\"Do you realize this?\""
-},
-{
-"k": "p",
-"t": "If YES, proceed."
-},
-{
-"k": "p",
-"t": "If NO, this person is not ready to be saved."
-}
-]
-},
-{
-"ref": "Romans 6:23",
-"b": 45,
-"c": 6,
-"s": 28092,
-"e": 28092,
-"quote": [
-"\"For the wages of sin is death; but the gift of God is eternal life through Jesus Christ our Lord.\""
-],
-"verses": [
-{
-"id": 28092,
-"v": 23,
-"t": "For the wages of sin is death; but the gift of God is eternal life through Jesus Christ our Lord."
-}
-],
-"blocks": [
-{
-"k": "line",
-"t": "\"For the wages of sin is death;...\""
-},
-{
-"k": "p",
-"t": "The Bible tells us that sin isn't free. There is a price that must be paid for all sin. That price or consequence of sin is \"death.\" The Bible is speaking of both a physical death and a spiritual death. We all are going to physically die one day and that is due to sin, but the far worse consequence of sin is the spiritual death. This is an eternal separation from God in Hell and the Lake of Fire."
-},
-{
-"k": "line",
-"t": "\"but the gift of God is eternal life through Jesus Christ our Lord.\""
-},
-{
-"k": "p",
-"t": "Although our sin sentences us to death, God made a way out. He gave the free gift of eternal life to all that come through Jesus Christ. There is no other way to receive this gift except through Jesus."
-}
-]
-},
-{
-"ref": "Romans 5:8",
-"b": 45,
-"c": 5,
-"s": 28056,
-"e": 28056,
-"quote": [
-"\"But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.\""
-],
-"verses": [
-{
-"id": 28056,
-"v": 8,
-"t": "But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us."
-}
-],
-"blocks": [
-{
-"k": "p",
-"t": "The Bible tells us that God loves us so much, in spite of our sin and wickedness, that He willingly sent us His perfect Son, Jesus Christ. Christ lived a sinless life, performed countless miracles helping those around Him, willingly sacrificed His own life to pay the price for all sin, was buried, and rose again three days later giving eternal life to all who would place their faith in Him. This means that no one has to pay the price of sin because Christ already paid it all. However, God tells us in order to gain this salvation from our sin we must receive Christ as our own personal Savior."
-},
-{
-"k": "ask",
-"t": "\"Is that something you would like to do?\""
-},
-{
-"k": "p",
-"t": "If YES, proceed."
-},
-{
-"k": "p",
-"t": "If NO, this person is not ready to be saved."
-}
-]
-},
-{
-"ref": "Romans 10:9-10",
-"b": 45,
-"c": 10,
-"s": 28198,
-"e": 28199,
-"quote": [
-"\"That if thou shalt confess with thy mouth the Lord Jesus, and shalt believe in thine heart that God hath raised him from the dead, thou shalt be saved.",
-"For with the heart man believeth unto righteousness; and with the mouth confession is made unto salvation.\""
-],
-"verses": [
-{
-"id": 28198,
-"v": 9,
-"t": "That if thou shalt confess with thy mouth the Lord Jesus, and shalt believe in thine heart that God hath raised him from the dead, thou shalt be saved."
-},
-{
-"id": 28199,
-"v": 10,
-"t": "For with the heart man believeth unto righteousness; and with the mouth confession is made unto salvation."
-}
-],
-"blocks": [
-{
-"k": "p",
-"t": "To be saved someone must ask for forgiveness and repent from their sin. Believe in the Death, Burial, and Resurrection of Christ. And ask Christ to be their Savior. The Bible makes it clear that this is something that requires faith, \"and shalt believe in thine heart...\" If someone says a prayer but doesn't truly believe, then they are not saved. You must truly believe in order to receive Christ as your Savior."
-},
-{
-"k": "ask",
-"t": "\"Do you want to be saved?\""
-},
-{
-"k": "p",
-"t": "If YES, inform them:"
-},
-{
-"k": "line",
-"t": "\"Then what you need to do is pray right now to God. But just know that it's not the words that save you. It's repenting from sin and placing your belief in Jesus Christ and what He did that brings salvation.\""
-},
-{
-"k": "p",
-"t": "If they ask for your help, say something along these lines:"
-},
-{
-"k": "line",
-"t": "\"All praying is, is talking to God. There are no fancy words that must be said, God knows your heart. It's the belief in Jesus Christ and what He did that brings salvation.\""
-},
-{
-"k": "p",
-"t": "Once saved, it would be a good idea to tell the individual a few verses that will help them solidify their faith."
-}
-]
-},
-{
-"ref": "Ephesians 2:8-9",
-"b": 49,
-"c": 2,
-"s": 29238,
-"e": 29239,
-"quote": [
-"\"For by grace are ye saved through faith; and that not of yourselves: it is the gift of God:Not of works, lest any man should boast.\""
-],
-"verses": [
-{
-"id": 29238,
-"v": 8,
-"t": "For by grace are ye saved through faith; and that not of yourselves: it is the gift of God:"
-},
-{
-"id": 29239,
-"v": 9,
-"t": "Not of works, lest any man should boast."
-}
-],
-"blocks": [
-{
-"k": "p",
-"t": "The Bible tells us that we are not saved by our works - the things we do. We are saved by faith. This means that we cannot gain nor lose our salvation. It is a matter of faith in Christ."
-}
-]
-},
-{
-"ref": "John 10:27-29",
-"b": 43,
-"c": 10,
-"s": 26509,
-"e": 26511,
-"quote": [
-"\"My sheep hear my voice, and I know them, and they follow me:",
-"And I give unto them eternal life; and they shall never perish, neither shall any man pluck them out of my hand.",
-"My Father, which gave them me, is greater than all; and no man is able to pluck them out of my Father's hand.\""
-],
-"verses": [
-{
-"id": 26509,
-"v": 27,
-"t": "My sheep hear my voice, and I know them, and they follow me:"
-},
-{
-"id": 26510,
-"v": 28,
-"t": "And I give unto them eternal life; and they shall never perish, neither shall any man pluck them out of my hand."
-},
-{
-"id": 26511,
-"v": 29,
-"t": "My Father, which gave them me, is greater than all; and no man is able to pluck them out of my Father's hand."
-}
-],
-"blocks": [
-{
-"k": "p",
-"t": "Jesus Christ tells us that we are in His hand, and no one can remove us from His hand. He then states that we are in God's hand and no one, not even ourselves, are able to remove us from His hand. Our salvation is sealed in God by God."
-}
-]
-},
-{
-"ref": "1 Peter 1:5",
-"b": 60,
-"c": 1,
-"s": 30380,
-"e": 30380,
-"quote": [
-"\"Who are kept by the power of God through faith unto salvation ready to be revealed in the last time.\""
-],
-"verses": [
-{
-"id": 30380,
-"v": 5,
-"t": "Who are kept by the power of God through faith unto salvation ready to be revealed in the last time."
-}
-],
-"blocks": [
-{
-"k": "p",
-"t": "The Bible makes it clear that God is the one who keeps our salvation. So if we are to sin again once we get saved, which is inevitable, we do not and cannot lose our salvation. God promised to keep us saved forever."
-}
-]
-},
-{
-"ref": "Romans 8:38-39",
-"b": 45,
-"c": 8,
-"s": 28155,
-"e": 28156,
-"quote": [
-"\"For I am persuaded, that neither death, nor life, nor angels, nor principalities, nor powers, nor things present, nor things to come,",
-"Nor height, nor depth, nor any other creature, shall be able to separate us from the love of God, which is in Christ Jesus our Lord.\""
-],
-"verses": [
-{
-"id": 28155,
-"v": 38,
-"t": "For I am persuaded, that neither death, nor life, nor angels, nor principalities, nor powers, nor things present, nor things to come,"
-},
-{
-"id": 28156,
-"v": 39,
-"t": "Nor height, nor depth, nor any other creature, shall be able to separate us from the love of God, which is in Christ Jesus our Lord."
-}
-],
-"blocks": [
-{
-"k": "p",
-"t": "Nothing can separate us from God."
-}
-]
-},
-{
-"ref": "Romans 10:13",
-"b": 45,
-"c": 10,
-"s": 28202,
-"e": 28202,
-"quote": [
-"\"For whosoever shall call upon the name of the Lord shall be saved.\""
-],
-"verses": [
-{
-"id": 28202,
-"v": 13,
-"t": "For whosoever shall call upon the name of the Lord shall be saved."
-}
-],
-"blocks": [
-{
-"k": "p",
-"t": "\"Whosoever\" means anybody and everybody. The Bible makes it clear that this salvation is for everyone. It doesn't matter who you are, where you've been, or what you've done. Christ's blood is powerful enough to save everyone from their sin."
-}
-]
-}
-]
+ "title": "The Gospel",
+ "meaning": "It literally means “the good news”!",
+ "name": "A Heavenly Home",
+ "intro": "Could you say that you are 100 percent sure that you will go to Heaven when you die? The Bible says...",
+ "sections": [
+  {
+   "head": "We Have All Sinned.",
+   "quote": "\"For all have sinned, and come short of the glory of God;\"",
+   "ref": "Romans 3:23",
+   "p": [
+    "The word sin means to fall short or miss the mark. We cannot come to God because of our sin."
+   ],
+   "s": 28015,
+   "e": 28015
+  },
+  {
+   "head": "Sin Has A Penalty.",
+   "quote": "\"For the wages of sin is death; but the gift of God is eternal life through Jesus Christ our Lord.\"",
+   "ref": "Romans 6:23",
+   "p": [
+    "The payment for your sin is death and separation from God in a place that the Bible calls hell."
+   ],
+   "s": 28092,
+   "e": 28092
+  },
+  {
+   "head": "Jesus Paid The Penalty.",
+   "quote": "\"But God commendeth his love toward us, in that, while we were yet sinners, Christ died for us.\"",
+   "ref": "Romans 5:8",
+   "p": [
+    "God proved His love for you by giving His Son, Jesus Christ, to die on the cross for your sins."
+   ],
+   "s": 28056,
+   "e": 28056
+  },
+  {
+   "head": "You Can Confess & Believe Today.",
+   "quote": "\"That if thou shalt confess with thy mouth the Lord Jesus, and shalt believe in thine heart that God hath raised him from the dead, thou shalt be saved. For whosoever shall call upon the name of the Lord shall be saved.\"",
+   "ref": "Romans 10:9,13",
+   "p": [
+    "To confess and believe on Jesus Christ simply means to believe that He died for you, paid the price for your sin, and that He is the only way to Heaven. You can express your belief on Jesus by calling on Him in prayer."
+   ],
+   "s": 28198,
+   "e": 28202
+  }
+ ],
+ "closing": "",
+ "film": {
+  "title": "The Gospel Film",
+  "by": "The Gospel Film Project",
+  "url": "https://youtu.be/mIeRU12STNw"
+ }
 }

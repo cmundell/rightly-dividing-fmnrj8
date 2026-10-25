@@ -1,18 +1,18 @@
 'use strict';
-/* The Bible Study App — web (iPhone / any browser) edition.
+/* Rightly Dividing — web (iPhone / any browser) edition.
    Stands in for the Windows app's back end: opens the same Bible database in the browser with sql.js,
    keeps your notes on this device (IndexedDB), and turns printing and saving into the browser's own. */
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '3.17.2';
+  const VERSION = '1.0.0';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
   const splash = document.createElement('div');
   splash.id = 'webSplash';
-  splash.innerHTML = `<div class="ws-card"><div class="ws-title">The Bible Study App</div>
-    <div class="ws-verse">“Search the scriptures; for in them ye think ye have eternal life: and they are they which testify of me.” <span>John 5:39</span></div>
+  splash.innerHTML = `<div class="ws-card"><div class="ws-title">Rightly Dividing</div>
+    <div class="ws-verse">“Study to shew thyself approved unto God, a workman that needeth not to be ashamed, rightly dividing the word of truth.” <span>2 Timothy 2:15</span></div>
     <div class="ws-bar"><i></i></div><div class="ws-msg">Opening…</div></div>`;
   const showSplash = () => document.body.appendChild(splash);
   if (document.body) showSplash();
@@ -110,7 +110,7 @@
   }
 
   // a simple passcode, asked once per device, to keep casual visitors out (not real security)
-  const PASS_HASH = '71944447f3c98add9e5668d3369128f3b92586d0626d0137a8ac3531fe4fc578';
+  const PASS_HASH = '6b1039644e70dc26498de7989cd9cfaaf0baae7cd2c78916c34cc75cb3b8e9b4';
   const sha = async (t) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map((b) => b.toString(16).padStart(2, '0')).join('');
   const passed = (() => {
     try {
@@ -123,7 +123,7 @@
     const show = () => {
       const g = document.createElement('div');
       g.id = 'webGate';
-      g.innerHTML = `<form class="wg-card"><div class="ws-title">The Bible Study App</div>
+      g.innerHTML = `<form class="wg-card"><div class="ws-title">Rightly Dividing</div>
         <p>Enter the passcode you were given.</p>
         <p class="wg-note">The first time, the app downloads the Bible and its study tools (about 42 MB), so Wi‑Fi is best. After that it works without the internet.</p>
         <input type="password" autocomplete="off" autocapitalize="off" aria-label="Passcode" placeholder="Passcode" />
@@ -248,7 +248,6 @@
     web: true,
     version: VERSION,
     books: D((db) => db.books),
-    meta: D((db) => ({ ...db.meta, userFile: 'this device (web)' })),
     chapter: D((db, b, c) => db.chapter(b, c)),
     verseId: D((db, b, c, v) => db.verseId(b, c, v)),
     locate: D((db, id) => db.locate(id)),
@@ -261,8 +260,6 @@
     strong: D((db, id) => db.strong(id)),
     concordance: D((db, id, _tr, limit, offset) => db.concordance(id, 'kjv', limit, offset)),
     dict: D((db, w) => db.dict(w)),
-    commentary: D((db, id) => db.commentary(id)),
-    osis: D((db, r) => db.osis(r)),
     naveForVerse: D((db, id) => db.naveForVerse(id)),
     naveSearch: D((db, q) => db.naveSearch(q)),
     naveTopic: D((db, id) => db.naveTopic(id)),
@@ -288,7 +285,7 @@
     gospel: () => loadJson('gospel.json', { steps: [], next: [] }),
     // the book introductions (3.14)
     phrases: () => loadJson('phrases.json', []),
-    scofield: async (id) => (await loadJson('scofield.json', {}))[id] || null,
+    tidwell: async (id) => (await loadJson('tidwell.json', {}))[id] || null,
     // after an update reaches this phone, show What's New once (not on a first install)
     whatsNewPending: async () => {
       const u = (await kvGet('user')) || {};
@@ -316,14 +313,6 @@
     exportSheet: (html) => printHtml(html),
     saveHtml: async (html, name) => download(new Blob([html], { type: 'text/html' }), `${safeName(name, 'Page')}.html`),
     exportNotesDocx: (doc) => exportNotesDocx(doc),
-    // things only the Windows app can do
-    notify: async () => false,
-    openAtLogin: async () => false,
-    speechAvailable: async () => false,
-    speechWarm: async () => false,
-    speak: async () => {
-      throw new Error('Reading aloud is in the Windows app only');
-    },
     uiZoom: async (f) => {
       const z = Math.min(1.6, Math.max(0.8, Number(f) || 1));
       document.documentElement.style.setProperty('--ui-zoom', z);
@@ -334,9 +323,9 @@
     // web only: back up and restore your notes
     backup: async () => {
       const u = (await kvGet('user')) || {};
-      const out = { app: 'The Bible Study App', exported: new Date().toISOString() };
+      const out = { app: 'Rightly Dividing', exported: new Date().toISOString() };
       for (const k of USER_KEYS) if (u[k] !== undefined) out[k] = u[k];
-      return download(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }), `The Bible Study App notes ${new Date().toISOString().slice(0, 10)}.json`);
+      return download(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }), `Rightly Dividing notes ${new Date().toISOString().slice(0, 10)}.json`);
     },
     restore: async (text) => {
       const data = JSON.parse(text);

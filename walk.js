@@ -1,5 +1,5 @@
 'use strict';
-/* Today, the gospel, the prayer list and journal, ways to practise memory verses; reminders and Listen (set aside for now, see features.js); study methods.
+/* Today, the gospel, the prayer list and journal, ways to practise memory verses; study methods.
    Merged in 3.15 from the per-release layers (v38.js, v381.js, v39.js), kept in their original order: later
    sections still extend earlier ones by wrapping window.X. */
 
@@ -7,7 +7,7 @@
 // from v38.js
 // =====================================================================================================
 /* v3.8: Daily walk — Today, the gospel,
-   prayer list, journal, more ways to practise memory verses, and gentle reminders.
+   prayer list, journal and more ways to practise memory verses.
    Loaded after v37.js; overrides use window.X so earlier code picks them up. */
 /* global tsk, state, $, $$, esc, go, toast, switchTab, saveUser, openModal, closeModal, todayStr, renderMarks, setTags,
    openPlan, planStatus, openDaily, openProgress, readingStats, markRead, v32, v33, startPractice, showPracticeCard,
@@ -18,7 +18,6 @@ const v38 = {
   journalQ: '',
 };
 const dkey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const curly = (t) => String(t).replace(/"([^"]*)"/g, '“$1”');
 const longDate = (k) => new Date(`${k}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const shortDate = (k) => new Date(`${k}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -43,14 +42,12 @@ const PRAYER_CATS = ['Family', 'Church', 'Friends', 'Those who need Christ', 'Mi
     const w = u.walk && typeof u.walk === 'object' ? u.walk : {};
     state.walk = {
       days: w.days || {},
-      remind: Object.assign({ on: false, time: '07:00' }, w.remind || {}),
-      lastRemind: w.lastRemind || '',
     };
   };
 }
 state.journal = state.journal || [];
 state.prayers = state.prayers || [];
-state.walk = state.walk || { days: {}, remind: { on: false, time: '07:00' }, lastRemind: '' };
+state.walk = state.walk || { days: {} };
 
 async function loadGospel() {
   if (!v38.gospel) v38.gospel = await tsk.gospel();
@@ -88,12 +85,10 @@ async function openToday() {
   const planToday = ps && !ps.finished ? ps.days[ps.today] || [] : [];
   const name = state.settings.name;
   const bk = state.books[(state.cur.book || 1) - 1];
-  const badges = Object.keys((state.walk && state.walk.badges) || {}).length;
   openModal(`<div class="kicker">${esc(longDate(today))}</div>
     <h2 class="m-title">${hello}${name ? `, ${esc(name)}` : ''}</h2>
     <blockquote class="td-invite">“${esc(text)}” <span>${esc(ref)}</span></blockquote>
     ${bk ? `<button class="td-open" data-td4="open">Open your Bible<span>Continue in ${esc(bk.name)} ${state.cur.ch}</span></button>` : ''}
-    ${typeof showcaseHtml === 'function' ? showcaseHtml() : ''}
     <div class="td-tiles">
       <button data-td2="study"><b>Study methods</b><span>Guided worksheets: observe, words, people, topics</span></button>
       ${FEATURES.prayer === false ? '' : `<button data-td="prayers"><b>Prayer list</b><span>${open ? `${open} request${open === 1 ? '' : 's'} you are praying for` : 'Keep a list of what you are praying for'}</span></button>`}
@@ -101,12 +96,10 @@ async function openToday() {
       <button data-td="plan"><b>Reading plan</b><span>${planToday.length ? `Today: ${esc(planLabel(planToday))}` : ps && ps.finished ? 'Plan finished — well done' : 'Choose a plan to read through the Bible'}</span></button>
       <button data-td="daily"><b>Devotional</b><span>Spurgeon's Morning and Evening for today</span></button>
       <button data-td="journal"><b>Journal</b><span>${state.journal.length ? `${state.journal.length} entr${state.journal.length === 1 ? 'y' : 'ies'}` : 'Write down what God is teaching you'}</span></button>
-      <button data-td="gospel"><b>The Gospel</b><span>How to be saved — to read, print or share</span></button>
-      <button data-td3="badges"><b>Medallions</b><span>${badges ? `${badges} collected` : 'Milestones in memorizing and reading'}</span></button>
+      <button data-td="gospel" class="td-gospel"><b>The Gospel</b><span>How to be saved — to read, print or share</span></button>
     </div>
     <div class="td-quiet" title="Days with God's Word: a chapter read">
       This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word · ${w.chapters} chapter${w.chapters === 1 ? '' : 's'}
-      ${FEATURES.reminders ? '<button class="linkish" data-td="remind">Gentle reminders…</button>' : ''}
     </div>`, 'm-today');
 }
 
@@ -130,19 +123,21 @@ function sheetPage(title, inner) {
     blockquote cite{display:block;font:9.5pt 'Segoe UI',Arial,sans-serif;color:#5b6476;margin-top:3pt;font-style:normal}
     sup{font-size:7pt;color:#8a6414;margin-right:1pt}ol,ul{margin:4pt 0 8pt 18pt;padding:0}li{margin:2pt 0}
     .f{margin-top:22pt;font:8.5pt 'Segoe UI',Arial,sans-serif;color:#8a8f99}
-    @media print{body{margin:0 auto}}</style></head><body>${inner}<div class="f">Scripture from the King James Version. Made with The Bible Study App.</div></body></html>`;
+    @media print{body{margin:0 auto}}</style></head><body>${inner}<div class="f">Scripture from the King James Version. Made with Rightly Dividing.</div></body></html>`;
 }
 
 // ===================================================================== the gospel
 async function openGospel() {
   const g = await loadGospel();
-  // Word for word from Teays Valley Baptist (see tools/build_gospel.py): nothing here is reworded.
-  const block = (x) => `<p class="gs-${x.k}">${esc(x.t)}</p>`;
-  openModal(`<h2 class="m-title">${esc(g.title)}</h2>
-    ${g.sections.map((s) => `<section class="gs-sec"><h3><button class="gs-ref" data-dvgo="${s.s}" title="Open in the Bible">${esc(s.ref)}</button></h3>
-      <blockquote class="gs-verse">${s.quote.map((q) => `<span class="gs-q">${esc(q)}</span>`).join('')}</blockquote>
-      ${s.blocks.map(block).join('')}</section>`).join('')}
-    <p class="gs-src">From ${esc(g.source)}, <a href="${esc(g.sourceUrl)}" target="_blank" rel="noopener">Witness Assist</a>.</p>
+  // Word for word from the tract "A Heavenly Home" (see tools/build_gospel.py): nothing here is reworded.
+  openModal(`<h2 class="m-title gs-title">${esc(g.title)}</h2>
+    ${g.meaning ? `<p class="gs-meaning">${esc(g.meaning)}</p>` : ''}
+    <h3 class="gs-name">${esc(g.name)}</h3>
+    <p class="gs-intro">${esc(g.intro)}</p>
+    ${g.sections.map((s) => `<section class="gs-sec"><h3>${esc(s.head)}</h3>
+      <blockquote class="gs-verse"><span class="gs-q">${esc(s.quote)}</span> <button class="gs-ref" data-dvgo="${s.s}" title="Open in the Bible">${esc(s.ref)}</button></blockquote>
+      ${s.p.map((t) => `<p class="gs-p">${esc(t)}</p>`).join('')}</section>`).join('')}
+    ${g.closing ? `<p class="gs-close">${esc(g.closing)}</p>` : ''}
     <a class="gs-film" href="${esc(g.film.url)}" target="_blank" rel="noopener">
       <span class="gs-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span>
       <span class="gs-film-t"><b>Watch ${esc(g.film.title)}</b><small>${esc(g.film.by)} · YouTube · needs internet</small></span>
@@ -153,10 +148,12 @@ async function openGospel() {
 async function gospelPage() {
   const g = await loadGospel();
   return sheetPage(g.title, `<h1>${esc(g.title)}</h1>
-    ${g.sections.map((s) => `<h2>${esc(s.ref)}</h2><blockquote>${s.quote.map(esc).join('<br>')}</blockquote>
-      ${s.blocks.map((x) => `<p${x.k === 'p' ? '' : ' style="font-weight:600"'}>${esc(x.t)}</p>`).join('')}`).join('')}
-    <p>Watch ${esc(g.film.title)} (${esc(g.film.by)}): <a href="${esc(g.film.url)}">${esc(g.film.url)}</a></p>
-    <p style="color:#666;font-size:.9em">From ${esc(g.source)}, Witness Assist: ${esc(g.sourceUrl)}</p>`);
+    ${g.meaning ? `<p style="font-style:italic;color:#8a6414;margin-top:0">${esc(g.meaning)}</p>` : ''}
+    <h2>${esc(g.name)}</h2><p>${esc(g.intro)}</p>
+    ${g.sections.map((s) => `<h2>${esc(s.head)}</h2><blockquote>${esc(s.quote)} <cite>${esc(s.ref)}</cite></blockquote>
+      ${s.p.map((t) => `<p>${esc(t)}</p>`).join('')}`).join('')}
+    ${g.closing ? `<p style="font-weight:600">${esc(g.closing)}</p>` : ''}
+    <p>Watch ${esc(g.film.title)} (${esc(g.film.by)}): <a href="${esc(g.film.url)}">${esc(g.film.url)}</a></p>`);
 }
 
 // ===================================================================== prayer list (Notes › Prayer)
@@ -304,36 +301,6 @@ function diffWords(want, got) {
   return out;
 }
 
-// ===================================================================== gentle reminders
-function openReminders() {
-  const r = state.walk.remind;
-  openModal(`<div class="kicker">Gentle reminders</div><h2 class="m-title">A quiet nudge, never a nag</h2>
-    <p class="hint">The Bible Study App will never send you streak warnings or count what you missed. If you like, it can remind you once a day.</p>
-    <div class="ro-grid">
-      <label>Daily reminder</label><div class="ro-seg"><button data-rm="off" class="${r.on ? '' : 'on'}">Off</button><button data-rm="on" class="${r.on ? 'on' : ''}">On</button></div>
-      <label for="rmTime">At</label><div><input id="rmTime" type="time" value="${esc(r.time)}" ${r.on ? '' : 'disabled'} /></div>
-      <label>When I sign in to Windows</label><div class="ro-seg"><button data-login="off">Don't open</button><button data-login="on">Open the app</button></div>
-    </div>
-    <p class="hint">The reminder shows while the app is open (it can sit minimized), and only on days you haven't yet opened the Word. If it is off, nothing is sent.</p>`, 'm-remind');
-  tsk.openAtLogin().then((on) => $$('#modal [data-login]').forEach((b) => b.classList.toggle('on', (b.dataset.login === 'on') === !!on)));
-}
-
-function checkReminder() {
-  if (!FEATURES.reminders) return;
-  const r = state.walk.remind;
-  if (!r.on) return;
-  const now = new Date();
-  const today = dkey(now);
-  if (state.walk.lastRemind === today || walkedOn(today)) return;
-  const [h, m] = String(r.time || '07:00').split(':').map(Number);
-  if (now.getHours() * 60 + now.getMinutes() < h * 60 + m) return;
-  state.walk.lastRemind = today;
-  saveUser(['walk']);
-  const [ref, text] = inviteFor(today);
-  tsk.notify('A verse for today', `“${text}” — ${ref}`);
-  toast(`“${text}” — ${ref}`);
-}
-
 // ===================================================================== tour, quick start, commands
 {
   const i = TOUR.findIndex((t) => t.el === '#btnTimeline');
@@ -354,7 +321,6 @@ function checkReminder() {
     ['Prayer list', 'requests answered', () => showMarksView('prayer')],
     ['Journal', 'diary entries', () => showMarksView('journal')],
     ['The Gospel — how to be saved', 'salvation saved romans road share', () => openGospel()],
-    ['Gentle reminders', 'notification reminder login', () => openReminders()],
   );
 }
 
@@ -374,7 +340,6 @@ function wireV38() {
       if (k === 'plan') return openPlan();
       if (k === 'daily') return openDaily(0, null);
       if (k === 'gospel') return openGospel();
-      if (k === 'remind') return openReminders();
     }
     const wk = t.closest('[data-wk]');
     if (wk) {
@@ -392,19 +357,6 @@ function wireV38() {
       if (saved) toast('Saved. Anyone can open it in a web browser.');
       return;
     }
-    // reminders
-    const rm = t.closest('[data-rm]');
-    if (rm) {
-      state.walk.remind.on = rm.dataset.rm === 'on';
-      saveUser(['walk']);
-      return openReminders();
-    }
-    const lg = t.closest('[data-login]');
-    if (lg) {
-      const on = await tsk.openAtLogin(lg.dataset.login === 'on');
-      $$('#modal [data-login]').forEach((b) => b.classList.toggle('on', (b.dataset.login === 'on') === !!on));
-      return;
-    }
     // memory practice extras
     const mx = t.closest('[data-memx]');
     if (mx && v33.practice) {
@@ -419,13 +371,6 @@ function wireV38() {
     if (mb) {
       mb.textContent = mb.dataset.w;
       mb.classList.add('shown');
-    }
-  });
-  modal.addEventListener('input', (e) => {
-    if (e.target.id === 'rmTime') {
-      state.walk.remind.time = e.target.value || '07:00';
-      state.walk.lastRemind = '';
-      saveUser(['walk']);
     }
   });
   modal.addEventListener('keydown', (e) => {
@@ -532,318 +477,16 @@ function wireV38() {
     else if (cmd === 'journal') showMarksView('journal');
     else if (cmd === 'gospel') openGospel();
   });
-  setInterval(checkReminder, 60000);
-  setTimeout(checkReminder, 5000);
 }
 
 wireV38();
-
-// =====================================================================================================
-// from v381.js
-// =====================================================================================================
-/* v3.8.1: Listen — the KJV read aloud by an offline British voice, verse by verse, with the verse being read
-   highlighted. Works in the reader. Loaded after v38.js. */
-/* global tsk, state, $, $$, esc, go, toast, saveUser, todayStr, markRead, v38, bookName, COMMANDS, TOUR, openQuickStart */
-
-const listen = {
-  ok: null, // is the voice installed?
-  ctx: null,
-  list: [], // [{ id, text, label }]
-  i: 0,
-  playing: false,
-  paused: false,
-  src: null,
-  cache: new Map(), // verse id -> Promise<AudioBuffer>
-  token: 0, // bumps when playback is restarted, so stale callbacks stop
-  where: null, // { kind: 'chapter', book, ch } | { kind: 'passage', title }
-  scope: null, // element to highlight within (reader or a dialog)
-};
-const LISTEN_SPEEDS = [0.8, 0.9, 1, 1.1, 1.25];
-const BASE_SPEED = 0.92; // a measured pace for Scripture
-const lsSpeed = () => Number(state.settings.listenSpeed) || 1;
-
-async function listenAvailable() {
-  if (listen.ok === null) listen.ok = !!(await tsk.speechAvailable().catch(() => false));
-  return listen.ok;
-}
-
-function audioFor(v) {
-  const key = `${v.id}@${lsSpeed()}`;
-  if (!listen.cache.has(key)) {
-    // the model's speed: larger is faster; our setting is "how fast", so divide the length
-    const p = tsk.speak(v.text, BASE_SPEED * lsSpeed()).then((a) => {
-      const ctx = listen.ctx;
-      const buf = ctx.createBuffer(1, a.samples.length, a.sampleRate);
-      buf.copyToChannel(a.samples instanceof Float32Array ? a.samples : Float32Array.from(a.samples), 0);
-      return buf;
-    });
-    p.catch(() => listen.cache.delete(key));
-    listen.cache.set(key, p);
-    if (listen.cache.size > 80) listen.cache.delete(listen.cache.keys().next().value);
-  }
-  return listen.cache.get(key);
-}
-
-function prefetch(from) {
-  for (let k = from; k < Math.min(from + 3, listen.list.length); k++) audioFor(listen.list[k]);
-}
-
-/** Start reading a list of verses. opts: { start, where, scope } */
-async function startListening(list, opts = {}) {
-  if (!(await listenAvailable())) return toast('The read-aloud voice is not installed.');
-  if (!list.length) return;
-  stopListening(true);
-  listen.ctx = listen.ctx || new AudioContext();
-  if (listen.ctx.state === 'suspended') await listen.ctx.resume();
-  listen.list = list;
-  listen.i = Math.max(0, Math.min(list.length - 1, opts.start || 0));
-  listen.where = opts.where || null;
-  listen.scope = opts.scope || '#readerInner';
-  listen.playing = true;
-  listen.paused = false;
-  showPlayer();
-  playCurrent();
-}
-
-async function playCurrent() {
-  const my = ++listen.token;
-  const v = listen.list[listen.i];
-  if (!v) return finished();
-  markSpeaking(v.id);
-  updatePlayer(true);
-  prefetch(listen.i);
-  let buf;
-  try {
-    buf = await audioFor(v);
-  } catch (e) {
-    if (my !== listen.token) return;
-    stopListening();
-    return toast('Could not read this aloud.');
-  }
-  if (my !== listen.token || !listen.playing) return;
-  updatePlayer(false);
-  const src = listen.ctx.createBufferSource();
-  src.buffer = buf;
-  src.connect(listen.ctx.destination);
-  src.onended = () => {
-    if (my !== listen.token || !listen.playing) return;
-    listen.src = null;
-    setTimeout(() => {
-      if (my !== listen.token || !listen.playing) return;
-      listen.i += 1;
-      playCurrent();
-    }, 380); // a breath between verses
-  };
-  listen.src = src;
-  src.start();
-}
-
-async function finished() {
-  const w = listen.where;
-  if (w && w.kind === 'chapter') {
-    markRead(w.book, w.ch);
-    const bk = state.books[w.book - 1];
-    if (state.settings.listenOn !== 'off' && (w.ch < bk.chapters || w.book < 66)) {
-      // carry on into the next chapter
-      const nb = w.ch < bk.chapters ? w.book : w.book + 1;
-      const nc = w.ch < bk.chapters ? w.ch + 1 : 1;
-      await go({ book: nb, ch: nc, vs: 1 });
-      return listenToChapter(nb, nc, 0);
-    }
-  }
-  stopListening();
-}
-
-function stopListening(quiet) {
-  listen.token += 1;
-  listen.playing = false;
-  listen.paused = false;
-  if (listen.src) {
-    try {
-      listen.src.onended = null;
-      listen.src.stop();
-    } catch {
-      /* already stopped */
-    }
-  }
-  listen.src = null;
-  if (listen.ctx && listen.ctx.state === 'suspended') listen.ctx.resume();
-  markSpeaking(null);
-  if (!quiet) hidePlayer();
-}
-
-function togglePause() {
-  if (!listen.playing || !listen.ctx) return;
-  if (listen.paused) {
-    listen.ctx.resume();
-    listen.paused = false;
-  } else {
-    listen.ctx.suspend();
-    listen.paused = true;
-  }
-  updatePlayer(false);
-}
-
-function skip(d) {
-  if (!listen.list.length) return;
-  const i = Math.max(0, Math.min(listen.list.length - 1, listen.i + d));
-  const keep = { list: listen.list, where: listen.where, scope: listen.scope };
-  stopListening(true);
-  Object.assign(listen, keep, { i, playing: true, paused: false });
-  playCurrent();
-}
-
-function setListenSpeed(s) {
-  state.settings.listenSpeed = s;
-  saveUser(['settings']);
-  if (listen.playing) skip(0); // re-read the current verse at the new pace
-  else updatePlayer(false);
-}
-
-function markSpeaking(id) {
-  $$('.speaking').forEach((el) => el.classList.remove('speaking'));
-  if (id == null) return;
-  const scope = $(listen.scope) || document;
-  const el = $(`[data-id="${id}"]`, scope) || $(`[data-wkv="${id}"]`, scope);
-  if (!el) return;
-  el.classList.add('speaking');
-  const box = el.getBoundingClientRect();
-  if (box.top < 90 || box.bottom > window.innerHeight - 80) el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-}
-
-// ---------------------------------------------------------------- what to read
-async function listenToChapter(book = state.cur.book, ch = state.cur.ch, start = null) {
-  const c = await tsk.chapter(book, ch);
-  const nm = c.name.replace(/^Psalms$/, 'Psalm');
-  const list = c.verses.map((v) => ({ id: v.id, text: v.text, label: `${nm} ${ch}:${v.vs}` }));
-  if (start === null) {
-    const sel = state.cur.sel && state.cur.book === book && state.cur.ch === ch ? list.findIndex((v) => v.id === state.cur.sel) : -1;
-    start = sel >= 0 ? sel : 0;
-  }
-  // say where we are at the start of each chapter
-  if (start === 0) list[0] = { ...list[0], text: `${nm}, chapter ${ch}. ${list[0].text}` };
-  return startListening(list, { start, where: { kind: 'chapter', book, ch }, scope: '#readerInner' });
-}
-
-function listenToVerses(verses, title, scope) {
-  const list = verses.map((v) => ({ id: v.id, text: v.t || v.text, label: v.label || title }));
-  return startListening(list, { where: { kind: 'passage', title }, scope });
-}
-
-// ---------------------------------------------------------------- player bar
-function showPlayer() {
-  let bar = $('#lsBar');
-  if (!bar) {
-    document.body.insertAdjacentHTML('beforeend', `<div id="lsBar" class="ls-bar" role="region" aria-label="Read aloud">
-      <button data-ls="prev" title="Previous verse" aria-label="Previous verse">&#9198;</button>
-      <button data-ls="play" class="ls-play" title="Pause (Space)" aria-label="Pause">&#10074;&#10074;</button>
-      <button data-ls="next" title="Next verse" aria-label="Next verse">&#9197;</button>
-      <button data-ls="stop" title="Stop" aria-label="Stop">&#9632;</button>
-      <span class="ls-where" aria-live="polite"></span>
-      <span class="ls-spin" hidden>preparing…</span>
-      <label class="ls-speed">Pace <select data-ls="speed" aria-label="Reading pace">${LISTEN_SPEEDS.map((s) => `<option value="${s}">${s === 1 ? 'Normal' : s < 1 ? (s === 0.8 ? 'Slowest' : 'Slower') : s === 1.1 ? 'Faster' : 'Fastest'}</option>`).join('')}</select></label>
-      <label class="ls-on" title="When a chapter ends, go on to the next"><input type="checkbox" data-ls="on" /> Keep going</label>
-    </div>`);
-    bar = $('#lsBar');
-  }
-  bar.hidden = false;
-  document.body.classList.add('listening');
-  updatePlayer(false);
-}
-function hidePlayer() {
-  const bar = $('#lsBar');
-  if (bar) bar.hidden = true;
-  document.body.classList.remove('listening');
-}
-function updatePlayer(preparing) {
-  const bar = $('#lsBar');
-  if (!bar) return;
-  const v = listen.list[listen.i];
-  $('.ls-where', bar).textContent = v ? v.label : '';
-  $('.ls-spin', bar).hidden = !preparing;
-  const p = $('.ls-play', bar);
-  p.innerHTML = listen.paused ? '&#9654;' : '&#10074;&#10074;';
-  p.title = listen.paused ? 'Play (Space)' : 'Pause (Space)';
-  p.setAttribute('aria-label', listen.paused ? 'Play' : 'Pause');
-  $('[data-ls="speed"]', bar).value = String(lsSpeed());
-  $('[data-ls="on"]', bar).checked = state.settings.listenOn !== 'off';
-  $('.ls-on', bar).hidden = !(listen.where && listen.where.kind === 'chapter');
-  $('#btnListen') && $('#btnListen').classList.toggle('on', listen.playing);
-}
-
-// ---------------------------------------------------------------- buttons in other places
-
-// ---------------------------------------------------------------- wiring
-function wireListen() {
-  $('#btnToday').insertAdjacentHTML('afterend', '<button id="btnListen" class="icon text" title="Listen: hear this chapter read aloud (Ctrl+Shift+L)">Listen</button>');
-  listenAvailable().then((ok) => {
-    if (!ok) $('#btnListen').hidden = true;
-  });
-  $('#btnListen').addEventListener('click', () => (listen.playing ? stopListening() : listenToChapter()));
-  document.addEventListener('click', async (e) => {
-    const b = e.target.closest('#lsBar [data-ls]');
-    if (b) {
-      const k = b.dataset.ls;
-      if (k === 'play') return togglePause();
-      if (k === 'stop') return stopListening();
-      if (k === 'prev') return skip(-1);
-      if (k === 'next') return skip(1);
-      return;
-    }
-  });
-  document.addEventListener('change', (e) => {
-    const s = e.target.closest('#lsBar [data-ls="speed"]');
-    if (s) return setListenSpeed(Number(s.value));
-    const on = e.target.closest('#lsBar [data-ls="on"]');
-    if (on) {
-      state.settings.listenOn = on.checked ? 'on' : 'off';
-      saveUser(['settings']);
-    }
-  });
-  document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
-      e.preventDefault();
-      return listen.playing ? stopListening() : listenToChapter();
-    }
-    // Space pauses while listening, unless typing
-    if (e.key === ' ' && listen.playing && !e.target.closest('input, textarea, select, [contenteditable], button')) {
-      e.preventDefault();
-      togglePause();
-    }
-  });
-  // the dialogs re-render; put the Listen buttons back each time, and stop reading a dialog that closes
-  new MutationObserver(() => {
-    if (listen.playing && listen.scope === '#modal' && $('#modal').hidden) stopListening();
-  }).observe($('#modal'), { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class'] });
-  tsk.onMenu((cmd) => {
-    if (cmd === 'listen') listen.playing ? stopListening() : listenToChapter();
-  });
-  const i = TOUR.findIndex((t) => t.el === '#btnToday');
-  // only mention Listen where the voice is installed (it is set aside in current releases)
-  listenAvailable().then((ok) => {
-    if (!ok) return;
-    COMMANDS.unshift(['Listen to this chapter', 'read aloud audio voice speak hear', () => listenToChapter()]);
-    TOUR.splice(i >= 0 ? i + 1 : TOUR.length - 1, 0, { el: '#btnListen', title: 'Listen', text: 'Hear the chapter read aloud by a British voice, verse by verse, with the verse being read highlighted. It all happens on your computer — no internet needed. Choose the pace, and whether to keep going into the next chapter.' });
-  });
-  const prevQS = window.openQuickStart;
-  window.openQuickStart = () => {
-    prevQS();
-    if (!listen.ok) return;
-    const ul = $('#modal .qs section ul');
-    const walk = $$('#modal .qs section').find((s) => /Your daily walk/.test(s.textContent));
-    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', '<li><b>Listen</b> (Ctrl+Shift+L): the chapter read aloud from the verse you have selected; Space pauses.</li>');
-    else if (ul) ul.insertAdjacentHTML('beforeend', '<li><b>Listen</b> (Ctrl+Shift+L): the chapter read aloud.</li>');
-  };
-}
-
-wireListen();
 
 // =====================================================================================================
 // from v39.js
 // =====================================================================================================
 /* v3.9: Study methods (guided worksheets that teach how to study a passage, using the app's own study data). */
 /* global tsk, state, $, $$, esc, go, toast, saveUser, openModal, closeModal, todayStr, newId, v32, v38, switchTab,
-   renderMarks, toggleMemory, COMMANDS, TOUR, openQuickStart, listenToVerses, listen, showMarksView, sheetPage, bookName */
+   renderMarks, toggleMemory, COMMANDS, TOUR, openQuickStart, showMarksView, sheetPage, bookName */
 
 const v39 = { study: null };
 

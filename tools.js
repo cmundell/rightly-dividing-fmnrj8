@@ -574,7 +574,7 @@ const COMMANDS = [
   ['Reading plan', 'schedule today', () => openPlan()],
   ['Cross-references tab', 'refs tsk', () => switchTab('refs')],
   ['Word study tab', 'hebrew greek strongs interlinear', () => switchTab('words')],
-  ['Commentary tab', 'commentary blue letter bible', () => switchTab('comm')],
+  ['Commentary at Blue Letter Bible', 'commentary blue letter bible online', () => state.xref && window.open(blbUrl(state.xref.verse.label), '_blank')],
   ['Topics tab', 'naves', () => switchTab('topics')],
   ['Places tab (maps)', 'map', () => document.querySelector('.tabs [data-tab="places"]').click()],
   ['Journeys (maps)', 'paul jesus exodus routes', async () => {

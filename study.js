@@ -205,7 +205,7 @@ async function lessonHtml(l) {
       return `<li><div class="ref">${esc(p.label)}</div><div class="text">${p.verses.map((v) => (multi ? `<sup>${v.vs}</sup>` : '') + esc(v.text)).join(' ')}${p.truncated ? ' …' : ''}</div>${it.note ? `<div class="note">${esc(it.note)}</div>` : ''}</li>`;
     })
     .join('')}</ol>
-<div class="credits">Scripture: King James Version (public domain). Made with The Bible Study App.</div></body></html>`;
+<div class="credits">Scripture: King James Version (public domain). Made with Rightly Dividing.</div></body></html>`;
 }
 
 // ===================================================================== reading plans
@@ -299,7 +299,7 @@ function openPlan() {
 // ===================================================================== Quick Start guide
 const dblClick = () => (typeof isPhone === 'function' && isPhone() ? 'Double-tap' : 'Double-click'); // a phone has no double-click
 function openQuickStart() {
-  openModal(`<div class="kicker">The Bible Study App</div><h2 class="m-title">Quick start</h2>
+  openModal(`<div class="kicker">Rightly Dividing</div><h2 class="m-title">Quick start</h2>
   <div class="qs">
     <section><h3>Getting around</h3><ul>
       <li>Type a reference in the top box and press Enter: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</li>
@@ -307,12 +307,12 @@ function openQuickStart() {
       <li><kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> go back and forward. The <b>trail</b> under the toolbar lists every verse you've studied — click one to return.</li>
       <li>Highlighted verses keep their color; marks in the left margin show verses you've noted (✎) or tagged (#).</li></ul></section>
     <section><h3>Studying a verse</h3><ul>
-      <li>New to Bible study? Select a verse and choose <b>Study this verse, step by step</b>: read it, related verses, one word up close${FEATURES.commentary ? ', what a trusted teacher said' : ''}, and what God is saying to you.</li>
+      <li>New to Bible study? Select a verse and choose <b>Study this verse, step by step</b>: read it, related verses, one word up close, and what God is saying to you.</li>
       <li><b>Related verses</b> — the Treasury of Scripture Knowledge cross-references, grouped by key word. Hover to preview, click to go.</li>
       <li><b>Original words</b> — every Hebrew/Greek word with Strong's number and grammar. Click a number for its full entry and every verse that uses it.</li>
-      <li>${FEATURES.commentary ? "<b>Commentary</b> — Matthew Henry's Concise Commentary on the passage." : '<b>Commentary</b> — opens the verse at Blue Letter Bible (online) if you want to read commentaries.'} <b>Topics</b> — Nave's topics that cite the verse.</li>
+      <li><b>Topics</b> — Nave's topics that cite the verse. To read commentaries, the verse's <b>More</b> menu (or right-click) opens it at Blue Letter Bible, online.</li>
       <li>${dblClick()} any word in the text for its Webster's 1828 definition and the original word.</li>
-${ABOUT_ON ? '      <li><b>About this book</b>, under each chapter heading: the writer, the date, the theme and the divisions of the book, from C. I. Scofield (1917).</li>' : ''}</ul></section>
+${ABOUT_ON ? '      <li><b>About this book</b>, under each chapter heading: the author, audience, relationship, occasion and purpose of the book, its outline and questions for study, from J. B. Tidwell (1916).</li>' : ''}</ul></section>
     <section><h3>Searching</h3><ul>
       <li><code>faith hope</code> all words · <code>"living water"</code> exact phrase · <code>shepherd OR sheep</code> either</li>
       <li><code>grace -law</code> leave a word out · <code>redeem*</code> word beginnings</li>
@@ -332,13 +332,13 @@ ${ABOUT_ON ? '      <li><b>About this book</b>, under each chapter heading: the 
 
 // ===================================================================== guided tour
 const TOUR = [
-  { title: 'Welcome to The Bible Study App', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
+  { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
   { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Highlighted verses keep their color; small marks in the left margin show your notes (✎) and tags (#).' },
-  ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: the writer, the date, the theme and the divisions of the book, from C. I. Scofield\'s introductions (1917).' },
+  ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: the author, audience, relationship, occasion and purpose of the book, with an outline and questions for study, from J. B. Tidwell (1916).' },
   { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
   { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
   { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
-  { el: '#pane-comm', tab: 'comm', title: 'Commentary and topics', text: (FEATURES.commentary ? 'Matthew Henry\'s Concise Commentary on the passage, with clickable scripture references.' : 'This app keeps to the Bible itself; the Commentary tab opens the verse at Blue Letter Bible (online) if you want to read commentaries.') + ' The Topics tab lists Nave\'s topics that cite the verse, and lets you browse any topic.' },
+  { el: '[data-tab="topics"]', tab: 'topics', title: 'Topics', text: 'Nave\'s topics that cite the verse, and any topic to browse. This app keeps to the Bible itself: to read commentaries, the verse\'s More menu (or right-click) opens it at Blue Letter Bible, online.' },
   { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. Click any one to go back to it.' },
   { el: '[data-tab="marks"]', tab: 'marks', title: 'Notes and lessons', text: 'Your notes (filter by tag), highlights, memory verses, prayer list and journal. Lessons collect verses in teaching order and export them as a PDF.' },
   { el: '#btnPlan', title: 'Reading plans', text: 'Choose a plan — the whole Bible in a year, the New Testament in 90 days, and more. A gold dot means today\'s reading is waiting.' },
@@ -719,7 +719,7 @@ function openReadingOptions() {
     `<div class="ro-seg">${opts.map(([v, t]) => `<button data-ro="${name}" data-v="${v}" class="${String(cur) === String(v) ? 'on' : ''}">${t}</button>`).join('')}</div>`;
   const ui = Number(s.uiScale) || 1;
   // Settings: the text, you (your name and the start screen), and your notes (backups)
-  openModal(`<div class="kicker">The Bible Study App</div><h2 class="m-title">Settings</h2>
+  openModal(`<div class="kicker">Rightly Dividing</div><h2 class="m-title">Settings</h2>
     <div class="section-title st-first">The text</div>
     <div class="ro-grid">
       <label>Font</label>
@@ -1065,7 +1065,7 @@ async function notesDoc() {
     title: 'My Bible study notes',
     subtitle: `${verses.length} verses · exported ${date} · King James Version`,
     groups,
-    footer: 'Scripture: King James Version (public domain). Made with The Bible Study App.',
+    footer: 'Scripture: King James Version (public domain). Made with Rightly Dividing.',
   };
 }
 

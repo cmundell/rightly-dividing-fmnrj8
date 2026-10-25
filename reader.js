@@ -274,6 +274,7 @@ async function showRefs(id) {
         <button data-act="copyRefs">Copy references</button>
         <button data-act="expandAll" class="${state.settings.expandAll ? 'on' : ''}">Show verse text for all references</button>
         <button data-act="addTags">Add tags…</button>
+        <a class="va-link" href="${blbUrl(v.label)}" target="_blank" rel="noopener" title="Opens in your web browser (needs the internet)">Commentary at Blue Letter Bible ↗</a>
       </div>
     </div>`);
   html.push(`<textarea class="note" placeholder="Your notes on ${esc(v.label)}…" data-id="${id}">${esc(state.notes[id] || '')}</textarea></div>`);
@@ -293,7 +294,7 @@ async function showRefs(id) {
   for (let gi = 0; gi < x.groups.length; gi++) renderGroupBody(gi, state.settings.expandAll);
   loadWords(id);
   if (window.v3OnVerse) window.v3OnVerse(id, x);
-  if (!['words', 'comm', 'topics'].includes(state.tab)) switchTab('refs');
+  if (!['words', 'topics'].includes(state.tab)) switchTab('refs');
 }
 
 function chip(r) {
@@ -908,7 +909,6 @@ function wireV2() {
    markSelection, strongChip, wrapWords, dictHtml, renderStrongEntry, hideWordCard */
 
 const v3 = {
-  comm: null,
   topicsVerse: [],
   topicsFor: null,
   topic: null,
@@ -944,7 +944,6 @@ window.v3OnVerse = (id, x) => {
   pushTrail(id);
   renderTrail();
   injectVerseTools(id);
-  loadCommentary(id);
   loadVerseTopics(id, x);
 };
 
@@ -1028,75 +1027,16 @@ function setTags(id, text) {
 }
 
 // ===================================================================== commentary
-// 3.17: commentary is not part of the app; the tab opens the verse at Blue Letter Bible (online) instead
+// commentary is not part of the app: the verse's More menu (and right-click) opens it at Blue Letter Bible, online
 const BLB_BOOKS = ['gen', 'exo', 'lev', 'num', 'deu', 'jos', 'jdg', 'rth', '1sa', '2sa', '1ki', '2ki', '1ch', '2ch', 'ezr', 'neh', 'est', 'job', 'psa',
   'pro', 'ecc', 'sng', 'isa', 'jer', 'lam', 'eze', 'dan', 'hos', 'joe', 'amo', 'oba', 'jon', 'mic', 'nah', 'hab', 'zep', 'hag', 'zec', 'mal', 'mat',
   'mar', 'luk', 'jhn', 'act', 'rom', '1co', '2co', 'gal', 'eph', 'phl', 'col', '1th', '2th', '1ti', '2ti', 'tit', 'phm', 'heb', 'jas', '1pe', '2pe',
   '1jo', '2jo', '3jo', 'jde', 'rev'];
-async function renderBlb(id) {
-  const pane = $('#pane-comm');
-  const v = id ? (await tsk.versesByIds([id]).catch(() => []))[0] : null;
-  const m = v && v.label ? v.label.match(/^(.+) (\d+):(\d+)$/) : null;
+/** The verse at Blue Letter Bible (online), where many commentaries can be read. */
+function blbUrl(label) {
+  const m = label ? label.match(/^(.+) (\d+):(\d+)/) : null;
   const b = m ? state.books.findIndex((x) => x.name === m[1]) + 1 : 0;
-  const url = b ? `https://www.blueletterbible.org/kjv/${BLB_BOOKS[b - 1]}/${m[2]}/${m[3]}/` : 'https://www.blueletterbible.org/';
-  pane.innerHTML = `<div class="blb">
-    <p>Want to read what commentators have written${v ? ` on <b>${esc(v.label)}</b>` : ''}? Blue Letter Bible has many commentaries to choose from.</p>
-    <a class="blb-go" href="${url}" target="_blank" rel="noopener">Open ${v ? esc(v.label) : 'Blue Letter Bible'} at Blue Letter Bible ›</a>
-    <p class="hint">Opens in your web browser; it needs the internet. Blue Letter Bible is a separate website: compare what any writer says with the Scripture itself (Acts 17:11).</p></div>`;
-}
-
-if (!FEATURES.commentary) setTimeout(() => { if ($('#pane-comm') && !$('#pane-comm').innerHTML.trim()) renderBlb(null); }, 0);
-
-async function loadCommentary(id) {
-  if (!FEATURES.commentary) return renderBlb(id);
-  if (v3.comm && id >= v3.comm.start_id && id <= v3.comm.end_id) return renderComm(id);
-  v3.comm = await tsk.commentary(id);
-  renderComm(id);
-}
-
-/** Sanitize commentary HTML: keep basic formatting, turn scripture links into clickable spans. */
-function commHtml(html) {
-  const doc = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html');
-  const OK = new Set(['P', 'B', 'I', 'BR', 'H4']);
-  const walk = (node) => {
-    let out = '';
-    for (const n of node.childNodes) {
-      if (n.nodeType === 3) out += esc(n.textContent);
-      else if (n.nodeType === 1) {
-        const inner = walk(n);
-        const t = n.tagName;
-        if (t === 'A' && n.getAttribute('data-osis')) out += `<span class="cref" data-osis="${esc(n.getAttribute('data-osis'))}">${inner}</span>`;
-        else if (t === 'BR') out += '<br>';
-        else if (OK.has(t)) out += `<${t.toLowerCase()}>${inner}</${t.toLowerCase()}>`;
-        else out += inner;
-      }
-    }
-    return out;
-  };
-  return walk(doc.body.firstChild);
-}
-
-function renderComm(selId) {
-  const pane = $('#pane-comm');
-  const c = v3.comm;
-  if (!c) {
-    pane.innerHTML = '<div class="empty">Select a verse to read Matthew Henry’s commentary on its passage.</div>';
-    return;
-  }
-  const label = state.xref && state.xref.verse.id === selId ? state.xref.verse.label : '';
-  pane.innerHTML = `
-    <div class="comm-head">
-      <div><div class="kicker">Matthew Henry · Concise Commentary</div>
-      <h2>${esc(c.label)}</h2>
-      <div class="sub">${label ? `Commentary on the passage containing ${esc(label)}` : ''}</div></div>
-      <div class="comm-nav">
-        <button data-act="commPrev" ${c.prev ? '' : 'disabled'} title="Previous section">&#8249; Prev</button>
-        <button data-act="commShow" title="Highlight this passage in the reading pane">Show passage</button>
-        <button data-act="commNext" ${c.next ? '' : 'disabled'} title="Next section">Next &#8250;</button>
-      </div>
-    </div>
-    <div class="comm-body">${commHtml(c.html)}</div>
-    <div class="hint" style="margin-top:14px">Scripture references in the commentary are clickable; hover to preview.</div>`;
+  return b ? `https://www.blueletterbible.org/kjv/${BLB_BOOKS[b - 1]}/${m[2]}/${m[3]}/` : 'https://www.blueletterbible.org/';
 }
 
 // ===================================================================== Nave's topics
@@ -1309,7 +1249,7 @@ function helpHtml() {
     <p><code>G26 -love</code> — where <i>agapē</i> is translated some other way (e.g. “charity”)</p>
     <p>Word endings are matched loosely, so <code>love</code> also finds <i>loved</i> and <i>loveth</i>.</p>
     <p><b>Go to</b> box: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</p>
-    <p><b>Keys</b>: ↑/↓ verses · Ctrl+←/→ chapter · Alt+←/→ back/forward · Ctrl+1–6 tabs · Ctrl+P study sheet · double-click a word for its card.</p>
+    <p><b>Keys</b>: ↑/↓ verses · Ctrl+←/→ chapter · Alt+←/→ back/forward · Ctrl+1–7 tabs · Ctrl+P study sheet · double-click a word for its card.</p>
   </div>`;
 }
 
@@ -1373,7 +1313,7 @@ async function renderMarks() {
 
 // ===================================================================== study sheet
 async function buildSheet(id) {
-  const [x, words, comm, topics] = await Promise.all([tsk.xrefs(id), tsk.words(id), FEATURES.commentary ? tsk.commentary(id) : null, tsk.naveForVerse(id)]);
+  const [x, words, topics] = await Promise.all([tsk.xrefs(id), tsk.words(id), tsk.naveForVerse(id)]);
   const groups = await Promise.all(
     x.groups.map(async (g) => ({
       ...g,
@@ -1382,7 +1322,6 @@ async function buildSheet(id) {
   );
   const note = state.notes[id];
   const tags = state.tags[id] || [];
-  const plainComm = comm ? commHtml(comm.html).replace(/<span class="cref"[^>]*>(.*?)<\/span>/g, '<b>$1</b>') : '';
   const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(x.verse.label)} — Study sheet</title>
 <style>
@@ -1401,7 +1340,6 @@ async function buildSheet(id) {
   th { font-family: 'Segoe UI', Arial, sans-serif; font-size: 8pt; text-transform: uppercase; color: #6b6155; }
   .og { font-size: 13pt; }
   .H { direction: rtl; }
-  .comm h4 { margin: 6pt 0 2pt; font-size: 11pt; }
   .topics { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5pt; }
   .credits { margin-top: 24pt; font-size: 7.5pt; color: #8a8072; font-family: 'Segoe UI', Arial, sans-serif; }
   h2, .kw { page-break-after: avoid; }
@@ -1419,10 +1357,9 @@ ${groups.length ? groups
   .join('') : '<p>No TSK entries for this verse.</p>'}
 ${words.length ? `<h2>Word study</h2><table><tr><th>English</th><th>Original</th><th>Translit.</th><th>Strong's</th><th>Grammar</th><th>Definition</th></tr>
 ${words.map((w) => `<tr><td>${esc(w.gloss)}</td><td class="og ${w.lang}">${esc(w.word)}</td><td><i>${esc(w.translit)}</i></td><td>${esc(w.strongs || '')}</td><td>${esc(shortGrammar(w.grammar))}</td><td>${esc(w.def || '')}</td></tr>`).join('')}</table>` : ''}
-${comm ? `<h2>Matthew Henry · Concise Commentary (${esc(comm.label)})</h2><div class="comm">${plainComm}</div>` : ''}
 ${topics.length ? `<h2>Nave's Topical Bible</h2><div class="topics">Topics that cite this verse: ${topics.map((t) => esc(t.subject)).join(' · ')}</div>` : ''}
 <div class="credits">KJV (public domain). Treasury of Scripture Knowledge via CrossReferences.org (CC BY 4.0). Hebrew/Greek data: STEPBible.org, Tyndale House (CC BY 4.0).
-Strong's (public domain; Open Scriptures CC BY-SA).${comm ? " Matthew Henry's Concise Commentary (public domain)." : ''} Nave's Topical Bible (public domain; BibleData CC BY 4.0).</div>
+Strong's (public domain; Open Scriptures CC BY-SA). Nave's Topical Bible (public domain; BibleData CC BY 4.0).</div>
 </body></html>`;
   return { html, name: `${x.verse.label} - study sheet` };
 }
@@ -1471,36 +1408,6 @@ function wireV3() {
       e.target.blur();
       toast('Tags saved');
     }
-  });
-
-  // commentary
-  const crefPreview = async (el) => {
-    if (!el.dataset.s) {
-      const r = await tsk.osis(el.dataset.osis);
-      if (!r) return;
-      el.dataset.s = r.start;
-      el.dataset.e = r.end;
-    }
-    showPreview(el);
-  };
-  $('#pane-comm').addEventListener('mouseover', (e) => {
-    const c = e.target.closest('.cref');
-    if (c) crefPreview(c);
-  });
-  $('#pane-comm').addEventListener('mouseout', (e) => e.target.closest('.cref') && hidePreview());
-  $('#pane-comm').addEventListener('click', async (e) => {
-    const c = e.target.closest('.cref');
-    if (c) {
-      hidePreview();
-      const r = await tsk.osis(c.dataset.osis);
-      if (r) go({ id: r.start, endId: r.end });
-      return;
-    }
-    const a = e.target.closest('[data-act]');
-    if (!a || !v3.comm) return;
-    if (a.dataset.act === 'commPrev' && v3.comm.prev) go({ id: v3.comm.prev });
-    if (a.dataset.act === 'commNext' && v3.comm.next) go({ id: v3.comm.next });
-    if (a.dataset.act === 'commShow') go({ id: v3.comm.start_id, endId: v3.comm.end_id }).then(() => switchTab('comm'));
   });
 
   // topics
