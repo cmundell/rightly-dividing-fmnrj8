@@ -217,6 +217,24 @@ function highlightSelected(id, color) {
   ids.forEach((i) => setHighlight(i, color));
   return ids.length;
 }
+// a tap on a verse is answered at once: a short pulse on the verse, and a light buzz where the phone allows it
+// (iPhone web apps cannot vibrate; Android ones can)
+function tapFeedback(el) {
+  if (!window.matchMedia('(pointer: coarse)').matches) return;
+  el.classList.remove('tap-pulse');
+  void el.offsetWidth; // restart the animation
+  el.classList.add('tap-pulse');
+  setTimeout(() => el.classList.remove('tap-pulse'), 400);
+  try { if (navigator.vibrate) navigator.vibrate(12); } catch { /* not allowed here */ }
+}
+function deselectVerse() {
+  clearMulti();
+  state.cur.sel = null;
+  state.cur.range = null;
+  markSelection();
+  renderRefsPlaceholder();
+  document.dispatchEvent(new CustomEvent('deselect'));
+}
 function clearMulti() {
   multi.ids.clear();
   multi.mode = false;
@@ -307,9 +325,7 @@ async function showRefs(id) {
       <div class="va-menu" hidden>
         <button data-act="copyRefs">Copy references</button>
         <button data-act="expandAll" class="${state.settings.expandAll ? 'on' : ''}">Show verse text for all references</button>
-        <button data-act="addTags">Add tags…</button>
         <button data-act="compare">Compare with other passages…</button>
-        <button data-act="bookmark">${isBookmarked(id) ? 'Remove bookmark' : 'Bookmark this verse'}</button>
         <a class="va-link" href="${blbUrl(v.label)}" target="_blank" rel="noopener" title="Opens in your web browser (needs the internet)">Commentary at Blue Letter Bible ↗</a>
       </div>
     </div>`);
@@ -464,6 +480,8 @@ function wire() {
     const v = e.target.closest('.verse');
     if (v) {
       const id = Number(v.dataset.id);
+      tapFeedback(v);
+      if (multi.mode && state.cur.sel === id && multi.ids.size <= 1) return deselectVerse(); // tapping the one chosen verse again lets it go
       if ((e.ctrlKey || e.metaKey || multi.mode) && state.cur.sel) {
         const first = multi.ids.size < 2;
         toggleMulti(id);
@@ -535,7 +553,6 @@ function wire() {
       toast('Verse copied');
     }
     if (act.dataset.act === 'compare') return openCompare(id);
-    if (act.dataset.act === 'bookmark') return toggleBookmark(id);
     if (act.dataset.act === 'copyRefs') {
       const lines = [state.xref.verse.label];
       state.xref.groups.forEach((g, i) => lines.push(`${i + 1}. ${g.anchor}: ${g.refs.map((r) => r.label).join('; ')}`));
@@ -573,11 +590,6 @@ function wire() {
     if (un) {
       e.stopPropagation();
       return setHighlight(Number(un.dataset.unhl), '');
-    }
-    const ub = e.target.closest('[data-unbm]');
-    if (ub) {
-      e.stopPropagation();
-      return toggleBookmark(Number(ub.dataset.unbm));
     }
     if (e.target.closest('[data-act="nameColours"]')) return openColourNames();
     const c = e.target.closest('[data-hlf]');
@@ -924,7 +936,7 @@ function wireV2() {
   Object.assign(state.settings, u.settings || {});
   state.settings.tr = 'kjv';
   if (window.v3Init) window.v3Init(u);
-  state.bookmarks = Array.isArray(u.bookmarks) ? u.bookmarks.filter((b) => b && b.id) : []; // [{id, added}]
+  state.bookmarks = []; // bookmarks were folded into highlights in 3.15 and are not kept
   state.notes = u.notes || {};
   const bs = $('#bookSel');
   const og = document.createElement('optgroup');
@@ -1031,17 +1043,6 @@ function shortLabel(full) {
 }
 
 // ===================================================================== highlights + tags
-// a plain bookmark on a verse: apart from highlights and notes, like a ribbon in a printed Bible
-const isBookmarked = (id) => state.bookmarks.some((b) => b.id === id);
-function toggleBookmark(id) {
-  const on = isBookmarked(id);
-  if (on) state.bookmarks = state.bookmarks.filter((b) => b.id !== id);
-  else state.bookmarks.push({ id, added: Date.now() });
-  saveUser(['bookmarks']);
-  refreshMarkIcons(id);
-  toast(on ? 'Bookmark removed' : 'Bookmarked — find it under Notes › Bookmarks');
-  renderMarks();
-}
 // highlight colours can be given names (Settings): "Promises", "Prayer", ...
 const hlName = (c) => ((state.settings.hlNames || {})[c] || '').trim() || c;
 
@@ -1062,7 +1063,6 @@ function injectVerseTools(id) {
       <span class="lbl">Highlight</span>
       ${HL_COLORS.map((c) => `<button class="dot hl-${c}${cur === c ? ' on' : ''}" data-hl="${c}" title="${esc(hlName(c))}" aria-label="${esc(hlName(c))}"></button>`).join('')}
       <button class="dot none${cur ? '' : ' on'}" data-hl="" title="No highlight">&times;</button>
-      <input class="tagin" data-id="${id}" placeholder="Tags, e.g. prayer, sermon idea" value="${esc(tags)}" title="Comma-separated tags; press Enter to save"${tags ? '' : ' hidden'} />
     </div>`
   );
 }
@@ -1355,13 +1355,13 @@ function helpHtml() {
 // ===================================================================== notes manager (override)
 async function renderMarks() {
   // Notes › Notes (verses with a note or tags) and Notes › Highlights; the other views live in study.js and walk.js
-  const view = typeof v32 !== 'undefined' && ['hl', 'bookmarks'].includes(v32.marksView) ? v32.marksView : 'notes';
+  const view = typeof v32 !== 'undefined' && ['hl', 'notes'].includes(v32.marksView) ? v32.marksView : 'all';
   const noted = new Set();
   for (const k of Object.keys(state.notes)) if (state.notes[k]) noted.add(Number(k));
   for (const k of Object.keys(state.tags || {})) noted.add(Number(k));
   const lit = new Set(Object.keys(state.highlights || {}).map(Number));
-  const marked = new Set(state.bookmarks.map((b) => b.id));
-  const all = new Set([...noted, ...lit, ...marked]);
+  const memo = new Set(Object.keys(state.memory || {}).map(Number));
+  const all = new Set([...noted, ...lit, ...memo]);
   $('#markCount').textContent = all.size ? `(${all.size})` : '';
 
   const tagCounts = {};
@@ -1369,7 +1369,7 @@ async function renderMarks() {
   const colorCounts = {};
   for (const c of Object.values(state.highlights || {})) colorCounts[c] = (colorCounts[c] || 0) + 1;
 
-  let list = [...(view === 'hl' ? lit : view === 'bookmarks' ? marked : noted)].sort((a, b) => a - b);
+  let list = [...(view === 'hl' ? lit : view === 'notes' ? noted : all)].sort((a, b) => a - b);
   if (view === 'notes' && v3.markTag) list = list.filter((id) => (state.tags[id] || []).includes(v3.markTag));
   if (view === 'hl' && v3.markColor) list = list.filter((id) => state.highlights[id] === v3.markColor);
   const verses = await tsk.versesByIds(list);
@@ -1382,24 +1382,21 @@ async function renderMarks() {
   const hadFocus = document.activeElement && document.activeElement.id === 'markSearch';
   const head = view === 'hl'
     ? (Object.keys(colorCounts).length ? `<div class="tagbar hlbar-f">${HL_COLORS.filter((c) => colorCounts[c]).map((c) => `<button class="tag hlf${v3.markColor === c ? ' on' : ''}" data-hlf="${c}" title="${esc(hlName(c))}"><i class="dot hl-${c}"></i> ${hlName(c) !== c ? `<b>${esc(hlName(c))}</b> ` : ''}<span>${colorCounts[c]}</span></button>`).join('')}<button class="tag hlf-name" data-act="nameColours" title="Give each colour a meaning, e.g. Promises, Prayer">Name the colours…</button></div>` : '')
-    : (Object.keys(tagCounts).length ? `<div class="tagbar">${Object.entries(tagCounts)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([t, n]) => `<button class="tag${v3.markTag === t ? ' on' : ''}" data-tag="${esc(t)}">#${esc(t)} <span>${n}</span></button>`)
-      .join('')}</div>` : '');
+    : '';
   const empty = view === 'hl'
-    ? (lit.size ? 'Nothing matches.' : 'No highlights yet. Select a verse and pick a highlight color — highlighted verses are kept here, like bookmarks.')
-    : view === 'bookmarks'
-      ? (marked.size ? 'Nothing matches.' : 'No bookmarks yet. Tap a verse and choose Bookmark to keep your place, like a ribbon in a printed Bible.')
-      : (noted.size ? 'Nothing matches.' : 'No notes yet. Tap a verse and choose Note — or write in the box under Related verses.');
+    ? (lit.size ? 'Nothing matches.' : 'No highlights yet. Tap a verse and pick a highlight colour — highlighted verses are kept here.')
+    : view === 'notes'
+      ? (noted.size ? 'Nothing matches.' : 'No notes yet. Tap a verse and choose Note — or write in the box under Related verses.')
+      : (all.size ? 'Nothing matches.' : 'Nothing marked yet. Tap a verse to highlight it, write a note or memorize it — everything you mark is kept here.');
   pane.innerHTML = `${head}
-    <input id="markSearch" class="marksearch" placeholder="${view === 'hl' ? 'Search your highlighted verses' : view === 'bookmarks' ? 'Search your bookmarks' : 'Search your notes and tags'}" value="${esc(v3.markQuery)}" />` +
+    <input id="markSearch" class="marksearch" placeholder="${view === 'hl' ? 'Search your highlighted verses' : view === 'notes' ? 'Search your notes' : 'Search everything you have marked'}" value="${esc(v3.markQuery)}" />` +
     (shown.length
       ? shown
           .map((v) => {
             const hl = state.highlights[v.id];
             const tags = state.tags[v.id] || [];
             return `<div class="mark${hl ? ` hlbar hl-${hl}` : ''}" data-id="${v.id}"><div class="top"><span class="lab">${esc(v.label)}</span>
-            ${view === 'hl' ? `<button class="del" data-unhl="${v.id}" title="Remove highlight">&times;</button>` : view === 'bookmarks' ? `<button class="del" data-unbm="${v.id}" title="Remove bookmark">&times;</button>` : ''}</div>
+            ${memo.has(v.id) ? '<i class="m-mem" title="memory verse">&#9670;</i>' : ''}${view === 'hl' ? `<button class="del" data-unhl="${v.id}" title="Remove highlight">&times;</button>` : ''}</div>
             <div class="t">${esc(v.text)}</div>
             ${tags.length ? `<div class="mtags">${tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
             ${state.notes[v.id] ? `<div class="nt">${esc(state.notes[v.id])}</div>` : ''}</div>`;

@@ -11,7 +11,7 @@
    earlier scripts pick them up when they call X(). */
 /* global tsk, state, $, $$, esc, go, toast, switchTab, showPreview, hidePreview, saveUser, refreshMarkIcons, v3 */
 
-const v32 = { marksView: 'notes', lessonId: null, tour: null, plansCache: null };
+const v32 = { marksView: 'all', lessonId: null, tour: null, plansCache: null };
 
 // ===================================================================== init hooks
 {
@@ -36,7 +36,7 @@ state.lessons = state.lessons || [];
 
 // ===================================================================== margin markers
 // Notes and tags show as small marks in the left margin, so a chapter shows at a glance where you've
-// studied. (Highlights show as the verse's color; a bookmark shows a small flag.)
+// studied. (Highlights show as the verse's color.)
 window.markIcons = (id) => {
   const parts = [];
   const tips = [];
@@ -47,10 +47,6 @@ window.markIcons = (id) => {
   if (state.tags && (state.tags[id] || []).length) {
     parts.push('<i class="m-tag">#</i>');
     tips.push(`tags: ${state.tags[id].join(', ')}`);
-  }
-  if (typeof isBookmarked === 'function' && isBookmarked(id)) {
-    parts.push('<i class="m-bm">&#9873;</i>');
-    tips.push('bookmarked');
   }
   return parts.length ? `<span class="marks gut" title="${esc(tips.join(' · '))}">${parts.join('')}</span>` : '';
 };
@@ -104,10 +100,7 @@ function addToLesson(lesson) {
 }
 
 function injectLessonButton() {
-  // in the verse's More menu
-  const menu = $('#pane-refs .xhead .va-menu') || $('#pane-refs .xhead .actions');
-  if (!menu || $('[data-act="lessonAdd"]', menu)) return;
-  menu.insertAdjacentHTML('beforeend', '<button data-act="lessonAdd" title="Add this verse to a lesson or study collection">Add to a lesson…</button>');
+  // 1.3: lessons are no longer offered (nothing sits more than one tap deep); the code stays for old notes files
 }
 
 function showLessonMenu(btn) {
@@ -344,7 +337,7 @@ const TOUR = [
   { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
   { el: '[data-tab="topics"]', tab: 'topics', title: 'Topics', text: 'Nave\'s topics that cite the verse, and any topic to browse; “show text” lists the words of every reference. This app keeps to the Bible itself: to read commentaries, the verse\'s More menu (or right-click) opens it at Blue Letter Bible, online.' },
   { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. Click any one to go back to it. After you follow a related verse, “‹ Back to …” at the top of the Study pane returns you one step at a time.' },
-  { el: '[data-tab="marks"]', tab: 'marks', title: 'Notes and lessons', text: 'Your notes (filter by tag), highlights, memory verses, prayer list and journal. Lessons collect verses in teaching order and export them as a PDF.' },
+  { el: '[data-tab="marks"]', tab: 'marks', title: 'Notes', text: 'Everything you have marked, in one list: notes, highlights and memory verses, with a filter for each. Export it all to Word or PDF.' },
   { el: '#btnPlan', title: 'Reading plans', text: 'Choose a plan — the whole Bible in a year, the New Testament in 90 days, and more. A gold dot means today\'s reading is waiting.' },
   { el: '#btnSheet', title: 'Study sheets', text: 'Save the selected verse with its cross-references, word study, topics and your notes as a PDF (Ctrl+P).' },
   { el: '#btnFocus', title: 'Focus mode', text: 'Hide everything but the text for plain reading (Ctrl+\\). Press it again or Esc to come back. That\'s the tour — F1 opens the Quick Start guide any time.' },
@@ -589,11 +582,7 @@ function wireV32() {
   tsk.onMenu((cmd) => {
     if (cmd === 'focus') toggleFocus();
     else if (cmd === 'plan') openPlan();
-    else if (cmd === 'lessons') {
-      v32.marksView = 'lessons';
-      switchTab('marks');
-      renderMarks();
-    } else if (cmd === 'tour') startTour();
+    else if (cmd === 'tour') startTour();
     else if (cmd === 'quickstart') openQuickStart();
   });
 
@@ -895,14 +884,12 @@ window.marksSwitch = () => {
   const v = window.v32 ? window.v32.marksView : v32.marksView;
   const nNotes = Object.values(state.notes).filter(Boolean).length;
   const nHl = Object.keys(state.highlights || {}).length;
-  const nBm = (state.bookmarks || []).length;
-  const open = (state.prayers || []).filter((p) => !p.answered).length;
-  const jn = (state.journal || []).length;
+  const nAll = new Set([...Object.keys(state.notes).filter((k) => state.notes[k]), ...Object.keys(state.highlights || {}), ...Object.keys(state.memory)]).size;
   const b = (k, t, c) => `<button data-mv="${k}" class="${v === k ? 'on' : ''}">${t}${c ? ` <span>${c}</span>` : ''}</button>`;
-  // the groups of the Notes screen; Lessons and Export sit quietly at the side
+  // one list of everything you have marked, with three filters; the prayer list and journal live on Today
   return `<div class="mswitch-row"><div class="mswitch">
-    ${b('notes', 'Notes', nNotes)}${b('hl', 'Highlights', nHl)}${b('bookmarks', 'Bookmarks', nBm)}${b('memory', 'Memory', due ? `${due} due` : n)}${FEATURES.prayer === false ? '' : b('prayer', 'Prayer', open)}${b('journal', 'Journal', jn)}
-  </div><div class="mswitch-side"><button class="linkbtn${v === 'lessons' ? ' on' : ''}" data-mv="lessons" title="Lessons: verses collected in teaching order, exported as one PDF">Lessons${state.lessons.length ? ` (${state.lessons.length})` : ''}</button><button class="linkbtn" data-act="exportNotes" title="Export all notes, highlights and tags to Word or PDF">Export…</button></div></div>`;
+    ${b('all', 'All', nAll)}${b('notes', 'Notes', nNotes)}${b('hl', 'Highlights', nHl)}${b('memory', 'Memory', due ? `${due} due` : n)}
+  </div><div class="mswitch-side"><button class="linkbtn" data-act="exportNotes" title="Export all your notes and highlights to Word or PDF">Export…</button></div></div>`;
 };
 
 {
@@ -1156,10 +1143,10 @@ TOUR.splice(2, 0, {
 {
   const refs = TOUR.find((t) => t.title === 'Related verses');
   if (refs) refs.text = 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go, or Shift-click to pin it above the text. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons, pins and “Compare with other passages” — any two to four passages side by side.';
-  const notes = TOUR.find((t) => t.title === 'Notes and lessons');
+  const notes = TOUR.find((t) => t.title === 'Notes');
   if (notes) {
     notes.title = 'Notes, lessons and memory';
-    notes.text = 'Everything you’ve marked, filterable by tag and exportable to Word or PDF. Lessons collect verses in teaching order; Memory brings your memory verses back for practice at growing intervals.';
+    notes.text = 'Everything you have marked, in one list: notes, highlights and memory verses, with a filter for each. Memory brings your memory verses back for practice at growing intervals. Export it all to Word or PDF.';
   }
 }
 {

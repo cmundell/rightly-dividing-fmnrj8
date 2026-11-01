@@ -374,11 +374,9 @@ async function paintNotesSection() {
       <div class="vm-hl" role="group" aria-label="Highlight">${HL_COLORS.map((c) => `<button class="dot hl-${c}${hl === c ? ' on' : ''}" data-vm="hl" data-c="${c}" title="Highlight: ${esc(hlName(c))}" aria-label="Highlight: ${esc(hlName(c))}"></button>`).join('')}<button class="dot none${hl ? '' : ' on'}" data-vm="hl" data-c="" title="No highlight" aria-label="No highlight">&times;</button></div>
       <button role="menuitem" data-vm="guide" class="vm-guide">Study it step by step</button>
       <button role="menuitem" data-vm="note">Write a note</button>
-      <button role="menuitem" data-vm="bookmark">${isBookmarked(id) ? 'Remove bookmark' : 'Bookmark'}</button>
       <button role="menuitem" data-vm="copy">Copy verse</button>
       <button role="menuitem" data-vm="memory">${memItemFor(id) !== null ? 'Remove from memory verses' : many > 1 ? `Memorize these ${many} verses` : 'Memorize'}</button>
       <div class="vm-sep"></div>
-      <button role="menuitem" data-vm="lesson" data-act="lessonAdd">Add to a lesson…</button>
       <button role="menuitem" data-vm="pin">Pin above the text</button>
       <button role="menuitem" data-vm="compare">Compare with other passages…</button>
       <div class="vm-sep"></div>
@@ -405,7 +403,6 @@ async function paintNotesSection() {
     } else if (k === 'memory') toggleMemory(v.id);
     else if (k === 'pin') pinCurrent();
     else if (k === 'compare') openCompare(v.id);
-    else if (k === 'bookmark') toggleBookmark(v.id);
     else if (k === 'guide') startGuide(v.id);
     else if (k === 'blb') window.open(blbUrl(v.label), '_blank');
     else if (k === 'note') {
@@ -573,7 +570,7 @@ const TAB_HELP = {
   places: { line: 'Where it happened, on a map.', tip: 'Every place named in the chapter is on the map, and places in the selected verse are marked. Tap a place to see every verse that names it, or follow one of the journeys.', eg: '' },
   people: { line: 'Who is named in this verse, and their family.', tip: 'Everyone named in the verse, with parents, husband or wife, children, brothers and sisters — each with the verse that says so. Follow a line back to Adam.', eg: '' },
   search: { line: 'Find words anywhere in the Bible.', tip: 'Type words in the box at the top and press Enter. Put words in quotes, like “living water”, for that exact phrase. The chart shows which books use it most.', eg: '' },
-  marks: { line: 'Your notes, highlights, memory verses, prayer list and journal.', tip: 'Everything you write or mark is kept here, on this device. Back it up now and then from Settings.', eg: '' },
+  marks: { line: 'Everything you have marked: notes, highlights and memory verses.', tip: 'Everything you write or mark is kept here, on this device. Back it up now and then from Settings.', eg: '' },
 };
 {
   const tabs = $('#study .tabs') || $('.tabs');
@@ -825,7 +822,7 @@ function showNudge(html, buttons) {
   };
 }
 
-const marksCount = () => Object.keys(state.notes || {}).length + Object.keys(state.highlights || {}).length + Object.keys(state.memory || {}).length + (state.bookmarks || []).length
+const marksCount = () => Object.keys(state.notes || {}).length + Object.keys(state.highlights || {}).length + Object.keys(state.memory || {}).length
   + (state.prayers || []).length + (state.journal || []).length;
 const DAY = 864e5;
 const since = (iso) => (iso ? Date.now() - Date.parse(iso) : Infinity);

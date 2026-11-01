@@ -698,7 +698,7 @@ const COMMANDS = [
     document.querySelector('.tabs [data-tab="places"]').click();
   }],
   ['People and family tree', 'genealogy family', () => switchTab('people')],
-  ['Notes', 'notes tags highlights bookmarks lessons', () => switchTab('marks')],
+  ['Notes', 'notes highlights memory verses', () => switchTab('marks')],
   ['Reading options', 'font size spacing', () => openReadingOptions()],
   ['Light / sepia / dark', 'theme night', () => toggleTheme()],
   ['High contrast on or off', 'accessibility contrast', () => setContrast(state.settings.contrast !== 'on')],

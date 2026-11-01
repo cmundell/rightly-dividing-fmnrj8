@@ -1296,10 +1296,12 @@ body.reduce-motion .j-halo { animation: none; }
 .td-mem-k { font: 600 11px var(--ui); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); margin-bottom: 4px; }
 .td-mem-v { font-family: var(--scripture); line-height: 1.5; }
 .td-mem button { margin-top: 6px; border: 0; background: none; padding: 0; font: 600 13px var(--ui); color: var(--link); cursor: pointer; }
-.m-bm { color: var(--gold); font-size: 10px; }
 .hln-grid { display: grid; gap: 10px; margin: 10px 0 16px; }
 .hln-grid label { display: flex; align-items: center; gap: 10px; }
 .hln-grid .dot { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rule); flex: none; }
 .hln-grid input { flex: 1; font: inherit; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
 .tag.hlf b { font-weight: 600; }
 .tag.hlf-name { color: var(--link); background: none; border-style: dashed; }
+/* a tap on a verse answers with a short dip in brightness, so the touch is seen to have landed */
+.verse.tap-pulse { filter: brightness(.9); transition: filter .05s; }
+.verse { transition: filter .35s ease-out; }

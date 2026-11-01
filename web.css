@@ -8,7 +8,7 @@
 .ws-bar { height: 6px; background: var(--chip); border-radius: 3px; overflow: hidden; }
 .ws-bar i { display: block; height: 100%; width: 2%; background: var(--accent); transition: width .2s; }
 .ws-msg { margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
-.m-nav, .m-vbar, .m-theme, .tabs .m-more, .m-more-list { display: none; }
+.m-nav, .m-vbar, .m-theme { display: none; }
 .wl-list li { margin: 8px 0; font-size: 15px; line-height: 1.45; }
 .wm-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
 .wm-list button { text-align: left; border: 1px solid var(--rule); background: var(--paper); border-radius: 10px; padding: 11px 13px; font-size: 15px; color: var(--ink); cursor: pointer; }
@@ -49,12 +49,11 @@
   .vb-head { display: flex; align-items: center; padding: 0 6px; }
   .vb-ref { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .02em; }
   .vb-x { margin-left: auto; border: 0; background: none; font-size: 22px; line-height: 1; color: var(--ink-soft); padding: 2px 6px; }
-  .vb-row { display: grid; grid-template-columns: repeat(7, 1fr); }
-  .vb-row [data-va="bookmark"].on .vi { fill: var(--gold); }
+  .vb-row { display: grid; grid-template-columns: repeat(5, 1fr); }
   .vb-hl .dot { position: relative; }
   .vb-hl .dot-n { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 3px; font-size: 9.5px; color: var(--ink-soft); white-space: nowrap; max-width: 54px; overflow: hidden; text-overflow: ellipsis; }
   .vb-hl:has(.dot-n:not(:empty)) { padding-bottom: 20px; }
-  .vb-row button { border: 0; background: none; color: var(--ink); font-size: 10.5px; min-width: 0; overflow: hidden; white-space: nowrap; padding: 6px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; border-radius: 10px; }
+  .vb-row button { border: 0; background: none; color: var(--ink); font-size: 11.5px; min-width: 0; overflow: hidden; white-space: nowrap; padding: 6px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; border-radius: 10px; }
   .vb-row .vi { width: 22px; height: 22px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .vb-row button.on .vi { stroke: var(--gold); }
   .vb-row [data-va="memory"].on .vi { fill: var(--gold); }
@@ -91,14 +90,11 @@
   .wordcard .more { width: 100%; padding: 12px; font-size: 15px; }
   .wm-word { background: var(--accent-soft); border-radius: 3px; }
   /* Study tabs: Refs, Words, Commentary, and More (Topics, Places, People, Search); Notes has its own button below */
-  .tabs button[data-tab="topics"], .tabs button[data-tab="places"], .tabs button[data-tab="people"], .tabs button[data-tab="search"], .tabs button[data-tab="marks"] { display: none; }
-  .tabs .m-more { display: flex; align-items: center; gap: 4px; margin-left: auto; padding: 11px 10px; flex: 0 0 auto; font-weight: 600; font-size: 13px; color: var(--ink-soft); cursor: pointer; border-bottom: 2px solid transparent; }
-  .tabs .m-more.on { color: var(--accent); border-bottom-color: var(--accent); }
-  .tabs .m-more .mm-car { font-size: 10px; opacity: .7; }
-  .m-more-list { display: block; position: fixed; right: 10px; z-index: 66; background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; box-shadow: var(--shadow); padding: 4px; min-width: 170px; }
-  .m-more-list[hidden] { display: none; }
-  .m-more-list button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 11px 14px; font: inherit; font-size: 16px; color: var(--ink); border-radius: 8px; }
-  .m-more-list button:active { background: var(--sel); }
+  .tabs button[data-tab="marks"] { display: none; }
+  .tab-help .th-i, .tab-help .th-tip { display: none; } /* the tour covers the tabs on a phone */
+  body.m-notes #study .tabs, body.m-notes #tabHelp { display: none; } /* the Notes screen is its own place, not a Study tab */
+  .tabs button[data-tab="search"] { display: none; }
+  .tabs.has-search button[data-tab="search"] { display: block; }
   .m-brand { position: absolute; left: 0; right: 0; bottom: max(2px, calc(env(safe-area-inset-bottom) - 14px)); text-align: center; font-family: var(--scripture); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); opacity: .75; pointer-events: none; }
   /* Settings: labels above their choices, so nothing is cut off */
   .ro-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
@@ -132,7 +128,7 @@
 }
 /* 3.16: easier to tap on a phone — bigger buttons and chips */
 @media (max-width: 760px) {
-  .tabs button, .tabs .m-more { font-size: 14px; padding: 12px 10px; }
+  .tabs button { font-size: 14px; padding: 12px 10px; }
   .xhead .actions button { min-height: 38px; padding: 6px 12px; font-size: 14px; border-radius: 8px; }
   .xhead .actions .va-menu button { min-height: 42px; font-size: 15px; }
   #pane-refs .ref, #pane-topics .ref { font-size: 14px; padding: 5px 9px; display: inline-block; margin: 2px 0; }
@@ -157,3 +153,13 @@
 
 /* several verses tapped: Study goes with the last one tapped, so step-by-step is put away */
 .m-vbar.vb-multi .vb-guide { display: none; }
+
+/* Back: a slim bar under the toolbar, and a Back at the top of every window */
+.m-back { display: none; }
+@media (max-width: 760px) {
+  .m-back { display: block; position: fixed; left: 10px; bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 40; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); color: var(--link); font: 600 13px var(--ui); padding: 6px 12px 6px 10px; box-shadow: var(--shadow); }
+  .m-back[hidden] { display: none; }
+  .modal-back { position: absolute; left: 12px; top: 12px; border: 0; background: none; color: var(--link); font: 600 14px var(--ui); padding: 4px 6px; }
+  .modal-back[hidden] { display: none; }
+  .modal-card:has(.modal-back:not([hidden])) .kicker { margin-left: 64px; }
+}

@@ -1,7 +1,7 @@
 'use strict';
 /* Web edition front end: a phone layout (one screen at a time, a bar of five buttons at the bottom),
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
-/* global tsk, state, go, dataTr, multi, clearMulti, highlightSelected, markSelection, isBookmarked, toggleBookmark, hlName, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
+/* global tsk, state, go, dataTr, multi, clearMulti, highlightSelected, markSelection, hlName, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
    openProgress, openStudyChooser, openGospel, showMarksView, openReadingOptions, toggleTheme,
    openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES */
 
@@ -17,13 +17,11 @@ document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria
   <button data-mn="menu"><span class="mi">&#9776;</span>Menu</button></nav>
   <div id="mStudyPill" class="m-vbar" hidden role="toolbar" aria-label="This verse">
     <div class="vb-head"><span class="vb-ref"></span><button class="vb-guide" data-va="guide">Study it step by step ›</button><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
-    <div class="vb-share" hidden><button data-va="shareText">Share the words</button><button data-va="shareImage">Share as a picture</button></div>
+    <div class="vb-share" hidden><button data-va="shareText">Share the words</button><button data-va="shareImage">Share as a picture</button><button data-va="copy">Copy</button></div>
     <div class="vb-hl" hidden>${HL_COLORS.map((c) => `<button class="dot hl-${c}" data-va="hl" data-c="${c}" aria-label="${c}"><span class="dot-n"></span></button>`).join('')}<button class="dot none" data-va="hl" data-c="" aria-label="No highlight">&times;</button></div>
     <div class="vb-row">
       <button data-va="highlight"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-9 9H6v-5z"/><path d="M4 21h16"/></svg>Highlight</button>
       <button data-va="note"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"/><path d="M14 4v5h5M8 13h8M8 17h6"/></svg>Note</button>
-      <button data-va="bookmark"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Bookmark</button>
-      <button data-va="copy"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>Copy</button>
       <button data-va="share"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>Share</button>
       <button data-va="memory"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Memorize</button>
       <button data-va="study" class="vb-study"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg>Study</button>
@@ -53,10 +51,88 @@ $('.group.right').insertAdjacentHTML('afterbegin', '<button id="btnMenu" class="
 
 function setView(v) {
   document.body.classList.toggle('m-study', v === 'study' || v === 'notes');
+  document.body.classList.toggle('m-notes', v === 'notes');
   $$('#mNav button').forEach((b) => b.classList.toggle('on', b.dataset.mn === v));
   hideVerseBar();
+  navSchedule();
 }
 let studyTab = 'refs';
+
+// ---------------------------------------------------------------- Back: one step back to where you were
+// Every change of screen (Read, Study, Notes), tab or window is remembered; Back returns to the last one, scroll
+// position and all. The phone's own back swipe does the same. Windows has Alt+← for the trail instead.
+const nav = { stack: [], cur: null, restoring: false, timer: null };
+const navSnapshot = () => {
+  const m = $('#modal');
+  const study = document.body.classList.contains('m-study');
+  return {
+    view: !study ? 'read' : state.tab === 'marks' ? 'notes' : 'study',
+    tab: state.tab,
+    modal: m.hidden ? null : { html: $('#modalBody').innerHTML, cls: m.className, title: ($('.m-title', m) || {}).textContent || '' },
+    reader: $('#reader').scrollTop,
+    pane: (document.querySelector('#study .pane:not([hidden])') || {}).scrollTop || 0,
+  };
+};
+const navSame = (a, b) => a && b && a.view === b.view && (a.view === 'read' || a.tab === b.tab) && !!a.modal === !!b.modal
+  && (!a.modal || (a.modal.cls === b.modal.cls && a.modal.title === b.modal.title));
+const navWhere = (s) => (s.modal ? s.modal.title || 'back' : s.view === 'read' ? 'Reading' : s.view === 'notes' ? 'Notes' : 'Study');
+function navPaint() {
+  const bar = $('#mBack');
+  const top = nav.stack[nav.stack.length - 1];
+  const modalOpen = !$('#modal').hidden;
+  bar.hidden = !isPhone() || !top || modalOpen || !$('#mStudyPill').hidden;
+  if (top) $('span', bar).textContent = `Back to ${navWhere(top)}`;
+  const mb = $('#modal .modal-back');
+  if (mb) mb.hidden = !isPhone() || !top;
+}
+function navSchedule() {
+  if (nav.restoring || !isPhone()) return;
+  clearTimeout(nav.timer);
+  // a short wait, so that closing one window and opening the next counts as one step
+  nav.timer = setTimeout(() => {
+    if (v32.tour != null || !state.settings.tourDone) { nav.cur = null; return; } // the tour moves about on its own
+    const now = navSnapshot();
+    if (nav.cur && !navSame(nav.cur, now)) {
+      nav.stack.push(nav.cur);
+      if (nav.stack.length > 30) nav.stack.shift();
+      try { history.pushState({ rd: nav.stack.length }, ''); } catch { /* not allowed here */ }
+    }
+    nav.cur = now;
+    navPaint();
+  }, 220);
+}
+function navBack() {
+  const s = nav.stack.pop();
+  if (!s) return;
+  nav.restoring = true;
+  const m = $('#modal');
+  if (s.modal) {
+    $('#modalBody').innerHTML = s.modal.html;
+    m.className = s.modal.cls;
+    m.hidden = false;
+  } else m.hidden = true;
+  setView(s.view);
+  if (s.view !== 'read' && state.tab !== s.tab) switchTab(s.tab);
+  $('#reader').scrollTop = s.reader;
+  const pane = document.querySelector('#study .pane:not([hidden])');
+  if (pane) pane.scrollTop = s.pane;
+  setTimeout(() => {
+    nav.restoring = false;
+    nav.cur = navSnapshot();
+    navPaint();
+  }, 30);
+}
+document.body.insertAdjacentHTML('beforeend', '<button id="mBack" class="m-back" hidden>&#8249; <span>Back</span></button>');
+$('#modal .modal-card').insertAdjacentHTML('afterbegin', '<button class="modal-back" hidden aria-label="Back">&#8249; Back</button>');
+$('#mBack').addEventListener('click', () => (history.state && history.state.rd ? history.back() : navBack()));
+$('#modal .modal-back').addEventListener('click', () => (history.state && history.state.rd ? history.back() : navBack()));
+window.addEventListener('popstate', () => { if (nav.stack.length) navBack(); });
+new MutationObserver(navSchedule).observe($('#modal'), { attributes: true, attributeFilter: ['hidden', 'class'] });
+new MutationObserver(navSchedule).observe($('#modalBody'), { childList: true });
+new MutationObserver(() => navPaint()).observe($('#mStudyPill'), { attributes: true, attributeFilter: ['hidden'] });
+$('#reader').addEventListener('scroll', () => { if (nav.cur && !nav.restoring) nav.cur.reader = $('#reader').scrollTop; }, { passive: true });
+$('#study').addEventListener('scroll', (e) => { if (nav.cur && !nav.restoring && e.target.classList && e.target.classList.contains('pane')) nav.cur.pane = e.target.scrollTop; }, { capture: true, passive: true });
+setTimeout(() => { nav.cur = navSnapshot(); }, 1500);
 $('#mNav').addEventListener('click', (e) => {
   const b = e.target.closest('[data-mn]');
   if (!b) return;
@@ -84,6 +160,7 @@ $('#btnMenu').addEventListener('click', () => openMenu());
   const prev = window.switchTab;
   window.switchTab = function (name) {
     prev(name);
+    navSchedule();
     if (name !== 'marks') studyTab = name;
     if (isPhone() && document.body.classList.contains('m-study')) $$('#mNav button').forEach((b) => b.classList.toggle('on', b.dataset.mn === (name === 'marks' ? 'notes' : 'study')));
   };
@@ -91,6 +168,7 @@ $('#btnMenu').addEventListener('click', () => openMenu());
   const prevSearch = window.runSearch;
   window.runSearch = function (...a) {
     const r = prevSearch.apply(this, a);
+    $('#study .tabs').classList.add('has-search'); // the Search tab appears once there is a search
     if (isPhone()) setView('study');
     return r;
   };
@@ -121,7 +199,6 @@ function paintVerseBar() {
   $('[data-va="memory"]', vbar).classList.toggle('on', memItemFor(id) !== null);
   $('[data-va="memory"]', vbar).lastChild.textContent = memItemFor(id) !== null ? 'Memorizing' : 'Memorize';
   $('[data-va="highlight"]', vbar).classList.toggle('on', !!hl);
-  $('[data-va="bookmark"]', vbar).classList.toggle('on', isBookmarked(id));
   $$('.vb-hl .dot[data-c]:not([data-c=""])', vbar).forEach((d) => { const nm = hlName(d.dataset.c); d.setAttribute('aria-label', nm); $('.dot-n', d).textContent = nm === d.dataset.c ? '' : nm; });
   $('[data-va="note"]', vbar).classList.toggle('on', !!state.notes[id]);
 }
@@ -234,9 +311,6 @@ vbar.addEventListener('click', async (e) => {
       $('.vb-hl', vbar).hidden = true;
       return toast(b.dataset.c ? (n > 1 ? `${n} verses highlighted` : 'Highlighted') : (n > 1 ? `Highlight removed from ${n} verses` : 'Highlight removed'));
     }
-    case 'bookmark':
-      toggleBookmark(v.id);
-      return paintVerseBar();
     case 'note':
       hideVerseBar();
       setView('study');
@@ -250,6 +324,7 @@ vbar.addEventListener('click', async (e) => {
       }, 250);
       return;
     case 'copy':
+      $('.vb-share', vbar).hidden = true;
       try {
         await navigator.clipboard.writeText(text);
         toast('Verse copied');
@@ -287,6 +362,7 @@ vbar.addEventListener('click', async (e) => {
   }
 });
 document.addEventListener('multisel', () => !vbar.hidden && paintVerseBar());
+document.addEventListener('deselect', () => hideVerseBar());
 // a passage chosen in Compare opens on the reading screen
 document.addEventListener('click', (e) => {
   if (isPhone() && e.target.closest('#modal.m-cmp [data-dvgo]')) setTimeout(() => setView('read'), 50);
@@ -327,21 +403,17 @@ document.addEventListener('click', async (e) => {
 
 // ---------------------------------------------------------------- Menu
 const MENU = [
+  // kept short on purpose: everything here is one tap deep, and the rest lives on Today
   ['Study', [
     ...(FEATURES.today === false ? [['Memory verses', () => showMarksView('memory')]] : []),
     ['The Gospel', () => openGospel()],
-    ['Study methods', () => openStudyChooser()],
-    ...(ABOUT_ON ? [['About this book', () => openBookIntro(state.cur.book)]] : []),
     ['Compare passages', () => openCompare()],
+    ...(ABOUT_ON ? [['About this book', () => openBookIntro(state.cur.book)]] : []),
     ['Timeline', () => openTimeline()],
-    ['Reading progress', () => openProgress()],
-    ['Search everything…', () => openCmdk()],
   ]],
   ['Settings and help', [
     ['Settings', () => openReadingOptions()],
     ...(navigator.standalone === true || matchMedia('(display-mode: standalone)').matches ? [] : [['Add to Home Screen', () => openHomeScreenHelp()]]),
-    ['Quick start', () => openQuickStart()],
-    ["What's new", () => openWhatsNew()],
     ['About', () => openAbout()],
   ]],
 ];
@@ -397,18 +469,18 @@ function openAbout() {
 const PHONE_TOUR = [
   { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the app — about a minute. Tap Next, or Skip. You can take it again any time from Menu › Tutorial.', before: () => setView('read') },
   { el: '#readerInner .verse', title: 'Read', text: 'Tap any verse to select it. Double-tap any word to see what it means, with the original Hebrew or Greek. Swipe left or right on the text to go to the next or previous chapter.', before: () => setView('read') },
-  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, copy or share it, add it to your memory verses, or Study it in depth. Keep tapping to choose several verses: one colour highlights them all, and Memorize keeps them together as one passage. New to Bible study? “Study it step by step” walks you through.', before: () => {
+  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, share or copy it, add it to your memory verses, or Study it in depth. Keep tapping to choose several verses: one colour highlights them all, and Memorize keeps them together as one passage. Tap a verse again to let it go. New to Bible study? “Study it step by step” walks you through.', before: () => {
     paintVerseBar();
     vbar.hidden = false;
   } },
   { el: '.toolbar .group.nav', title: 'Choose a chapter', text: 'Pick a book and chapter here. The ‹ and › buttons also change chapters.', before: () => (hideVerseBar()) },
   { el: '#searchForm', title: 'Go to a verse, or search', text: 'Type a reference like John 3:16 to go straight there, or words to search the whole Bible.' },
-  { el: '#study .tabs', title: 'Study', text: 'Related verses for the one you selected, then Words (Hebrew and Greek). Tap a related verse to study it, and “‹ Back to …” brings you back. More holds Topics (tap a reference to read it right there), Places, People and your search results.', before: () => { setView('study'); switchTab('refs'); } },
+  { el: '#study .tabs', title: 'Study', text: 'Related verses for the one you selected, Words (Hebrew and Greek), Topics, Places and People — swipe the row to see them all. Wherever you go, a “‹ Back” button at the bottom left brings you back to where you were; the phone\'s back swipe does the same.', before: () => { setView('study'); switchTab('refs'); } },
   FEATURES.today === false
     ? { el: '#mNav [data-mn="search"]', title: 'Search', text: 'Search the whole Bible for words or phrases, and see the results with a chart of where they occur.', before: () => setView('read') }
     : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Open your Bible where you left off, the devotional, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'}, the reading plan and your journal.`, before: () => setView('read') },
-  { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from Menu › Settings now and then.' },
-  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Memory verses, ' : ''}The Gospel, study methods, Compare passages (any two to four side by side), an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
+  { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Everything you have marked, in one list: notes, highlights and memory verses, with a filter for each. They are kept on this phone — back them up from Menu › Settings now and then.' },
+  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Memory verses, ' : ''}The Gospel, Compare passages (any two to four side by side), About this book, the Timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
   { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },
 ];
 if (isPhone()) {
@@ -424,6 +496,8 @@ if (isPhone()) {
     prevEnd();
     hideVerseBar();
     setView('read');
+    nav.stack.length = 0; // the tour's wanderings are not places to go back to
+    setTimeout(() => { nav.cur = navSnapshot(); navPaint(); }, 400);
   };
 }
 MENU[1][1].splice(1, 0, ['Tutorial', () => startTour()]);
@@ -494,44 +568,22 @@ window.addEventListener('resize', () => {
   }, { passive: true });
 }
 
-// ---------------------------------------------------------------- Study tabs on a phone: Related, Words, and More
+// ---------------------------------------------------------------- Study tabs on a phone: one row you can swipe sideways (no More menu)
 {
-  const MORE = [['topics', 'Topics', '#topicCount'], ['places', 'Places', '#placeCount'], ['people', 'People', null], ['search', 'Search', '#searchCount']];
-  $('#study .tabs').insertAdjacentHTML('beforeend', '<div class="m-more" role="button" tabindex="0" aria-haspopup="true">More <span class="mm-car">&#9662;</span></div>');
-  $('#study').insertAdjacentHTML('beforeend', '<div id="mMoreList" class="m-more-list" hidden></div>');
-  const btn = $('#study .tabs .m-more');
-  const list = $('#mMoreList');
-  const paintMore = (name) => {
-    const hit = MORE.find((m) => m[0] === name);
-    btn.classList.toggle('on', !!hit);
-    btn.firstChild.textContent = hit ? `${hit[1]} ` : 'More ';
-  };
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!list.hidden) return (list.hidden = true);
-    list.innerHTML = MORE.map(([k, t, c]) => {
-      const n = c && $(c) ? $(c).textContent.trim() : '';
-      return `<button data-mtab="${k}">${t}${n ? ` <span class="count">${esc(n)}</span>` : ''}</button>`;
-    }).join('');
-    const r = btn.getBoundingClientRect();
-    list.style.top = `${r.bottom + 4}px`;
-    list.hidden = false;
-  });
-  list.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-mtab]');
-    if (!b) return;
-    list.hidden = true;
-    switchTab(b.dataset.mtab);
-  });
-  document.addEventListener('click', (e) => {
-    if (!list.hidden && !e.target.closest('#mMoreList')) list.hidden = true;
-  });
   const prev = window.switchTab;
   window.switchTab = function (name) {
     prev(name);
-    paintMore(name);
-    list.hidden = true;
+    const b = $(`#study .tabs [data-tab="${name}"]`);
+    if (b && isPhone()) b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
   };
+  // the tip cards under the tabs are left to the tour on a phone; the one-line description stays
+  if (isPhone()) {
+    const th = $('#tabHelp');
+    if (th) {
+      $('.th-i', th).hidden = true;
+      new MutationObserver(() => { const t = $('.th-tip', th); if (t && !t.hidden) t.hidden = true; }).observe(th, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    }
+  }
 }
 
 // ---------------------------------------------------------------- the name of the app, under the bottom buttons
