@@ -58,26 +58,52 @@ async function loadGospel() {
 function walkedOn(k) {
   return !!(state.walk.days[k] || (state.readlog && state.readlog.days[k]));
 }
-/** Days in a row with God's Word, with grace: one missed day in any seven doesn't break the walk. */
+/** Days with God's Word: this week, in a row (today or yesterday counts as the start), and in all. */
 function weekSummary() {
   const d = new Date();
-  let days = 0, chapters = 0;
+  let days = 0;
   for (let i = 0; i < 7; i++) {
-    const k = dkey(d);
-    if (walkedOn(k)) days += 1;
-    chapters += (state.readlog && state.readlog.days[k]) || 0;
+    if (walkedOn(dkey(d))) days += 1;
     d.setDate(d.getDate() - 1);
   }
-  return { days, chapters };
+  const s = new Date();
+  if (!walkedOn(dkey(s))) s.setDate(s.getDate() - 1); // today is not over yet
+  let streak = 0;
+  while (walkedOn(dkey(s))) {
+    streak += 1;
+    s.setDate(s.getDate() - 1);
+  }
+  const all = new Set([...Object.keys(state.walk.days), ...Object.keys((state.readlog && state.readlog.days) || {})]).size;
+  return { days, streak, all };
 }
 const inviteFor = (k) => INVITES[[...k].reduce((a, c) => a + c.charCodeAt(0), 0) % INVITES.length];
+/** The verse of the day: the same passage on the same date every year (data/votd.json, 366 passages); the
+ *  invitations above are the fallback. Returns {ref, text, s, e}. */
+async function verseOfTheDay(k) {
+  const list = await tsk.votd().catch(() => []);
+  if (!list.length) {
+    const [ref, text] = inviteFor(k);
+    return { ref, text };
+  }
+  const [y, m, d] = k.split('-').map(Number);
+  const leap = new Date(2000, m - 1, d); // a leap year, so 29 February has its own day
+  const n = Math.round((leap - new Date(2000, 0, 1)) / 86400000);
+  const { s, e } = list[n % list.length];
+  const p = await tsk.passage(s, e, dataTr());
+  return { ref: p.label, text: p.verses.map((v) => v.text).join(' '), s, e };
+}
+// a quiet word when the walk reaches a milestone
+const MILESTONES = { 7: 'a week in the Word', 14: 'two weeks in the Word', 30: 'a month in the Word', 60: 'two months in the Word',
+  100: 'a hundred days in the Word', 180: 'half a year in the Word', 365: 'a whole year in the Word' };
 
 // ===================================================================== Today
 async function openToday() {
   const today = todayStr();
   const w = weekSummary();
-  const [ref, text] = inviteFor(today);
-  const due = Object.values(state.memory || {}).filter((m) => m.due <= today).length;
+  const { ref, text, s: vs, e: ve } = await verseOfTheDay(today);
+  const dueList = Object.entries(state.memory || {}).filter(([, m]) => m.due <= today).map(([id]) => Number(id)).sort((a, b) => a - b);
+  const due = dueList.length;
+  const first = due ? await memPassage(dueList[0]).catch(() => null) : null;
   const open = state.prayers.filter((p) => !p.answered).length;
   const hr = new Date().getHours();
   const hello = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
@@ -87,19 +113,24 @@ async function openToday() {
   const bk = state.books[(state.cur.book || 1) - 1];
   openModal(`<div class="kicker">${esc(longDate(today))}</div>
     <h2 class="m-title">${hello}${name ? `, ${esc(name)}` : ''}</h2>
-    <blockquote class="td-invite">“${esc(text)}” <span>${esc(ref)}</span></blockquote>
+    <blockquote class="td-invite">“${esc(text)}” ${vs ? `<button class="td-vgo" data-td5="${vs}" data-e="${ve}">${esc(ref)} ›</button>` : `<span>${esc(ref)}</span>`}</blockquote>
     ${bk ? `<button class="td-open" data-td4="open">Open your Bible<span>Continue in ${esc(bk.name)} ${state.cur.ch}</span></button>` : ''}
     <div class="td-tiles">
       <button data-td2="study"><b>Study methods</b><span>Guided worksheets: observe, words, people, topics</span></button>
       ${FEATURES.prayer === false ? '' : `<button data-td="prayers"><b>Prayer list</b><span>${open ? `${open} request${open === 1 ? '' : 's'} you are praying for` : 'Keep a list of what you are praying for'}</span></button>`}
       <button data-td="memory"><b>Memory verses</b><span>${due ? `${due} to practise today` : `${Object.keys(state.memory || {}).length || 'No'} verse${Object.keys(state.memory || {}).length === 1 ? '' : 's'} hidden in your heart`}</span></button>
-      <button data-td="plan"><b>Reading plan</b><span>${planToday.length ? `Today: ${esc(planLabel(planToday))}` : ps && ps.finished ? 'Plan finished — well done' : 'Choose a plan to read through the Bible'}</span></button>
+      <button data-td="plan"><b>Reading plan</b><span>${planToday.length ? `Day ${ps.today + 1} of ${ps.def.days}: ${esc(planLabel(planToday))}` : ps && ps.finished ? 'Plan finished — well done' : 'Choose a plan to read through the Bible'}</span></button>
       <button data-td="daily"><b>Devotional</b><span>Spurgeon's Morning and Evening for today</span></button>
       <button data-td="journal"><b>Journal</b><span>${state.journal.length ? `${state.journal.length} entr${state.journal.length === 1 ? 'y' : 'ies'}` : 'Write down what God is teaching you'}</span></button>
       <button data-td="gospel" class="td-gospel"><b>The Gospel</b><span>How to be saved — to read, print or share</span></button>
     </div>
+    ${first ? `<div class="td-mem"><div class="td-mem-k">Memory verse for today${due > 1 ? ` · ${due} due` : ''}</div>
+      <div class="td-mem-v"><b>${esc(first.label)}</b> ${esc(first.text.length > 160 ? `${first.text.slice(0, 160).replace(/\s+\S*$/, '')}…` : first.text)}</div>
+      <button data-td3="practise">Practise now ›</button></div>` : ''}
     <div class="td-quiet" title="Days with God's Word: a chapter read">
-      This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word · ${w.chapters} chapter${w.chapters === 1 ? '' : 's'}
+      <span>This week: ${w.days} day${w.days === 1 ? '' : 's'} in the Word</span>
+      <span>${w.streak} day${w.streak === 1 ? '' : 's'} in a row${MILESTONES[w.streak] ? ` — ${MILESTONES[w.streak]}` : ''}</span>
+      <span>${w.all} day${w.all === 1 ? '' : 's'} in all</span>
     </div>`, 'm-today');
 }
 
@@ -252,7 +283,7 @@ function showMarksView(view) {
     const p = v33.practice;
     if (!p || p.i >= p.queue.length || !['blanks', 'type', 'typed'].includes(p.stage)) return prevPractice();
     const id = p.queue[p.i];
-    const [v] = await tsk.versesByIds([id]);
+    const v = await memPassage(id);
     let inner = '';
     if (p.stage === 'blanks') {
       let k = 0;
@@ -340,6 +371,13 @@ function wireV38() {
       if (k === 'plan') return openPlan();
       if (k === 'daily') return openDaily(0, null);
       if (k === 'gospel') return openGospel();
+    }
+    if (t.closest('[data-td3="practise"]')) return startPractice(false);
+    const vg = t.closest('[data-td5]');
+    if (vg) {
+      closeModal();
+      if (typeof setView === 'function' && typeof isPhone === 'function' && isPhone()) setView('read');
+      return go({ id: Number(vg.dataset.td5), endId: Number(vg.dataset.e) });
     }
     const wk = t.closest('[data-wk]');
     if (wk) {

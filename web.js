@@ -1,7 +1,7 @@
 'use strict';
 /* Web edition front end: a phone layout (one screen at a time, a bar of five buttons at the bottom),
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
-/* global tsk, state, go, dataTr, multi, clearMulti, highlightSelected, markSelection, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
+/* global tsk, state, go, dataTr, multi, clearMulti, highlightSelected, markSelection, isBookmarked, toggleBookmark, hlName, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
    openProgress, openStudyChooser, openGospel, showMarksView, openReadingOptions, toggleTheme,
    openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES */
 
@@ -16,11 +16,13 @@ document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria
   <button data-mn="notes"><span class="mi">&#9998;</span>Notes</button>
   <button data-mn="menu"><span class="mi">&#9776;</span>Menu</button></nav>
   <div id="mStudyPill" class="m-vbar" hidden role="toolbar" aria-label="This verse">
-    <div class="vb-head"><span class="vb-ref"></span><button class="vb-guide" data-va="guide">Study it step by step ›</button><button class="vb-more" data-va="multi">Select more</button><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
-    <div class="vb-hl" hidden>${HL_COLORS.map((c) => `<button class="dot hl-${c}" data-va="hl" data-c="${c}" aria-label="${c}"></button>`).join('')}<button class="dot none" data-va="hl" data-c="" aria-label="No highlight">&times;</button></div>
+    <div class="vb-head"><span class="vb-ref"></span><button class="vb-guide" data-va="guide">Study it step by step ›</button><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
+    <div class="vb-share" hidden><button data-va="shareText">Share the words</button><button data-va="shareImage">Share as a picture</button></div>
+    <div class="vb-hl" hidden>${HL_COLORS.map((c) => `<button class="dot hl-${c}" data-va="hl" data-c="${c}" aria-label="${c}"><span class="dot-n"></span></button>`).join('')}<button class="dot none" data-va="hl" data-c="" aria-label="No highlight">&times;</button></div>
     <div class="vb-row">
       <button data-va="highlight"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-9 9H6v-5z"/><path d="M4 21h16"/></svg>Highlight</button>
       <button data-va="note"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"/><path d="M14 4v5h5M8 13h8M8 17h6"/></svg>Note</button>
+      <button data-va="bookmark"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Bookmark</button>
       <button data-va="copy"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>Copy</button>
       <button data-va="share"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>Share</button>
       <button data-va="memory"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Memorize</button>
@@ -104,23 +106,84 @@ function paintVerseBar() {
   const x = state.xref;
   if (!x) return;
   const id = x.verse.id;
-  const n = multi.ids.size || 1;
-  vbar.classList.toggle('vb-multi', multi.mode);
-  $('.vb-ref', vbar).textContent = multi.mode ? `${n} verse${n === 1 ? '' : 's'} — tap more` : x.verse.label;
-  $('.vb-more', vbar).textContent = multi.mode ? 'Done' : 'Select more';
-  if (multi.mode) $('.vb-hl', vbar).hidden = false;
+  // several verses tapped: "Psalm 23:1–3" when they run together, otherwise how many
+  const n = multi.ids.size;
+  let label = x.verse.label;
+  if (n > 1 && state.chapter) {
+    const vs = state.chapter.verses.filter((v) => multi.ids.has(v.id)).map((v) => v.vs);
+    const runs = vs[vs.length - 1] - vs[0] === vs.length - 1;
+    label = runs ? `${state.chapter.name} ${state.chapter.ch}:${vs[0]}–${vs[vs.length - 1]}` : `${n} verses`;
+  }
+  vbar.classList.toggle('vb-multi', n > 1);
+  $('.vb-ref', vbar).textContent = label;
   const hl = state.highlights[id];
   $$('.vb-hl .dot', vbar).forEach((d) => d.classList.toggle('on', d.dataset.c === (hl || '')));
-  $('[data-va="memory"]', vbar).classList.toggle('on', !!state.memory[id]);
-  $('[data-va="memory"]', vbar).lastChild.textContent = state.memory[id] ? 'Memorizing' : 'Memorize';
+  $('[data-va="memory"]', vbar).classList.toggle('on', memItemFor(id) !== null);
+  $('[data-va="memory"]', vbar).lastChild.textContent = memItemFor(id) !== null ? 'Memorizing' : 'Memorize';
   $('[data-va="highlight"]', vbar).classList.toggle('on', !!hl);
+  $('[data-va="bookmark"]', vbar).classList.toggle('on', isBookmarked(id));
+  $$('.vb-hl .dot[data-c]:not([data-c=""])', vbar).forEach((d) => { const nm = hlName(d.dataset.c); d.setAttribute('aria-label', nm); $('.dot-n', d).textContent = nm === d.dataset.c ? '' : nm; });
   $('[data-va="note"]', vbar).classList.toggle('on', !!state.notes[id]);
 }
 const hideVerseBar = () => {
   if (multi.mode) clearMulti();
   vbar.hidden = true;
   $('.vb-hl', vbar).hidden = true;
+  $('.vb-share', vbar).hidden = true;
 };
+// the verse, or every verse tapped, as one passage: {label, text}
+function selectedPassage(v) {
+  if (multi.ids.size > 1 && state.chapter) {
+    const vs = state.chapter.verses.filter((x) => multi.ids.has(x.id));
+    const run = vs[vs.length - 1].vs - vs[0].vs === vs.length - 1;
+    const label = run ? `${state.chapter.name} ${state.chapter.ch}:${vs[0].vs}-${vs[vs.length - 1].vs}` : vs.map((x) => `${state.chapter.name} ${state.chapter.ch}:${x.vs}`).join('; ');
+    return { label, text: vs.map((x) => x.text).join(' ') };
+  }
+  return { label: v.label, text: v.text };
+}
+// a verse card to share as a picture: the words on navy, the reference in gold
+async function shareVerseImage({ label, text }) {
+  const W = 1080, H = 1080, PAD = 96;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1f3a6b'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#c9a227'; g.fillRect(PAD, PAD, 120, 6);
+  const words = text.split(/\s+/);
+  let size = text.length > 520 ? 38 : text.length > 360 ? 44 : text.length > 220 ? 52 : text.length > 120 ? 60 : 72;
+  let lines;
+  for (;;) { // shrink until the words fit the card
+    g.font = `${size}px Georgia, 'Times New Roman', serif`;
+    lines = [];
+    let line = '';
+    for (const w of words) {
+      const t = line ? `${line} ${w}` : w;
+      if (g.measureText(t).width > W - PAD * 2 && line) { lines.push(line); line = w; } else line = t;
+    }
+    lines.push(line);
+    if (lines.length * size * 1.4 <= H - PAD * 2 - 200 || size <= 24) break;
+    size -= 2;
+  }
+  const lh = size * 1.4;
+  let y = (H - lines.length * lh) / 2 + size * 0.35;
+  g.fillStyle = '#fdfcf8'; g.textBaseline = 'alphabetic';
+  for (const ln of lines) { g.fillText(ln, PAD, y); y += lh; }
+  g.fillStyle = '#c9a227'; g.font = `600 ${Math.max(30, size * 0.55)}px -apple-system, 'Segoe UI', Arial, sans-serif`;
+  g.fillText(`${label} (KJV)`, PAD, Math.min(H - PAD - 60, y + 10));
+  g.fillStyle = 'rgba(253,252,248,.55)'; g.font = `28px -apple-system, 'Segoe UI', Arial, sans-serif`;
+  g.fillText('RIGHTLY DIVIDING', PAD, H - PAD + 10);
+  const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+  const file = new File([blob], `${label.replace(/[^A-Za-z0-9]+/g, '-')}.png`, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); } catch { /* cancelled */ }
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = file.name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  toast('Picture saved');
+}
 {
   const prev = window.v3OnVerse;
   let tapped = false; // the first verse is selected by itself on opening; only offer the bar after a tap
@@ -131,6 +194,9 @@ const hideVerseBar = () => {
     $('.vb-hl', vbar).hidden = true;
     paintVerseBar();
     vbar.hidden = false;
+    // while the bar is up, every tap adds a verse (tap one again to drop it); closing the bar starts afresh
+    multi.mode = true;
+    if (!multi.ids.size) multi.ids.add(id);
   };
   // reading on (scrolling well past the verse) puts the bar away; the app's own scroll to the verse does not
   let y0 = null;
@@ -142,7 +208,7 @@ const hideVerseBar = () => {
     }
   }).observe(vbar, { attributes: true, attributeFilter: ['hidden'] });
   $('#reader').addEventListener('scroll', () => {
-    if (vbar.hidden || multi.mode || Date.now() - shownAt < 900) return;
+    if (vbar.hidden || multi.ids.size > 1 || Date.now() - shownAt < 900) return;
     const y = $('#reader').scrollTop;
     if (y0 === null) y0 = y;
     else if (Math.abs(y - y0) > 160) hideVerseBar();
@@ -152,32 +218,25 @@ vbar.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-va]');
   if (!b || !state.xref) return;
   const v = state.xref.verse;
-  const text = `${v.label} (KJV) ${v.text}`;
+  const sel = selectedPassage(v);
+  const text = `${sel.label} (KJV) ${sel.text}`;
   switch (b.dataset.va) {
     case 'close':
       if (multi.ids.size) clearMulti();
       return hideVerseBar();
-    case 'multi':
-      if (multi.mode) {
-        clearMulti();
-        return paintVerseBar();
-      }
-      multi.mode = true;
-      multi.ids.clear();
-      multi.ids.add(v.id);
-      markSelection();
-      return paintVerseBar();
     case 'guide':
       hideVerseBar();
       return startGuide(v.id);
     case 'highlight': $('.vb-hl', vbar).hidden = !$('.vb-hl', vbar).hidden; return;
     case 'hl': {
       const n = highlightSelected(v.id, b.dataset.c);
-      if (multi.ids.size) clearMulti();
       paintVerseBar();
       $('.vb-hl', vbar).hidden = true;
       return toast(b.dataset.c ? (n > 1 ? `${n} verses highlighted` : 'Highlighted') : (n > 1 ? `Highlight removed from ${n} verses` : 'Highlight removed'));
     }
+    case 'bookmark':
+      toggleBookmark(v.id);
+      return paintVerseBar();
     case 'note':
       hideVerseBar();
       setView('study');
@@ -198,7 +257,12 @@ vbar.addEventListener('click', async (e) => {
         toast('Could not copy on this device');
       }
       return;
-    case 'share':
+    case 'share': $('.vb-share', vbar).hidden = !$('.vb-share', vbar).hidden; return;
+    case 'shareImage':
+      $('.vb-share', vbar).hidden = true;
+      return shareVerseImage(sel);
+    case 'shareText':
+      $('.vb-share', vbar).hidden = true;
       if (navigator.share) {
         try {
           await navigator.share({ text });
@@ -214,6 +278,7 @@ vbar.addEventListener('click', async (e) => {
       return;
     case 'memory':
       toggleMemory(v.id);
+      if (vbar.hidden) return;
       return paintVerseBar();
     case 'study':
       hideVerseBar();
@@ -233,40 +298,7 @@ document.addEventListener('click', (e) => {
   if (r) setTimeout(() => setView('read'), 50);
 }, true);
 
-// ---------------------------------------------------------------- following references on the study screen
-// Related: tapping a reference studies that verse; a button at the top goes back to the verse you came from
-// (and back again, one step at a time).
-{
-  const back = []; // verse ids, most recent last
-  let following = false;
-  document.addEventListener('click', (e) => {
-    if (!isPhone() || !state.xref) return;
-    const sb = e.target.closest('.study-back');
-    if (sb) {
-      e.stopPropagation();
-      following = true;
-      go({ id: back.pop() });
-      return;
-    }
-    if (e.target.closest('#pane-refs .ref')) {
-      back.push(state.xref.verse.id);
-      following = true;
-    }
-  }, true);
-  const prev = window.v3OnVerse;
-  window.v3OnVerse = (id, x) => {
-    if (prev) prev(id, x);
-    if (!following) back.length = 0; // a verse chosen some other way starts afresh
-    following = false;
-    while (back.length && back[back.length - 1] === id) back.pop();
-    if (!back.length) return;
-    const to = back[back.length - 1];
-    tsk.versesByIds([to]).then(([v]) => {
-      if (!v || !state.xref || state.xref.verse.id !== id || $('#pane-refs .study-back')) return;
-      $('#pane-refs').insertAdjacentHTML('afterbegin', `<button class="study-back">&#8249; Back to ${esc(v.label)}</button>`);
-    });
-  };
-}
+// ---------------------------------------------------------------- following references on the study screen (Topics)
 // Topics: tapping a reference opens its words right there, with a way to read it in the Bible
 document.addEventListener('click', async (e) => {
   if (!isPhone()) return;
@@ -365,18 +397,18 @@ function openAbout() {
 const PHONE_TOUR = [
   { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the app — about a minute. Tap Next, or Skip. You can take it again any time from Menu › Tutorial.', before: () => setView('read') },
   { el: '#readerInner .verse', title: 'Read', text: 'Tap any verse to select it. Double-tap any word to see what it means, with the original Hebrew or Greek. Swipe left or right on the text to go to the next or previous chapter.', before: () => setView('read') },
-  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, copy or share it, add it to your memory verses, or Study it in depth. New to Bible study? “Study it step by step” walks you through.', before: () => {
+  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, copy or share it, add it to your memory verses, or Study it in depth. Keep tapping to choose several verses: one colour highlights them all, and Memorize keeps them together as one passage. New to Bible study? “Study it step by step” walks you through.', before: () => {
     paintVerseBar();
     vbar.hidden = false;
   } },
   { el: '.toolbar .group.nav', title: 'Choose a chapter', text: 'Pick a book and chapter here. The ‹ and › buttons also change chapters.', before: () => (hideVerseBar()) },
   { el: '#searchForm', title: 'Go to a verse, or search', text: 'Type a reference like John 3:16 to go straight there, or words to search the whole Bible.' },
-  { el: '#study .tabs', title: 'Study', text: 'Cross-references for the verse you selected, then Words (Hebrew and Greek). More holds Topics, Places, People and your search results.', before: () => { setView('study'); switchTab('refs'); } },
+  { el: '#study .tabs', title: 'Study', text: 'Related verses for the one you selected, then Words (Hebrew and Greek). Tap a related verse to study it, and “‹ Back to …” brings you back. More holds Topics (tap a reference to read it right there), Places, People and your search results.', before: () => { setView('study'); switchTab('refs'); } },
   FEATURES.today === false
     ? { el: '#mNav [data-mn="search"]', title: 'Search', text: 'Search the whole Bible for words or phrases, and see the results with a chart of where they occur.', before: () => setView('read') }
     : { el: '#mNav [data-mn="today"]', title: 'Today', text: `Open your Bible where you left off, the devotional, study methods, memory verses${FEATURES.prayer === false ? '' : ', your prayer list'}, the reading plan and your journal.`, before: () => setView('read') },
   { el: '#mNav [data-mn="notes"]', title: 'Notes', text: 'Your notes, highlights, prayer list, journal and memory verses. They are kept on this phone — back them up from Menu › Settings now and then.' },
-  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Memory verses, ' : ''}The Gospel, study methods, an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
+  { el: '#mNav [data-mn="menu"]', title: 'Menu', text: `${FEATURES.today === false ? 'Memory verses, ' : ''}The Gospel, study methods, Compare passages (any two to four side by side), an introduction to each book, the timeline, and Settings — text size, theme, your name and backing up your notes. This tutorial is here too.` },
   { el: '#mNav [data-mn="read"]', title: 'Back to reading', text: 'Read always brings you back to the text. That is the tour — may the Lord bless your time in His Word.' },
 ];
 if (isPhone()) {

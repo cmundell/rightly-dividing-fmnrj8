@@ -49,14 +49,21 @@
   .vb-head { display: flex; align-items: center; padding: 0 6px; }
   .vb-ref { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .02em; }
   .vb-x { margin-left: auto; border: 0; background: none; font-size: 22px; line-height: 1; color: var(--ink-soft); padding: 2px 6px; }
-  .vb-row { display: grid; grid-template-columns: repeat(6, 1fr); }
-  .vb-row button { border: 0; background: none; color: var(--ink); font-size: 11px; padding: 6px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; border-radius: 10px; }
+  .vb-row { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .vb-row [data-va="bookmark"].on .vi { fill: var(--gold); }
+  .vb-hl .dot { position: relative; }
+  .vb-hl .dot-n { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 3px; font-size: 9.5px; color: var(--ink-soft); white-space: nowrap; max-width: 54px; overflow: hidden; text-overflow: ellipsis; }
+  .vb-hl:has(.dot-n:not(:empty)) { padding-bottom: 20px; }
+  .vb-row button { border: 0; background: none; color: var(--ink); font-size: 10.5px; min-width: 0; overflow: hidden; white-space: nowrap; padding: 6px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; border-radius: 10px; }
   .vb-row .vi { width: 22px; height: 22px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .vb-row button.on .vi { stroke: var(--gold); }
   .vb-row [data-va="memory"].on .vi { fill: var(--gold); }
   .vb-row .vb-study { background: var(--accent); color: var(--paper); }
   .vb-row .vb-study .vi { stroke: var(--paper); }
   .vb-hl { display: flex; gap: 12px; justify-content: center; padding: 6px 0 8px; }
+  .vb-share { display: flex; gap: 8px; justify-content: center; padding: 6px 10px 8px; }
+  .vb-share[hidden] { display: none; }
+  .vb-share button { flex: 1; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--link); font: 600 13px var(--ui); padding: 9px 6px; }
   .vb-hl[hidden] { display: none; }
   .vb-hl .dot { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--rule); }
   .vb-hl .dot.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--paper) inset; }
@@ -148,7 +155,5 @@
 /* 3.17.1: the help card sits above the bottom buttons on the phone */
 @media (max-width: 760px) { #nudge { left: 16px; right: 16px; width: auto; bottom: calc(92px + env(safe-area-inset-bottom)); } }
 
-/* choosing several verses: only the highlight colours are offered */
-.m-vbar .vb-more { border: 1px solid var(--rule); border-radius: 999px; background: none; color: var(--link); font: inherit; font-size: 13px; padding: 3px 10px; margin-left: 6px; }
-.m-vbar.vb-multi .vb-row, .m-vbar.vb-multi .vb-guide { display: none; }
-.m-vbar.vb-multi .vb-more { margin-left: auto; }
+/* several verses tapped: Study goes with the last one tapped, so step-by-step is put away */
+.m-vbar.vb-multi .vb-guide { display: none; }

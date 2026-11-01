@@ -36,7 +36,7 @@ state.lessons = state.lessons || [];
 
 // ===================================================================== margin markers
 // Notes and tags show as small marks in the left margin, so a chapter shows at a glance where you've
-// studied. (Highlights show as the verse's color; since 3.15 they also do the work of bookmarks.)
+// studied. (Highlights show as the verse's color; a bookmark shows a small flag.)
 window.markIcons = (id) => {
   const parts = [];
   const tips = [];
@@ -47,6 +47,10 @@ window.markIcons = (id) => {
   if (state.tags && (state.tags[id] || []).length) {
     parts.push('<i class="m-tag">#</i>');
     tips.push(`tags: ${state.tags[id].join(', ')}`);
+  }
+  if (typeof isBookmarked === 'function' && isBookmarked(id)) {
+    parts.push('<i class="m-bm">&#9873;</i>');
+    tips.push('bookmarked');
   }
   return parts.length ? `<span class="marks gut" title="${esc(tips.join(' · '))}">${parts.join('')}</span>` : '';
 };
@@ -333,13 +337,13 @@ ${ABOUT_ON ? '      <li><b>About this book</b>, under each chapter heading: the 
 // ===================================================================== guided tour
 const TOUR = [
   { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
-  { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Highlighted verses keep their color; small marks in the left margin show your notes (✎) and tags (#).' },
-  ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: the author, audience, relationship, occasion and purpose of the book, with an outline and questions for study, from J. B. Tidwell (1916).' },
+  { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Ctrl+click to choose several verses at once — one colour then highlights them all, and Memorize keeps them together as one passage. Small marks in the left margin show your notes (✎) and tags (#).' },
+  ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: who wrote the book and to whom, in the book\'s own words where it says; then the relationship, occasion and purpose, with an outline and questions for study, from J. B. Tidwell (1916).' },
   { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
   { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
   { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
-  { el: '[data-tab="topics"]', tab: 'topics', title: 'Topics', text: 'Nave\'s topics that cite the verse, and any topic to browse. This app keeps to the Bible itself: to read commentaries, the verse\'s More menu (or right-click) opens it at Blue Letter Bible, online.' },
-  { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. Click any one to go back to it.' },
+  { el: '[data-tab="topics"]', tab: 'topics', title: 'Topics', text: 'Nave\'s topics that cite the verse, and any topic to browse; “show text” lists the words of every reference. This app keeps to the Bible itself: to read commentaries, the verse\'s More menu (or right-click) opens it at Blue Letter Bible, online.' },
+  { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. Click any one to go back to it. After you follow a related verse, “‹ Back to …” at the top of the Study pane returns you one step at a time.' },
   { el: '[data-tab="marks"]', tab: 'marks', title: 'Notes and lessons', text: 'Your notes (filter by tag), highlights, memory verses, prayer list and journal. Lessons collect verses in teaching order and export them as a PDF.' },
   { el: '#btnPlan', title: 'Reading plans', text: 'Choose a plan — the whole Bible in a year, the New Testament in 90 days, and more. A gold dot means today\'s reading is waiting.' },
   { el: '#btnSheet', title: 'Study sheets', text: 'Save the selected verse with its cross-references, word study, topics and your notes as a PDF (Ctrl+P).' },
@@ -813,19 +817,49 @@ const addDays = (n) => {
 };
 const dueIds = () => Object.entries(state.memory).filter(([, m]) => m.due <= todayStr()).map(([id]) => Number(id)).sort((a, b) => a - b);
 
+// A memory item is one verse, or a run of verses kept as one passage ("end" is the last verse's id).
+const memItemFor = (id) => {
+  if (state.memory[id]) return id;
+  for (const [k, m] of Object.entries(state.memory)) if (m.end && Number(k) < id && id <= m.end) return Number(k);
+  return null;
+};
+async function memPassage(id) {
+  const m = state.memory[id] || {};
+  const end = m.end && m.end > id ? m.end : id;
+  const p = await tsk.passage(id, end, dataTr());
+  return { id, end, label: p.label, text: p.verses.map((v) => v.text).join(' ') };
+}
+const memRuns = (ids) => { // contiguous runs of verse ids: [[s, e], ...]
+  const out = [];
+  for (const id of [...ids].sort((a, b) => a - b)) {
+    const last = out[out.length - 1];
+    if (last && id === last[1] + 1) last[1] = id;
+    else out.push([id, id]);
+  }
+  return out;
+};
 function toggleMemory(id) {
-  if (state.memory[id]) delete state.memory[id];
-  else state.memory[id] = { box: 0, due: todayStr(), added: Date.now() };
+  const ids = typeof hlTargets === 'function' ? hlTargets(id) : [id];
+  const runs = memRuns(ids);
+  const on = memItemFor(id) !== null;
+  for (const [s, e] of runs) {
+    for (let i = s; i <= e; i++) { // whatever overlaps goes, so a verse is never in two items
+      const k = memItemFor(i);
+      if (k !== null) delete state.memory[k];
+    }
+    if (!on) state.memory[s] = { box: 0, due: todayStr(), added: Date.now(), ...(e > s ? { end: e } : {}) };
+  }
   saveUser(['memory']);
-  refreshMarkIcons(id);
+  for (const [s, e] of runs) for (let i = s; i <= e; i++) refreshMarkIcons(i);
   const b = $('[data-act="memToggle"]');
   if (b) setMemButton(b, id);
-  toast(state.memory[id] ? 'Added to memory verses — practice from Notes › Memory' : 'Removed from memory verses');
+  const n = ids.length;
+  toast(on ? 'Removed from memory verses' : `${n > 1 ? `${n} verses added as ${runs.length === 1 ? 'one passage' : `${runs.length} passages`}` : 'Added'} to memory verses — practice from Notes › Memory`);
   renderMarks();
 }
 
 function setMemButton(b, id) {
-  const on = !!state.memory[id];
+  const on = memItemFor(id) !== null;
   b.classList.toggle('on', on);
   b.innerHTML = on ? '&#9670; Memorizing' : '&#9671; Memorize';
 }
@@ -847,7 +881,7 @@ function injectV33Buttons(id) {
   const prevMarks = window.markIcons;
   window.markIcons = (id) => {
     let h = prevMarks(id);
-    if (state.memory && state.memory[id]) {
+    if (state.memory && memItemFor(id) !== null) {
       const i = '<i class="m-mem">&#9670;</i>';
       h = h ? h.replace(/<\/span>$/, `${i}</span>`).replace(/title="([^"]*)"/, 'title="$1 · memory verse"') : `<span class="marks gut" title="memory verse">${i}</span>`;
     }
@@ -861,12 +895,13 @@ window.marksSwitch = () => {
   const v = window.v32 ? window.v32.marksView : v32.marksView;
   const nNotes = Object.values(state.notes).filter(Boolean).length;
   const nHl = Object.keys(state.highlights || {}).length;
+  const nBm = (state.bookmarks || []).length;
   const open = (state.prayers || []).filter((p) => !p.answered).length;
   const jn = (state.journal || []).length;
   const b = (k, t, c) => `<button data-mv="${k}" class="${v === k ? 'on' : ''}">${t}${c ? ` <span>${c}</span>` : ''}</button>`;
   // the groups of the Notes screen; Lessons and Export sit quietly at the side
   return `<div class="mswitch-row"><div class="mswitch">
-    ${b('notes', 'Notes', nNotes)}${b('hl', 'Highlights', nHl)}${b('memory', 'Memory', due ? `${due} due` : n)}${FEATURES.prayer === false ? '' : b('prayer', 'Prayer', open)}${b('journal', 'Journal', jn)}
+    ${b('notes', 'Notes', nNotes)}${b('hl', 'Highlights', nHl)}${b('bookmarks', 'Bookmarks', nBm)}${b('memory', 'Memory', due ? `${due} due` : n)}${FEATURES.prayer === false ? '' : b('prayer', 'Prayer', open)}${b('journal', 'Journal', jn)}
   </div><div class="mswitch-side"><button class="linkbtn${v === 'lessons' ? ' on' : ''}" data-mv="lessons" title="Lessons: verses collected in teaching order, exported as one PDF">Lessons${state.lessons.length ? ` (${state.lessons.length})` : ''}</button><button class="linkbtn" data-act="exportNotes" title="Export all notes, highlights and tags to Word or PDF">Export…</button></div></div>`;
 };
 
@@ -880,7 +915,7 @@ window.marksSwitch = () => {
 
 async function renderMemory() {
   const ids = Object.keys(state.memory).map(Number);
-  const verses = await tsk.versesByIds(ids.sort((a, b) => state.memory[a].due.localeCompare(state.memory[b].due) || a - b));
+  const verses = await Promise.all(ids.sort((a, b) => state.memory[a].due.localeCompare(state.memory[b].due) || a - b).map(memPassage));
   const due = dueIds();
   const fmt = (d) => (d <= todayStr() ? '<b class="due">due today</b>' : `next ${new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
   $('#pane-marks').innerHTML = `${marksSwitch()}
@@ -917,7 +952,7 @@ async function showPracticeCard() {
     return;
   }
   const id = p.queue[p.i];
-  const [v] = await tsk.versesByIds([id]);
+  const v = await memPassage(id);
   const letters = v.text.replace(WORD_RE, (w) => w[0]);
   openModal(`<div class="kicker">Memory verse ${p.i + 1} of ${p.queue.length}</div>
     <h2 class="m-title">${esc(v.label)}</h2>
@@ -1120,7 +1155,7 @@ TOUR.splice(2, 0, {
 });
 {
   const refs = TOUR.find((t) => t.title === 'Related verses');
-  if (refs) refs.text = 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go, or Shift-click to pin it above the text for comparing. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.';
+  if (refs) refs.text = 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go, or Shift-click to pin it above the text. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons, pins and “Compare with other passages” — any two to four passages side by side.';
   const notes = TOUR.find((t) => t.title === 'Notes and lessons');
   if (notes) {
     notes.title = 'Notes, lessons and memory';
@@ -1224,9 +1259,10 @@ function wireV33() {
     const rm = e.target.closest('[data-mem-rm]');
     if (rm) {
       const id = Number(rm.dataset.memRm);
+      const end = (state.memory[id] || {}).end || id;
       delete state.memory[id];
       saveUser(['memory']);
-      refreshMarkIcons(id);
+      for (let i = id; i <= end; i++) refreshMarkIcons(i);
       return renderMarks();
     }
     const g = e.target.closest('.mem-go');

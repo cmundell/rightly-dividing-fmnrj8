@@ -139,8 +139,8 @@ async function go(loc, { push = true } = {}) {
   }
   const changed = book !== state.cur.book || ch !== state.cur.ch || !state.chapter;
   state.cur = { book, ch, sel: selId, range };
+  if (multi.ids.size && (changed || !multi.ids.has(selId))) clearMulti();
   if (changed) {
-    if (multi.ids.size) clearMulti();
     fillChapters();
     await renderChapter();
   } else {
@@ -309,6 +309,7 @@ async function showRefs(id) {
         <button data-act="expandAll" class="${state.settings.expandAll ? 'on' : ''}">Show verse text for all references</button>
         <button data-act="addTags">Add tags…</button>
         <button data-act="compare">Compare with other passages…</button>
+        <button data-act="bookmark">${isBookmarked(id) ? 'Remove bookmark' : 'Bookmark this verse'}</button>
         <a class="va-link" href="${blbUrl(v.label)}" target="_blank" rel="noopener" title="Opens in your web browser (needs the internet)">Commentary at Blue Letter Bible ↗</a>
       </div>
     </div>`);
@@ -534,6 +535,7 @@ function wire() {
       toast('Verse copied');
     }
     if (act.dataset.act === 'compare') return openCompare(id);
+    if (act.dataset.act === 'bookmark') return toggleBookmark(id);
     if (act.dataset.act === 'copyRefs') {
       const lines = [state.xref.verse.label];
       state.xref.groups.forEach((g, i) => lines.push(`${i + 1}. ${g.anchor}: ${g.refs.map((r) => r.label).join('; ')}`));
@@ -572,6 +574,12 @@ function wire() {
       e.stopPropagation();
       return setHighlight(Number(un.dataset.unhl), '');
     }
+    const ub = e.target.closest('[data-unbm]');
+    if (ub) {
+      e.stopPropagation();
+      return toggleBookmark(Number(ub.dataset.unbm));
+    }
+    if (e.target.closest('[data-act="nameColours"]')) return openColourNames();
     const c = e.target.closest('[data-hlf]');
     if (c) {
       v3.markColor = v3.markColor === c.dataset.hlf ? null : c.dataset.hlf;
@@ -916,14 +924,7 @@ function wireV2() {
   Object.assign(state.settings, u.settings || {});
   state.settings.tr = 'kjv';
   if (window.v3Init) window.v3Init(u);
-  state.bookmarks = u.bookmarks || [];
-  // 3.15: a bookmark is now simply a highlight
-  if (state.bookmarks.length) {
-    state.highlights = state.highlights || {}; // loaded by v3Init, just above
-    for (const b of state.bookmarks) if (!state.highlights[b.id]) state.highlights[b.id] = 'yellow';
-    state.bookmarks = [];
-    saveUser(['bookmarks', 'highlights']);
-  }
+  state.bookmarks = Array.isArray(u.bookmarks) ? u.bookmarks.filter((b) => b && b.id) : []; // [{id, added}]
   state.notes = u.notes || {};
   const bs = $('#bookSel');
   const og = document.createElement('optgroup');
@@ -1030,6 +1031,20 @@ function shortLabel(full) {
 }
 
 // ===================================================================== highlights + tags
+// a plain bookmark on a verse: apart from highlights and notes, like a ribbon in a printed Bible
+const isBookmarked = (id) => state.bookmarks.some((b) => b.id === id);
+function toggleBookmark(id) {
+  const on = isBookmarked(id);
+  if (on) state.bookmarks = state.bookmarks.filter((b) => b.id !== id);
+  else state.bookmarks.push({ id, added: Date.now() });
+  saveUser(['bookmarks']);
+  refreshMarkIcons(id);
+  toast(on ? 'Bookmark removed' : 'Bookmarked — find it under Notes › Bookmarks');
+  renderMarks();
+}
+// highlight colours can be given names (Settings): "Promises", "Prayer", ...
+const hlName = (c) => ((state.settings.hlNames || {})[c] || '').trim() || c;
+
 function applyHighlight(el) {
   const c = state.highlights[el.dataset.id];
   HL_COLORS.forEach((k) => el.classList.remove(`hl-${k}`));
@@ -1045,7 +1060,7 @@ function injectVerseTools(id) {
     'afterend',
     `<div class="v3tools">
       <span class="lbl">Highlight</span>
-      ${HL_COLORS.map((c) => `<button class="dot hl-${c}${cur === c ? ' on' : ''}" data-hl="${c}" title="${c}"></button>`).join('')}
+      ${HL_COLORS.map((c) => `<button class="dot hl-${c}${cur === c ? ' on' : ''}" data-hl="${c}" title="${esc(hlName(c))}" aria-label="${esc(hlName(c))}"></button>`).join('')}
       <button class="dot none${cur ? '' : ' on'}" data-hl="" title="No highlight">&times;</button>
       <input class="tagin" data-id="${id}" placeholder="Tags, e.g. prayer, sermon idea" value="${esc(tags)}" title="Comma-separated tags; press Enter to save"${tags ? '' : ' hidden'} />
     </div>`
@@ -1060,6 +1075,31 @@ function setHighlight(id, color) {
   if (el) applyHighlight(el);
   $$('#pane-refs .v3tools .dot').forEach((d) => d.classList.toggle('on', d.dataset.hl === (color || '')));
   renderMarks();
+}
+
+function openColourNames() {
+  const names = state.settings.hlNames || {};
+  openModal(`<div class="kicker">Highlights</div><h2 class="m-title">Name the colours</h2>
+    <p class="hint">Give each colour a meaning, so your highlights become a key: Promises, Prayer, Commands, Prophecy… Leave one blank to keep just the colour.</p>
+    <div class="hln-grid">${HL_COLORS.map((c) => `<label><i class="dot hl-${c}"></i><input type="text" maxlength="24" data-hln="${c}" placeholder="${c}" value="${esc(names[c] || '')}" /></label>`).join('')}</div>
+    <div class="plan-foot"><button class="primary-btn" data-act="hlnDone">Done</button></div>`, 'm-hln');
+}
+{
+  const save = () => {
+    const names = {};
+    $$('#modal [data-hln]').forEach((i) => { const v = i.value.trim().slice(0, 24); if (v) names[i.dataset.hln] = v; });
+    state.settings.hlNames = names;
+    saveUser(['settings']);
+  };
+  $('#modal').addEventListener('input', (e) => e.target.matches('[data-hln]') && save());
+  $('#modal').addEventListener('click', (e) => {
+    if (!e.target.closest('[data-act="hlnDone"]')) return;
+    save();
+    closeModal();
+    renderMarks();
+    $$('.v3tools .dot[data-hl]').forEach((d) => { if (d.dataset.hl) d.title = d.ariaLabel = hlName(d.dataset.hl); });
+    toast('Colour names saved');
+  });
 }
 
 function setTags(id, text) {
@@ -1315,12 +1355,13 @@ function helpHtml() {
 // ===================================================================== notes manager (override)
 async function renderMarks() {
   // Notes › Notes (verses with a note or tags) and Notes › Highlights; the other views live in study.js and walk.js
-  const view = typeof v32 !== 'undefined' && v32.marksView === 'hl' ? 'hl' : 'notes';
+  const view = typeof v32 !== 'undefined' && ['hl', 'bookmarks'].includes(v32.marksView) ? v32.marksView : 'notes';
   const noted = new Set();
   for (const k of Object.keys(state.notes)) if (state.notes[k]) noted.add(Number(k));
   for (const k of Object.keys(state.tags || {})) noted.add(Number(k));
   const lit = new Set(Object.keys(state.highlights || {}).map(Number));
-  const all = new Set([...noted, ...lit]);
+  const marked = new Set(state.bookmarks.map((b) => b.id));
+  const all = new Set([...noted, ...lit, ...marked]);
   $('#markCount').textContent = all.size ? `(${all.size})` : '';
 
   const tagCounts = {};
@@ -1328,7 +1369,7 @@ async function renderMarks() {
   const colorCounts = {};
   for (const c of Object.values(state.highlights || {})) colorCounts[c] = (colorCounts[c] || 0) + 1;
 
-  let list = [...(view === 'hl' ? lit : noted)].sort((a, b) => a - b);
+  let list = [...(view === 'hl' ? lit : view === 'bookmarks' ? marked : noted)].sort((a, b) => a - b);
   if (view === 'notes' && v3.markTag) list = list.filter((id) => (state.tags[id] || []).includes(v3.markTag));
   if (view === 'hl' && v3.markColor) list = list.filter((id) => state.highlights[id] === v3.markColor);
   const verses = await tsk.versesByIds(list);
@@ -1340,23 +1381,25 @@ async function renderMarks() {
   const pane = $('#pane-marks');
   const hadFocus = document.activeElement && document.activeElement.id === 'markSearch';
   const head = view === 'hl'
-    ? (Object.keys(colorCounts).length > 1 ? `<div class="tagbar hlbar-f">${HL_COLORS.filter((c) => colorCounts[c]).map((c) => `<button class="tag hlf${v3.markColor === c ? ' on' : ''}" data-hlf="${c}" title="${c}"><i class="dot hl-${c}"></i> <span>${colorCounts[c]}</span></button>`).join('')}</div>` : '')
+    ? (Object.keys(colorCounts).length ? `<div class="tagbar hlbar-f">${HL_COLORS.filter((c) => colorCounts[c]).map((c) => `<button class="tag hlf${v3.markColor === c ? ' on' : ''}" data-hlf="${c}" title="${esc(hlName(c))}"><i class="dot hl-${c}"></i> ${hlName(c) !== c ? `<b>${esc(hlName(c))}</b> ` : ''}<span>${colorCounts[c]}</span></button>`).join('')}<button class="tag hlf-name" data-act="nameColours" title="Give each colour a meaning, e.g. Promises, Prayer">Name the colours…</button></div>` : '')
     : (Object.keys(tagCounts).length ? `<div class="tagbar">${Object.entries(tagCounts)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([t, n]) => `<button class="tag${v3.markTag === t ? ' on' : ''}" data-tag="${esc(t)}">#${esc(t)} <span>${n}</span></button>`)
       .join('')}</div>` : '');
   const empty = view === 'hl'
     ? (lit.size ? 'Nothing matches.' : 'No highlights yet. Select a verse and pick a highlight color — highlighted verses are kept here, like bookmarks.')
-    : (noted.size ? 'Nothing matches.' : 'No notes yet. Tap a verse and choose Note — or write in the box under Related verses.');
+    : view === 'bookmarks'
+      ? (marked.size ? 'Nothing matches.' : 'No bookmarks yet. Tap a verse and choose Bookmark to keep your place, like a ribbon in a printed Bible.')
+      : (noted.size ? 'Nothing matches.' : 'No notes yet. Tap a verse and choose Note — or write in the box under Related verses.');
   pane.innerHTML = `${head}
-    <input id="markSearch" class="marksearch" placeholder="${view === 'hl' ? 'Search your highlighted verses' : 'Search your notes and tags'}" value="${esc(v3.markQuery)}" />` +
+    <input id="markSearch" class="marksearch" placeholder="${view === 'hl' ? 'Search your highlighted verses' : view === 'bookmarks' ? 'Search your bookmarks' : 'Search your notes and tags'}" value="${esc(v3.markQuery)}" />` +
     (shown.length
       ? shown
           .map((v) => {
             const hl = state.highlights[v.id];
             const tags = state.tags[v.id] || [];
             return `<div class="mark${hl ? ` hlbar hl-${hl}` : ''}" data-id="${v.id}"><div class="top"><span class="lab">${esc(v.label)}</span>
-            ${view === 'hl' ? `<button class="del" data-unhl="${v.id}" title="Remove highlight">&times;</button>` : ''}</div>
+            ${view === 'hl' ? `<button class="del" data-unhl="${v.id}" title="Remove highlight">&times;</button>` : view === 'bookmarks' ? `<button class="del" data-unbm="${v.id}" title="Remove bookmark">&times;</button>` : ''}</div>
             <div class="t">${esc(v.text)}</div>
             ${tags.length ? `<div class="mtags">${tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
             ${state.notes[v.id] ? `<div class="nt">${esc(state.notes[v.id])}</div>` : ''}</div>`;
@@ -1433,6 +1476,41 @@ async function exportSheet(print) {
     const saved = await tsk.exportSheet(html, name);
     if (saved) toast('Study sheet saved');
   }
+}
+
+// ===================================================================== following references
+// Related: tapping a reference studies that verse; a button at the top goes back to the verse you came from
+// (and back again, one step at a time). Alt+← does the same through the history.
+{
+  const back = []; // verse ids, most recent last
+  let following = false;
+  document.addEventListener('click', (e) => {
+    if (!state.xref) return;
+    const sb = e.target.closest('.study-back');
+    if (sb) {
+      e.stopPropagation();
+      following = true;
+      go({ id: back.pop() });
+      return;
+    }
+    if (!e.shiftKey && e.target.closest('#pane-refs .ref')) { // Shift-click pins instead
+      back.push(state.xref.verse.id);
+      following = true;
+    }
+  }, true);
+  const prev = window.v3OnVerse;
+  window.v3OnVerse = (id, x) => {
+    if (prev) prev(id, x);
+    if (!following) back.length = 0; // a verse chosen some other way starts afresh
+    following = false;
+    while (back.length && back[back.length - 1] === id) back.pop();
+    if (!back.length) return;
+    const to = back[back.length - 1];
+    tsk.versesByIds([to]).then(([v]) => {
+      if (!v || !state.xref || state.xref.verse.id !== id || $('#pane-refs .study-back')) return;
+      $('#pane-refs').insertAdjacentHTML('afterbegin', `<button class="study-back">&#8249; Back to ${esc(v.label)}</button>`);
+    });
+  };
 }
 
 // ===================================================================== events

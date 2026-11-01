@@ -930,7 +930,8 @@ body.reduce-motion .j-halo { animation: none; }
 /* Today */
 .modal.m-today .modal-card { width: min(760px, 100%); }
 .td-invite { font-family: var(--scripture); font-size: 19px; line-height: 1.5; color: var(--accent-strong); border-left: 3px solid var(--gold); margin: 10px 0 16px; padding: 2px 0 2px 14px; }
-.td-invite span { display: block; font: 12.5px var(--ui); color: var(--ink-soft); margin-top: 4px; }
+.td-invite span, .td-invite .td-vgo { display: block; font: 12.5px var(--ui); color: var(--ink-soft); margin-top: 4px; }
+.td-invite .td-vgo { border: 0; background: none; padding: 0; color: var(--link); cursor: pointer; }
 :root[data-theme='dark'] .td-invite { color: var(--ink); }
 .td-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; margin: 12px 0 14px; }
 .td-tiles button { text-align: left; border: 1px solid var(--rule); background: var(--paper); border-radius: 10px; padding: 10px 12px; cursor: pointer; color: var(--ink); }
@@ -1288,3 +1289,17 @@ body.reduce-motion .j-halo { animation: none; }
 .cmp-out .sbs-t p { margin-bottom: 4px; }
 @media (max-width: 760px) { .cmp-out { grid-template-columns: 1fr; } }
 @media (max-width: 760px) { .cmp-slot select[data-cmp="book"] { flex: 1 1 calc(100% - 3em); } }
+.cmp-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.cmp-foot button { font: inherit; font-size: 13px; padding: 5px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--link); cursor: pointer; }
+.cmp-foot .hint { flex: 1 1 100%; }
+.td-mem { border: 1px solid var(--rule); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--paper); padding: 10px 14px; margin: 4px 0 12px; }
+.td-mem-k { font: 600 11px var(--ui); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); margin-bottom: 4px; }
+.td-mem-v { font-family: var(--scripture); line-height: 1.5; }
+.td-mem button { margin-top: 6px; border: 0; background: none; padding: 0; font: 600 13px var(--ui); color: var(--link); cursor: pointer; }
+.m-bm { color: var(--gold); font-size: 10px; }
+.hln-grid { display: grid; gap: 10px; margin: 10px 0 16px; }
+.hln-grid label { display: flex; align-items: center; gap: 10px; }
+.hln-grid .dot { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rule); flex: none; }
+.hln-grid input { flex: 1; font: inherit; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
+.tag.hlf b { font-weight: 600; }
+.tag.hlf-name { color: var(--link); background: none; border-style: dashed; }

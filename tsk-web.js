@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '1.1.0';
+  const VERSION = '1.2.0';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -286,6 +286,7 @@
     // the book introductions (3.14)
     phrases: () => loadJson('phrases.json', []),
     tidwell: async (id) => (await loadJson('tidwell.json', {}))[id] || null,
+    votd: () => loadJson('votd.json', []),
     // after an update reaches this phone, show What's New once (not on a first install)
     whatsNewPending: async () => {
       const u = (await kvGet('user')) || {};

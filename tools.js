@@ -180,6 +180,25 @@ async function openSideBySide(gids, focusId) {
 // Each passage has its own book, chapter and verse pickers. Columns on a wide screen; one above another on a phone.
 // The last comparison is remembered (Settings), so it is there again next time.
 const cmpCounts = new Map(); // "book:ch" -> number of verses
+let cmpLast = null; // what is on screen, for Copy and Print
+const cmpText = () => cmpLast.slots.map((x, i) => `${cmpLast.label(x)} (KJV)\n${cmpLast.passages[i].vs.map((v) => `${v.vs} ${v.text}`).join(' ')}`).join('\n\n');
+function cmpPrintHtml() {
+  const { slots, passages, label } = cmpLast;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Compare passages</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; color: #1f1b16; font-size: 11pt; line-height: 1.5; margin: 0.6in; }
+  h1 { font-size: 16pt; font-weight: normal; margin: 0 0 2pt; }
+  .meta { color: #6b6155; font-size: 9pt; font-family: 'Segoe UI', Arial, sans-serif; margin-bottom: 14pt; }
+  .cols { display: grid; grid-template-columns: repeat(${slots.length}, 1fr); gap: 14pt; }
+  .col { border-top: 2pt solid #1f3a6b; padding-top: 6pt; }
+  h2 { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10pt; color: #1f3a6b; margin: 0 0 6pt; }
+  p { margin: 0 0 5pt; } sup { font-family: 'Segoe UI', Arial, sans-serif; font-size: 7pt; color: #6b6155; }
+  @media print { @page { margin: 0.5in; } body { margin: 0; } }
+</style></head><body>
+<h1>Compare passages</h1><div class="meta">King James Version · ${esc(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }))}</div>
+<div class="cols">${slots.map((x, i) => `<div class="col"><h2>${esc(label(x))}</h2>${passages[i].vs.map((v) => `<p><sup>${v.vs}</sup> ${esc(v.text)}</p>`).join('')}</div>`).join('')}</div>
+</body></html>`;
+}
 async function cmpVerses(book, ch) {
   const k = `${book}:${ch}`;
   if (!cmpCounts.has(k)) cmpCounts.set(k, (await tsk.chapter(book, ch, dataTr())).verses.length);
@@ -230,7 +249,9 @@ async function renderCompare(slots) {
   const html = `<div class="kicker">Compare passages</div><h2 class="m-title">Side by side</h2>
     <div class="cmp-pick">${pickers}${slots.length < 4 ? '<button class="cmp-add" data-cmp="add">+ Add a passage</button>' : ''}</div>
     <div class="sbs cmp-out" style="--cols:${slots.length}">${cols}</div>
-    <div class="hint">Choose up to four passages. Tap a reference to open it in the Bible.</div>`;
+    <div class="cmp-foot"><button data-cmp="copy">Copy</button><button data-cmp="print">Print or save as PDF</button>
+      <span class="hint">Choose up to four passages. Tap a reference to open it in the Bible.</span></div>`;
+  cmpLast = { slots, passages, label };
   const m = $('#modal');
   if (!m.hidden && m.classList.contains('m-cmp')) {
     const card = $('.modal-card', m);
@@ -255,8 +276,13 @@ async function renderCompare(slots) {
     renderCompare(slots);
   });
   $('#modal').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-cmp="add"], [data-cmp="remove"]');
+    const b = e.target.closest('[data-cmp="add"], [data-cmp="remove"], [data-cmp="copy"], [data-cmp="print"]');
     if (!b) return;
+    if (b.dataset.cmp === 'copy') {
+      navigator.clipboard.writeText(cmpText()).then(() => toast('Passages copied'), () => toast('Could not copy on this device'));
+      return;
+    }
+    if (b.dataset.cmp === 'print') return tsk.printSheet(cmpPrintHtml());
     const slots = cur();
     if (b.dataset.cmp === 'add' && slots.length < 4) slots.push({ ...slots[slots.length - 1] });
     if (b.dataset.cmp === 'remove' && slots.length > 2) slots.splice(Number(b.closest('.cmp-slot').dataset.i), 1);
