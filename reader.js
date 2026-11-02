@@ -599,7 +599,10 @@ function wire() {
     const un = e.target.closest('[data-unhl]');
     if (un) {
       e.stopPropagation();
-      return setHighlight(Number(un.dataset.unhl), '');
+      const ids = un.dataset.unhl.split(',').map(Number);
+      const was = ids.map((i) => state.highlights[i]);
+      ids.forEach((i) => setHighlight(i, ''));
+      return toastUndo(ids.length > 1 ? `Highlight removed from ${ids.length} verses` : 'Highlight removed', () => ids.forEach((i, k) => setHighlight(i, was[k])));
     }
     const unn = e.target.closest('[data-unnote]');
     if (unn) {
@@ -615,23 +618,21 @@ function wire() {
     const unm = e.target.closest('[data-unmark]');
     if (unm) {
       e.stopPropagation();
-      const id = Number(unm.dataset.unmark);
-      const was = { note: state.notes[id], hl: state.highlights[id], mem: state.memory[id] };
-      delete state.notes[id];
-      delete state.highlights[id];
-      delete state.memory[id];
+      const ids = unm.dataset.unmark.split(',').map(Number);
+      const was = ids.map((id) => ({ id, note: state.notes[id], hl: state.highlights[id], mem: state.memory[id] }));
+      const paint = () => ids.forEach((id) => { const el = document.getElementById(`v${id}`); if (el) applyHighlight(el); refreshMarkIcons(id); });
+      ids.forEach((id) => { delete state.notes[id]; delete state.highlights[id]; delete state.memory[id]; });
       saveUser(['notes', 'highlights', 'memory']);
-      const el = document.getElementById(`v${id}`);
-      if (el) applyHighlight(el);
-      refreshMarkIcons(id);
+      paint();
       renderMarks();
       return toastUndo('Removed from your marks', () => {
-        if (was.note) state.notes[id] = was.note;
-        if (was.hl) state.highlights[id] = was.hl;
-        if (was.mem) state.memory[id] = was.mem;
+        for (const w of was) {
+          if (w.note) state.notes[w.id] = w.note;
+          if (w.hl) state.highlights[w.id] = w.hl;
+          if (w.mem) state.memory[w.id] = w.mem;
+        }
         saveUser(['notes', 'highlights', 'memory']);
-        if (el) applyHighlight(el);
-        refreshMarkIcons(id);
+        paint();
         renderMarks();
       });
     }
@@ -642,7 +643,7 @@ function wire() {
       return renderMarks();
     }
     const m = e.target.closest('.mark');
-    if (m) go({ id: Number(m.dataset.id) });
+    if (m) go({ id: Number(m.dataset.id), endId: Number(m.dataset.e || m.dataset.id) });
   });
 
   $$('.tabs button').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
@@ -1397,6 +1398,24 @@ function helpHtml() {
 }
 
 // ===================================================================== notes manager (override)
+// Verses highlighted together are listed together: a run of verses in the same colour, with no notes among
+// them, is one row ("Genesis 1:1–4") rather than four. (A verse with a note keeps its own row.)
+function groupMarks(verses, memo) {
+  const out = [];
+  for (const v of verses) {
+    const hl = state.highlights[v.id];
+    const last = out[out.length - 1];
+    const plain = hl && !state.notes[v.id];
+    if (last && plain && last.plain && last.hl === hl && v.id === last.verses[last.verses.length - 1].id + 1) last.verses.push(v);
+    else out.push({ verses: [v], hl, plain });
+  }
+  for (const g of out) {
+    const a = g.verses[0].label, z = g.verses[g.verses.length - 1].label;
+    g.label = g.verses.length === 1 ? a : a.replace(/:\d+$/, '') === z.replace(/:\d+$/, '') ? `${a}–${z.split(':').pop()}` : `${a} – ${z}`;
+  }
+  return out;
+}
+
 async function renderMarks() {
   // Notes › Notes (verses with a note or tags) and Notes › Highlights; the other views live in study.js and walk.js
   const view = typeof v32 !== 'undefined' && ['hl', 'notes'].includes(v32.marksView) ? v32.marksView : 'all';
@@ -1435,13 +1454,16 @@ async function renderMarks() {
   pane.innerHTML = `${head}
     <input id="markSearch" class="marksearch" placeholder="${view === 'hl' ? 'Search your highlighted verses' : view === 'notes' ? 'Search your notes' : 'Search everything you have marked'}" value="${esc(v3.markQuery)}" />` +
     (shown.length
-      ? shown
-          .map((v) => {
+      ? groupMarks(shown, memo)
+          .map((g) => {
+            const v = g.verses[0];
+            const ids = g.verses.map((x) => x.id);
             const hl = state.highlights[v.id];
             const tags = state.tags[v.id] || [];
-            return `<div class="mark${hl ? ` hlbar hl-${hl}` : ''}" data-id="${v.id}"><div class="top"><span class="lab">${esc(v.label)}</span>
-            ${memo.has(v.id) ? '<i class="m-mem" title="memory verse">&#9670;</i>' : ''}${view === 'hl' ? `<button class="del" data-unhl="${v.id}" title="Remove highlight">&times;</button>` : view === 'notes' ? `<button class="del" data-unnote="${v.id}" title="Delete this note">&times;</button>` : `<button class="del" data-unmark="${v.id}" title="Remove the note, highlight and memory verse from ${esc(v.label)}">&times;</button>`}</div>
-            <div class="t">${esc(v.text)}</div>
+            const multi = g.verses.length > 1;
+            return `<div class="mark${hl ? ` hlbar hl-${hl}` : ''}" data-id="${v.id}" data-e="${ids[ids.length - 1]}"><div class="top"><span class="lab">${esc(g.label)}</span>
+            ${ids.some((i) => memo.has(i)) ? '<i class="m-mem" title="memory verse">&#9670;</i>' : ''}${view === 'hl' ? `<button class="del" data-unhl="${ids.join(',')}" title="Remove highlight">&times;</button>` : view === 'notes' ? `<button class="del" data-unnote="${v.id}" title="Delete this note">&times;</button>` : `<button class="del" data-unmark="${ids.join(',')}" title="Remove the note, highlight and memory verse from ${esc(g.label)}">&times;</button>`}</div>
+            <div class="t">${g.verses.map((x) => (multi ? `<sup>${x.label.split(':').pop()}</sup> ` : '') + esc(x.text)).join(' ')}</div>
             ${tags.length ? `<div class="mtags">${tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
             ${state.notes[v.id] ? `<div class="nt">${esc(state.notes[v.id])}</div>` : ''}</div>`;
           })
