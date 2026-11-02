@@ -282,8 +282,12 @@ async function shareVerseImage({ label, text }) {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
-  g.fillStyle = '#1f3a6b'; g.fillRect(0, 0, W, H);
-  g.fillStyle = '#c9a227'; g.fillRect(PAD, PAD, 120, 6);
+  // the same softened photo as the icon and the opening screen; plain navy if it cannot be loaded
+  const bg = await new Promise((resolve) => { const im = new Image(); im.onload = () => resolve(im); im.onerror = () => resolve(null); im.src = 'data/brand-bg.jpg'; });
+  if (bg) g.drawImage(bg, 0, 0, W, H);
+  else { g.fillStyle = '#1f3a6b'; g.fillRect(0, 0, W, H); }
+  g.fillStyle = '#e0be6e'; g.fillRect(PAD, PAD, 120, 6);
+  g.shadowColor = 'rgba(20,16,10,.6)'; g.shadowBlur = 8; g.shadowOffsetY = 3;
   const words = text.split(/\s+/);
   let size = text.length > 520 ? 38 : text.length > 360 ? 44 : text.length > 220 ? 52 : text.length > 120 ? 60 : 72;
   let lines;
@@ -301,11 +305,11 @@ async function shareVerseImage({ label, text }) {
   }
   const lh = size * 1.4;
   let y = (H - lines.length * lh) / 2 + size * 0.35;
-  g.fillStyle = '#fdfcf8'; g.textBaseline = 'alphabetic';
+  g.fillStyle = '#faf4e6'; g.textBaseline = 'alphabetic';
   for (const ln of lines) { g.fillText(ln, PAD, y); y += lh; }
-  g.fillStyle = '#c9a227'; g.font = `600 ${Math.max(30, size * 0.55)}px -apple-system, 'Segoe UI', Arial, sans-serif`;
+  g.fillStyle = '#e0be6e'; g.font = `600 ${Math.max(30, size * 0.55)}px -apple-system, 'Segoe UI', Arial, sans-serif`;
   g.fillText(`${label} (KJV)`, PAD, Math.min(H - PAD - 60, y + 10));
-  g.fillStyle = 'rgba(253,252,248,.55)'; g.font = `28px -apple-system, 'Segoe UI', Arial, sans-serif`;
+  g.fillStyle = 'rgba(250,244,230,.7)'; g.font = `28px -apple-system, 'Segoe UI', Arial, sans-serif`;
   g.fillText('RIGHTLY DIVIDING', PAD, H - PAD + 10);
   const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
   const file = new File([blob], `${label.replace(/[^A-Za-z0-9]+/g, '-')}.png`, { type: 'image/png' });
@@ -519,6 +523,7 @@ function openAbout() {
       <li>Parallel passages and Old Testament quotations: UBS Parallel Passage Database, © 2023 United Bible Societies, CC BY-SA 4.0.</li>
       <li>People and family links: BibleData by Brady Stephenson, CC BY 4.0.</li>
       <li>Timeline: Theographic Bible Metadata by Robert Rouse, CC BY-SA 4.0 (chronology of Floyd Nolen Jones).</li>
+      <li>Icon, opening screen and shared-verse background: photo by Yulia Gapeenko on Vecteezy (Free License).</li>
       <li>Bible places: OpenBible.info Bible Geocoding Data, CC BY 4.0. Base map: Natural Earth; terrain: NASA Blue Marble shaded relief (public domain).</li>
       <li>Journeys: each stop drawn from the KJV text; order of the Gospel events after A. T. Robertson's Harmony of the Gospels (1922, public domain).</li>
     </ul>`, 'm-about');

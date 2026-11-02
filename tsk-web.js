@@ -5,13 +5,13 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '1.4.5';
+  const VERSION = '1.5.0';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'hlGroups', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
   const splash = document.createElement('div');
   splash.id = 'webSplash';
-  splash.innerHTML = `<div class="ws-card"><div class="ws-title">Rightly Dividing</div>
+  splash.innerHTML = `<div class="ws-card"><img class="ws-icon" src="icon-192.png" alt="" width="96" height="96" /><div class="ws-title">Rightly Dividing</div>
     <div class="ws-verse">“Study to shew thyself approved unto God, a workman that needeth not to be ashamed, rightly dividing the word of truth.” <span>2 Timothy 2:15</span></div>
     <div class="ws-bar"><i></i></div><div class="ws-msg">Opening…</div></div>`;
   const showSplash = () => document.body.appendChild(splash);

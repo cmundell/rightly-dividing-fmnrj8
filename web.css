@@ -1,13 +1,15 @@
 /* ===================== web edition ===================== */
-#webSplash { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: flex; align-items: center; justify-content: center; transition: opacity .4s; padding: 24px; }
+/* the opening screen: the same photo as the icon, softened; the title in gold, the verse in cream */
+#webSplash { position: fixed; inset: 0; z-index: 200; background: #4a3a2c url(data/brand-bg.jpg) center / cover no-repeat; display: flex; align-items: center; justify-content: center; transition: opacity .4s; padding: 24px; }
 #webSplash.done { opacity: 0; pointer-events: none; }
 .ws-card { max-width: 420px; text-align: center; }
-.ws-title { font-family: var(--scripture); font-size: 28px; color: var(--accent); margin-bottom: 14px; }
-#webSplash .ws-verse { font-family: var(--scripture); font-size: 16px; line-height: 1.5; color: var(--ink); margin-bottom: 22px; }
-#webSplash .ws-verse span { display: block; font: 12px var(--ui); color: var(--ink-soft); margin-top: 4px; }
-.ws-bar { height: 6px; background: var(--chip); border-radius: 3px; overflow: hidden; }
-.ws-bar i { display: block; height: 100%; width: 2%; background: var(--accent); transition: width .2s; }
-.ws-msg { margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
+.ws-icon { display: block; width: 96px; height: 96px; margin: 0 auto 18px; border-radius: 22px; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.ws-title { font-family: var(--scripture); font-size: 30px; color: #e0be6e; margin-bottom: 14px; text-shadow: 0 2px 6px rgba(0,0,0,.4); }
+#webSplash .ws-verse { font-family: var(--scripture); font-size: 17px; line-height: 1.5; color: #faf4e6; margin-bottom: 22px; text-shadow: 0 2px 6px rgba(0,0,0,.45); background: none; border: 0; padding: 0; }
+#webSplash .ws-verse span { display: block; font: 12px var(--ui); color: #e1d2b4; margin-top: 4px; }
+.ws-bar { height: 6px; background: rgba(90,70,50,.9); border-radius: 3px; overflow: hidden; }
+.ws-bar i { display: block; height: 100%; width: 2%; background: #e0be6e; transition: width .2s; }
+.ws-msg { margin-top: 10px; font-size: 13px; color: #e1d2b4; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .m-nav, .m-vbar, .m-theme { display: none; }
 .wl-list li { margin: 8px 0; font-size: 15px; line-height: 1.45; }
 .wm-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
