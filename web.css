@@ -192,3 +192,4 @@
   .modal:not([hidden]) .modal-card { animation: m-up .22s ease-out; }
 }
 @media (max-width: 760px) { .modal.m-pick .modal-back { display: none; } }
+@media (max-width: 760px) { .toast { bottom: calc(118px + env(safe-area-inset-bottom)); z-index: 70; max-width: 90vw; text-align: center; } }

@@ -51,6 +51,15 @@ function toast(msg) {
   clearTimeout(toast.t);
   toast.t = setTimeout(() => (t.hidden = true), 1800);
 }
+// a toast with an Undo button, for things that were easy to tap by mistake
+function toastUndo(msg, undo) {
+  const t = $('#toast');
+  t.innerHTML = `${esc(msg)} <button class="toast-undo">Undo</button>`;
+  t.hidden = false;
+  $('.toast-undo', t).onclick = () => { t.hidden = true; undo(); };
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => (t.hidden = true), 5000);
+}
 
 // Translation used for data queries ("both" reads KJV for anchors/search/previews)
 const dataTr = () => 'kjv'; // v3 is KJV-only
@@ -591,6 +600,40 @@ function wire() {
     if (un) {
       e.stopPropagation();
       return setHighlight(Number(un.dataset.unhl), '');
+    }
+    const unn = e.target.closest('[data-unnote]');
+    if (unn) {
+      e.stopPropagation();
+      const id = Number(unn.dataset.unnote);
+      const was = state.notes[id];
+      delete state.notes[id];
+      saveUser(['notes']);
+      refreshMarkIcons(id);
+      renderMarks();
+      return toastUndo('Note deleted', () => { state.notes[id] = was; saveUser(['notes']); refreshMarkIcons(id); renderMarks(); });
+    }
+    const unm = e.target.closest('[data-unmark]');
+    if (unm) {
+      e.stopPropagation();
+      const id = Number(unm.dataset.unmark);
+      const was = { note: state.notes[id], hl: state.highlights[id], mem: state.memory[id] };
+      delete state.notes[id];
+      delete state.highlights[id];
+      delete state.memory[id];
+      saveUser(['notes', 'highlights', 'memory']);
+      const el = document.getElementById(`v${id}`);
+      if (el) applyHighlight(el);
+      refreshMarkIcons(id);
+      renderMarks();
+      return toastUndo('Removed from your marks', () => {
+        if (was.note) state.notes[id] = was.note;
+        if (was.hl) state.highlights[id] = was.hl;
+        if (was.mem) state.memory[id] = was.mem;
+        saveUser(['notes', 'highlights', 'memory']);
+        if (el) applyHighlight(el);
+        refreshMarkIcons(id);
+        renderMarks();
+      });
     }
     if (e.target.closest('[data-act="nameColours"]')) return openColourNames();
     const c = e.target.closest('[data-hlf]');
@@ -1397,7 +1440,7 @@ async function renderMarks() {
             const hl = state.highlights[v.id];
             const tags = state.tags[v.id] || [];
             return `<div class="mark${hl ? ` hlbar hl-${hl}` : ''}" data-id="${v.id}"><div class="top"><span class="lab">${esc(v.label)}</span>
-            ${memo.has(v.id) ? '<i class="m-mem" title="memory verse">&#9670;</i>' : ''}${view === 'hl' ? `<button class="del" data-unhl="${v.id}" title="Remove highlight">&times;</button>` : ''}</div>
+            ${memo.has(v.id) ? '<i class="m-mem" title="memory verse">&#9670;</i>' : ''}${view === 'hl' ? `<button class="del" data-unhl="${v.id}" title="Remove highlight">&times;</button>` : view === 'notes' ? `<button class="del" data-unnote="${v.id}" title="Delete this note">&times;</button>` : `<button class="del" data-unmark="${v.id}" title="Remove the note, highlight and memory verse from ${esc(v.label)}">&times;</button>`}</div>
             <div class="t">${esc(v.text)}</div>
             ${tags.length ? `<div class="mtags">${tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
             ${state.notes[v.id] ? `<div class="nt">${esc(state.notes[v.id])}</div>` : ''}</div>`;
