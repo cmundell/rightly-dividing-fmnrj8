@@ -224,6 +224,10 @@ const hlTargets = (id) => (multi.ids.size > 1 && multi.ids.has(id) ? [...multi.i
 function highlightSelected(id, color) {
   const ids = hlTargets(id);
   ids.forEach((i) => setHighlight(i, color));
+  // verses highlighted together stay together in the Notes list, whether or not they are neighbours
+  const g = ids.length > 1 && color ? Date.now().toString(36) : null;
+  ids.forEach((i) => { if (g) state.hlGroups[i] = g; else delete state.hlGroups[i]; });
+  saveUser(['hlGroups']);
   return ids.length;
 }
 // a tap on a verse is answered at once: a short pulse on the verse, and a light buzz where the phone allows it
@@ -621,8 +625,8 @@ function wire() {
       const ids = unm.dataset.unmark.split(',').map(Number);
       const was = ids.map((id) => ({ id, note: state.notes[id], hl: state.highlights[id], mem: state.memory[id] }));
       const paint = () => ids.forEach((id) => { const el = document.getElementById(`v${id}`); if (el) applyHighlight(el); refreshMarkIcons(id); });
-      ids.forEach((id) => { delete state.notes[id]; delete state.highlights[id]; delete state.memory[id]; });
-      saveUser(['notes', 'highlights', 'memory']);
+      ids.forEach((id) => { delete state.notes[id]; delete state.highlights[id]; delete state.hlGroups[id]; delete state.memory[id]; });
+      saveUser(['notes', 'highlights', 'hlGroups', 'memory']);
       paint();
       renderMarks();
       return toastUndo('Removed from your marks', () => {
@@ -1026,12 +1030,14 @@ const v3 = {
 const HL_COLORS = ['yellow', 'green', 'blue', 'pink', 'purple'];
 // Defaults until v3Init receives the saved data (init in app.js is async)
 state.highlights = state.highlights || {};
+state.hlGroups = state.hlGroups || {};
 state.tags = state.tags || {};
 state.trail = state.trail || [];
 
 // ===================================================================== init + hooks
 window.v3Init = (u) => {
   state.highlights = u.highlights || {};
+  state.hlGroups = u.hlGroups && typeof u.hlGroups === 'object' ? u.hlGroups : {}; // verse id -> the group it was highlighted with
   state.tags = u.tags || {};
   state.trail = Array.isArray(u.trail) ? u.trail : [];
   v3.cursor = state.trail.length - 1;
@@ -1114,8 +1120,11 @@ function injectVerseTools(id) {
 
 function setHighlight(id, color) {
   if (color) state.highlights[id] = color;
-  else delete state.highlights[id];
-  saveUser(['highlights']);
+  else {
+    delete state.highlights[id];
+    delete state.hlGroups[id];
+  }
+  saveUser(['highlights', 'hlGroups']);
   const el = document.getElementById(`v${id}`);
   if (el) applyHighlight(el);
   $$('#pane-refs .v3tools .dot').forEach((d) => d.classList.toggle('on', d.dataset.hl === (color || '')));
@@ -1402,18 +1411,44 @@ function helpHtml() {
 // them, is one row ("Genesis 1:1–4") rather than four. (A verse with a note keeps its own row.)
 function groupMarks(verses, memo) {
   const out = [];
+  const byGroup = new Map(); // highlighted together (even apart, like 1:1 and 1:5): one row
   for (const v of verses) {
     const hl = state.highlights[v.id];
-    const last = out[out.length - 1];
     const plain = hl && !state.notes[v.id];
-    if (last && plain && last.plain && last.hl === hl && v.id === last.verses[last.verses.length - 1].id + 1) last.verses.push(v);
+    const gid = plain && state.hlGroups[v.id];
+    if (gid) {
+      const g = byGroup.get(gid);
+      if (g && g.hl === hl) { g.verses.push(v); continue; }
+      const row = { verses: [v], hl, plain, gid };
+      byGroup.set(gid, row);
+      out.push(row);
+      continue;
+    }
+    const last = out[out.length - 1];
+    if (last && plain && last.plain && !last.gid && last.hl === hl && v.id === last.verses[last.verses.length - 1].id + 1) last.verses.push(v);
     else out.push({ verses: [v], hl, plain });
   }
-  for (const g of out) {
-    const a = g.verses[0].label, z = g.verses[g.verses.length - 1].label;
-    g.label = g.verses.length === 1 ? a : a.replace(/:\d+$/, '') === z.replace(/:\d+$/, '') ? `${a}–${z.split(':').pop()}` : `${a} – ${z}`;
-  }
+  for (const g of out) g.label = rangeLabel(g.verses.map((v) => v.label));
   return out;
+}
+// "Genesis 1:1", "Genesis 1:1–4", "Genesis 1:1–3, 5", "Genesis 1:31; 2:1"
+function rangeLabel(labels) {
+  if (labels.length === 1) return labels[0];
+  const parts = [];
+  let book = null;
+  for (const l of labels) {
+    const m = l.match(/^(.*) (\d+):(\d+)$/);
+    if (!m) { parts.push({ book: l, ch: '', vs: [] }); continue; }
+    const last = parts[parts.length - 1];
+    if (last && last.book === m[1] && last.ch === m[2]) last.vs.push(Number(m[3]));
+    else parts.push({ book: m[1], ch: m[2], vs: [Number(m[3])] });
+  }
+  const runs = (vs) => {
+    const r = [];
+    for (const n of vs) { const t = r[r.length - 1]; if (t && n === t[1] + 1) t[1] = n; else r.push([n, n]); }
+    return r.map(([a, b]) => (a === b ? `${a}` : `${a}–${b}`)).join(', ');
+  };
+  return parts.map((p, i) => `${i && p.book === parts[i - 1].book ? '' : `${p.book} `}${p.ch}:${runs(p.vs)}`).join('; ');
 }
 
 async function renderMarks() {

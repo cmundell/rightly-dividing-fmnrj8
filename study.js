@@ -138,6 +138,8 @@ const renderNotesList = window.renderMarks;
 window.renderMarks = async function () {
   if (v32.marksView === 'lessons') return renderLessons();
   await renderNotesList();
+  // several renders may be in flight at once (six verses highlighted together): one switch row, never six
+  $$('#pane-marks .mswitch-row').forEach((e) => e.remove());
   $('#pane-marks').insertAdjacentHTML('afterbegin', marksSwitch());
 };
 
