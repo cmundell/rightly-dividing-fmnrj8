@@ -808,44 +808,39 @@ const addDays = (n) => {
 };
 const dueIds = () => Object.entries(state.memory).filter(([, m]) => m.due <= todayStr()).map(([id]) => Number(id)).sort((a, b) => a - b);
 
-// A memory item is one verse, or a run of verses kept as one passage ("end" is the last verse's id).
+// A memory item is one verse, a run of verses kept as one passage ("end" is the last verse's id), or verses chosen
+// together that are not neighbours ("ids" lists them all: Genesis 1:1 and 1:5 as one item).
+const memIds = (k, m) => (m.ids ? m.ids : Array.from({ length: (m.end && m.end > k ? m.end : k) - k + 1 }, (_, i) => k + i));
 const memItemFor = (id) => {
   if (state.memory[id]) return id;
-  for (const [k, m] of Object.entries(state.memory)) if (m.end && Number(k) < id && id <= m.end) return Number(k);
+  for (const [k, m] of Object.entries(state.memory)) if (memIds(Number(k), m).includes(id)) return Number(k);
   return null;
 };
 async function memPassage(id) {
   const m = state.memory[id] || {};
-  const end = m.end && m.end > id ? m.end : id;
-  const p = await tsk.passage(id, end, dataTr());
-  return { id, end, label: p.label, text: p.verses.map((v) => v.text).join(' ') };
+  const ids = memIds(id, m);
+  const vs = await tsk.versesByIds(ids);
+  const label = typeof rangeLabel === 'function' ? rangeLabel(vs.map((v) => v.label)) : vs[0].label;
+  return { id, end: ids[ids.length - 1], ids, label, text: vs.map((v) => v.text).join(' ') };
 }
-const memRuns = (ids) => { // contiguous runs of verse ids: [[s, e], ...]
-  const out = [];
-  for (const id of [...ids].sort((a, b) => a - b)) {
-    const last = out[out.length - 1];
-    if (last && id === last[1] + 1) last[1] = id;
-    else out.push([id, id]);
-  }
-  return out;
-};
 function toggleMemory(id) {
-  const ids = typeof hlTargets === 'function' ? hlTargets(id) : [id];
-  const runs = memRuns(ids);
+  const ids = [...new Set(typeof hlTargets === 'function' ? hlTargets(id) : [id])].sort((a, b) => a - b);
   const on = memItemFor(id) !== null;
-  for (const [s, e] of runs) {
-    for (let i = s; i <= e; i++) { // whatever overlaps goes, so a verse is never in two items
-      const k = memItemFor(i);
-      if (k !== null) delete state.memory[k];
-    }
-    if (!on) state.memory[s] = { box: 0, due: todayStr(), added: Date.now(), ...(e > s ? { end: e } : {}) };
+  for (const i of ids) { // whatever overlaps goes, so a verse is never in two items
+    const k = memItemFor(i);
+    if (k !== null) delete state.memory[k];
+  }
+  if (!on) {
+    const s = ids[0], e = ids[ids.length - 1];
+    const run = e - s === ids.length - 1;
+    state.memory[s] = { box: 0, due: todayStr(), added: Date.now(), ...(ids.length > 1 ? (run ? { end: e } : { ids }) : {}) };
   }
   saveUser(['memory']);
-  for (const [s, e] of runs) for (let i = s; i <= e; i++) refreshMarkIcons(i);
+  ids.forEach(refreshMarkIcons);
   const b = $('[data-act="memToggle"]');
   if (b) setMemButton(b, id);
   const n = ids.length;
-  toast(on ? 'Removed from memory verses' : `${n > 1 ? `${n} verses added as ${runs.length === 1 ? 'one passage' : `${runs.length} passages`}` : 'Added'} to memory verses — practice from Notes › Memory`);
+  toast(on ? 'Removed from memory verses' : `${n > 1 ? `${n} verses added as one passage` : 'Added'} to memory verses — practice from Notes › Memory`);
   renderMarks();
 }
 
@@ -1070,17 +1065,19 @@ function noteIds() {
 async function notesDoc() {
   const verses = await tsk.versesByIds(noteIds());
   const groups = [];
-  for (const v of verses) {
+  const memo = new Set(Object.keys(state.memory).map(Number));
+  for (const row of groupMarks(verses, memo)) { // the same rows as the Notes screen: "Genesis 1:1–4" is one entry
+    const v = row.verses[0];
     const book = v.label.replace(/ \d+:\d+$/, '');
     let g = groups[groups.length - 1];
     if (!g || g.heading !== book) groups.push((g = { heading: book, items: [] }));
     g.items.push({
-      label: v.label,
-      text: v.text,
+      label: row.label,
+      text: row.verses.length > 1 ? row.verses.map((x) => `${x.label.split(':').pop()} ${x.text}`).join(' ') : v.text,
       note: state.notes[v.id] || '',
       tags: state.tags[v.id] || [],
       highlight: state.highlights[v.id] || null,
-      bookmark: state.bookmarks.some((b) => b.id === v.id),
+      bookmark: false,
     });
   }
   const date = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
@@ -1241,10 +1238,10 @@ function wireV33() {
     const rm = e.target.closest('[data-mem-rm]');
     if (rm) {
       const id = Number(rm.dataset.memRm);
-      const end = (state.memory[id] || {}).end || id;
+      const ids = memIds(id, state.memory[id] || {});
       delete state.memory[id];
       saveUser(['memory']);
-      for (let i = id; i <= end; i++) refreshMarkIcons(i);
+      ids.forEach(refreshMarkIcons);
       return renderMarks();
     }
     const g = e.target.closest('.mem-go');

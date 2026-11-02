@@ -253,10 +253,16 @@ function newJournalEntry() {
 {
   // (the Prayer and Journal buttons are in marksSwitch, study.js)
   const prevRender = window.renderMarks;
-  window.renderMarks = async function () {
+  const draw = async function () {
     if (v32.marksView === 'prayer') return renderPrayers();
     if (v32.marksView === 'journal') return renderJournal();
     return prevRender();
+  };
+  // Several changes in one go (six verses highlighted at once) ask for six redraws; one is drawn, after the last ask.
+  let pending = null;
+  window.renderMarks = function () {
+    if (!pending) pending = new Promise((resolve) => setTimeout(() => { pending = null; resolve(draw()); }, 0));
+    return pending;
   };
 }
 function showMarksView(view) {

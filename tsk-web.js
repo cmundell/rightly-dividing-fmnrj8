@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '1.4.4';
+  const VERSION = '1.4.5';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'hlGroups', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
