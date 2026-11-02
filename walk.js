@@ -116,12 +116,10 @@ async function openToday() {
     <blockquote class="td-invite">“${esc(text)}” ${vs ? `<button class="td-vgo" data-td5="${vs}" data-e="${ve}">${esc(ref)} ›</button>` : `<span>${esc(ref)}</span>`}</blockquote>
     ${bk ? `<button class="td-open" data-td4="open">Open your Bible<span>Continue in ${esc(bk.name)} ${state.cur.ch}</span></button>` : ''}
     <div class="td-tiles">
-      <button data-td2="study"><b>Study methods</b><span>Guided worksheets: observe, words, people, topics</span></button>
       ${FEATURES.prayer === false ? '' : `<button data-td="prayers"><b>Prayer list</b><span>${open ? `${open} request${open === 1 ? '' : 's'} you are praying for` : 'Keep a list of what you are praying for'}</span></button>`}
       <button data-td="memory"><b>Memory verses</b><span>${due ? `${due} to practise today` : `${Object.keys(state.memory || {}).length || 'No'} verse${Object.keys(state.memory || {}).length === 1 ? '' : 's'} hidden in your heart`}</span></button>
       <button data-td="plan"><b>Reading plan</b><span>${planToday.length ? `Day ${ps.today + 1} of ${ps.def.days}: ${esc(planLabel(planToday))}` : ps && ps.finished ? 'Plan finished — well done' : 'Choose a plan to read through the Bible'}</span></button>
       <button data-td="daily"><b>Devotional</b><span>Spurgeon's Morning and Evening for today</span></button>
-      <button data-td="journal"><b>Journal</b><span>${state.journal.length ? `${state.journal.length} entr${state.journal.length === 1 ? 'y' : 'ies'}` : 'Write down what God is teaching you'}</span></button>
       <button data-td="gospel" class="td-gospel"><b>The Gospel</b><span>How to be saved — to read, print or share</span></button>
     </div>
     ${first ? `<div class="td-mem"><div class="td-mem-k">Memory verse for today${due > 1 ? ` · ${due} due` : ''}</div>

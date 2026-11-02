@@ -26,6 +26,63 @@ document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria
       <button data-va="memory"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Memorize</button>
       <button data-va="study" class="vb-study"><svg class="vi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></svg>Study</button>
     </div></div>`);
+// ---------------------------------------------------------------- one-row header on a phone
+// "John 3 ▾" opens a book-and-chapter picker; the magnifier shows the search box. Swiping changes chapters.
+$('.toolbar .group.nav').insertAdjacentHTML('afterbegin', '<button id="mRef" class="m-ref" aria-haspopup="dialog"><span class="m-ref-t">Bible</span> <span class="m-ref-car">&#9662;</span></button>');
+$('.toolbar .group.nav').insertAdjacentHTML('beforeend', '<button id="mSearchBtn" class="m-search-btn" aria-label="Search, or go to a verse" title="Search, or go to a verse"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>');
+function paintRef() {
+  const b = state.books && state.books[(state.cur.book || 1) - 1];
+  if (b) $('#mRef .m-ref-t').textContent = `${b.id === 19 ? 'Psalm' : b.name}${b.chapters > 1 ? ` ${state.cur.ch}` : ''}`;
+}
+{
+  const prevFill = window.fillChapters;
+  window.fillChapters = function () {
+    prevFill();
+    paintRef();
+  };
+  setTimeout(paintRef, 1200);
+}
+let pickBook = null;
+function openPicker(book) {
+  pickBook = book || null;
+  if (!pickBook) {
+    const grid = (t) => `<div class="pk-grid">${state.books.filter((b) => b.testament === t).map((b) => `<button data-pk-book="${b.id}" class="${b.id === state.cur.book ? 'on' : ''}" title="${esc(b.name)}">${esc(b.abbr)}</button>`).join('')}</div>`;
+    openModal(`<div class="kicker">Choose a book</div>
+      <div class="section-title st-first">Old Testament</div>${grid('OT')}
+      <div class="section-title">New Testament</div>${grid('NT')}`, 'm-pick');
+    const on = $('#modal .pk-grid .on');
+    if (on) on.scrollIntoView({ block: 'center' });
+    return;
+  }
+  const b = state.books[pickBook - 1];
+  openModal(`<button class="backlink" data-pk-books="1">&#8592; All books</button><div class="kicker">Choose a chapter</div><h2 class="m-title">${esc(b.name)}</h2>
+    <div class="pk-grid pk-ch">${Array.from({ length: b.chapters }, (_, i) => `<button data-pk-ch="${i + 1}" class="${pickBook === state.cur.book && i + 1 === state.cur.ch ? 'on' : ''}">${i + 1}</button>`).join('')}</div>`, 'm-pick');
+}
+$('#mRef').addEventListener('click', () => openPicker(null));
+$('#modal').addEventListener('click', (e) => {
+  const bk = e.target.closest('[data-pk-book]');
+  if (bk) {
+    const b = state.books[Number(bk.dataset.pkBook) - 1];
+    if (b.chapters === 1) { closeModal(); setView('read'); return go({ book: b.id, ch: 1 }); }
+    return openPicker(b.id);
+  }
+  if (e.target.closest('[data-pk-books]')) return openPicker(null);
+  const ch = e.target.closest('[data-pk-ch]');
+  if (ch) {
+    closeModal();
+    setView('read');
+    go({ book: pickBook, ch: Number(ch.dataset.pkCh) });
+  }
+});
+$('#mSearchBtn').addEventListener('click', () => {
+  const on = document.body.classList.toggle('m-search');
+  if (on) { $('#searchInput').focus(); } else $('#searchInput').blur();
+});
+// the box closes itself once a search or reference has been entered, or when it loses focus while empty
+$('#searchForm').addEventListener('submit', () => isPhone() && setTimeout(() => { $('#searchInput').blur(); document.body.classList.remove('m-search'); }, 300));
+$('#searchInput').addEventListener('blur', () => { if (isPhone() && !$('#searchInput').value.trim()) setTimeout(() => document.body.classList.remove('m-search'), 150); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isPhone()) document.body.classList.remove('m-search'); });
+
 // a Menu button in the toolbar too (desktop browsers have no menu bar)
 if (isPhone()) $('#searchInput').placeholder = 'Go to John 3:16, or search words';
 // light / sepia / dark: one button on the reading screen; each tap moves to the next
@@ -91,6 +148,7 @@ function navSchedule() {
   // a short wait, so that closing one window and opening the next counts as one step
   nav.timer = setTimeout(() => {
     if (v32.tour != null || !state.settings.tourDone) { nav.cur = null; return; } // the tour moves about on its own
+    if (!$('#modal').hidden && $('#modal').classList.contains('m-pick')) return; // choosing a chapter is not a place to go back to
     const now = navSnapshot();
     if (nav.cur && !navSame(nav.cur, now)) {
       nav.stack.push(nav.cur);
@@ -409,6 +467,8 @@ const MENU = [
     ['The Gospel', () => openGospel()],
     ['Compare passages', () => openCompare()],
     ...(ABOUT_ON ? [['About this book', () => openBookIntro(state.cur.book)]] : []),
+    ['Study methods', () => openStudyChooser()],
+    ['Journal', () => showMarksView('journal')],
     ['Timeline', () => openTimeline()],
   ]],
   ['Settings and help', [

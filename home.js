@@ -377,7 +377,6 @@ async function paintNotesSection() {
       <button role="menuitem" data-vm="copy">Copy verse</button>
       <button role="menuitem" data-vm="memory">${memItemFor(id) !== null ? 'Remove from memory verses' : many > 1 ? `Memorize these ${many} verses` : 'Memorize'}</button>
       <div class="vm-sep"></div>
-      <button role="menuitem" data-vm="pin">Pin above the text</button>
       <button role="menuitem" data-vm="compare">Compare with other passages…</button>
       <div class="vm-sep"></div>
       <button role="menuitem" data-vm="blb" title="Opens in your web browser (needs the internet)">Commentary at Blue Letter Bible ↗</button>`;
@@ -401,7 +400,6 @@ async function paintNotesSection() {
       navigator.clipboard.writeText(`${v.label} (KJV) ${v.text}`);
       toast('Verse copied');
     } else if (k === 'memory') toggleMemory(v.id);
-    else if (k === 'pin') pinCurrent();
     else if (k === 'compare') openCompare(v.id);
     else if (k === 'guide') startGuide(v.id);
     else if (k === 'blb') window.open(blbUrl(v.label), '_blank');
@@ -437,6 +435,7 @@ const FUNCTION_WORDS = /^(Function=(Conjunction|Article|Preposition|Particle|Pro
 const guide = { id: null, step: 0, data: null, word: null };
 
 async function startGuide(id) {
+  if (!state.settings.guideUsed) { state.settings.guideUsed = true; saveUser(['settings']); } // from now on the button is a quiet link
   id = id || state.cur.sel || (state.xref && state.xref.verse.id);
   if (!id) return toast('Tap a verse first');
   guide.id = id;
@@ -550,7 +549,7 @@ $('#modal').addEventListener('click', (e) => {
   window.v3OnVerse = (id, x) => {
     prevOnVerse(id, x);
     const head = $('#pane-refs .xhead');
-    if (head && !$('.gd-start', head)) head.insertAdjacentHTML('afterbegin', '<button class="gd-start" data-gd-start="1">Study this verse, step by step ›</button>');
+    if (head && !$('.gd-start', head)) head.insertAdjacentHTML('afterbegin', `<button class="gd-start${state.settings.guideUsed ? ' gd-small' : ''}" data-gd-start="1">Study this verse, step by step ›</button>`);
   };
   $('#pane-refs').addEventListener('click', (e) => {
     if (e.target.closest('[data-gd-start]')) startGuide(state.xref && state.xref.verse.id);

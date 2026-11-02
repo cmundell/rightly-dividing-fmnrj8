@@ -629,7 +629,7 @@ const MAX_PINS = 4;
   window.v3Init = (u) => {
     prevInit(u);
     state.memory = u.memory && typeof u.memory === 'object' ? u.memory : {};
-    state.pins = Array.isArray(u.pins) ? u.pins : [];
+    state.pins = []; // 1.4: pins gave way to Compare passages
     const s = state.settings;
     if (s.italics === undefined) s.italics = true;
     if (s.red === undefined) s.red = true;
@@ -715,12 +715,12 @@ function openReadingOptions() {
   openModal(`<div class="kicker">Rightly Dividing</div><h2 class="m-title">Settings</h2>
     <div class="section-title st-first">The text</div>
     <div class="ro-grid">
-      <label>Font</label>
-      <div class="ro-fonts">${Object.entries(FONTS).map(([k, f]) => `<button data-ro="font" data-v="${k}" class="${s.font === k ? 'on' : ''}" style="font-family:${f.stack.replace(/"/g, "'")}">${esc(f.name)}</button>`).join('')}</div>
+      <label>Theme</label>${seg('theme', [['light', 'Light'], ['sepia', 'Sepia'], ['dark', 'Dark']], s.theme)}
       <label>Text size</label>
       <div class="ro-size"><button data-ro="size" data-v="-1">A&#8722;</button><span>${s.fs}px</span><button data-ro="size" data-v="1">A+</button></div>
+      <label>Font</label>
+      <div class="ro-fonts">${Object.entries(FONTS).map(([k, f]) => `<button data-ro="font" data-v="${k}" class="${s.font === k ? 'on' : ''}" style="font-family:${f.stack.replace(/"/g, "'")}">${esc(f.name)}</button>`).join('')}</div>
       <label>Line spacing</label>${seg('spacing', [['compact', 'Compact'], ['normal', 'Normal'], ['relaxed', 'Relaxed']], s.spacing)}
-      <label>Theme</label>${seg('theme', [['light', 'Light'], ['sepia', 'Sepia'], ['dark', 'Dark']], s.theme)}
       <label>KJV features</label>
       <div class="ro-checks">
         <label><input type="checkbox" data-ro="italics" ${s.italics !== false ? 'checked' : ''}/> <span><i>Italic</i> words — added by the translators for sense</span></label>
@@ -728,8 +728,8 @@ function openReadingOptions() {
         <label><input type="checkbox" data-ro="paras" ${s.paras !== false ? 'checked' : ''}/> <span>¶ Paragraph marks</span></label>
       </div>
       <label>Grammar</label><div class="ro-seg"><button data-gt="0" class="${s.grammarTerms ? '' : 'on'}">Plain words</button><button data-gt="1" class="${s.grammarTerms ? 'on' : ''}">Grammar terms</button></div>
-      <label>Interface size</label><div class="ro-seg">${UI_STEPS.map((v) => `<button data-ui="${v}" class="${Math.abs(v - ui) < 0.01 ? 'on' : ''}">${Math.round(v * 100)}%</button>`).join('')}</div>
-      <label>Contrast</label><div class="ro-seg"><button data-hc="off" class="${s.contrast === 'on' ? '' : 'on'}">Standard</button><button data-hc="on" class="${s.contrast === 'on' ? 'on' : ''}">High contrast</button></div>
+      <label class="st-desk">Interface size</label><div class="ro-seg st-desk">${UI_STEPS.map((v) => `<button data-ui="${v}" class="${Math.abs(v - ui) < 0.01 ? 'on' : ''}">${Math.round(v * 100)}%</button>`).join('')}</div>
+      <label class="st-desk">Contrast</label><div class="ro-seg st-desk"><button data-hc="off" class="${s.contrast === 'on' ? '' : 'on'}">Standard</button><button data-hc="on" class="${s.contrast === 'on' ? 'on' : ''}">High contrast</button></div>
     </div>
     <div class="ro-sample"><span class="vn-s">16</span> For God so loved the world, that he gave his only begotten Son…<br><span class="vn-s">1</span> The LORD <i class="kit">is</i> my shepherd; I shall not want.</div>
     <div class="section-title">You</div>
@@ -857,7 +857,6 @@ function injectV33Buttons(id) {
   const actions = $('#pane-refs .xhead .actions');
   if (!actions) return;
   const menu = $('.va-menu', actions) || actions;
-  if (!$('[data-act="pin"]', actions)) menu.insertAdjacentHTML('beforeend', '<button data-act="pin" title="Pin this passage above the text to compare (or Shift-click any reference)">Pin above the text</button>');
   if (!$('[data-act="memToggle"]', actions)) {
     const more = $('[data-act="vaMore"]', actions);
     if (more) more.insertAdjacentHTML('beforebegin', '<button data-act="memToggle" title="Add to your memory verses for spaced practice"></button>');
@@ -1142,7 +1141,7 @@ TOUR.splice(2, 0, {
 });
 {
   const refs = TOUR.find((t) => t.title === 'Related verses');
-  if (refs) refs.text = 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go, or Shift-click to pin it above the text. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons, pins and “Compare with other passages” — any two to four passages side by side.';
+  if (refs) refs.text = 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has “Compare with other passages” — any two to four passages side by side.';
   const notes = TOUR.find((t) => t.title === 'Notes');
   if (notes) {
     notes.title = 'Notes, lessons and memory';
@@ -1202,13 +1201,7 @@ function wireV33() {
   document.addEventListener(
     'click',
     (e) => {
-      if (!e.shiftKey) return;
-      const r = e.target.closest('.ref[data-s]');
-      if (!r) return;
-      e.preventDefault();
-      e.stopPropagation();
-      hidePreview();
-      pinRange(Number(r.dataset.s), Number(r.dataset.e));
+      return; // 1.4: Shift-click pinning gave way to Compare passages
     },
     true
   );

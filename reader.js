@@ -328,6 +328,7 @@ async function showRefs(id) {
         <button data-act="compare">Compare with other passages…</button>
         <a class="va-link" href="${blbUrl(v.label)}" target="_blank" rel="noopener" title="Opens in your web browser (needs the internet)">Commentary at Blue Letter Bible ↗</a>
       </div>
+      <div class="va-plain"><button data-act="expandAll" class="${state.settings.expandAll ? 'on' : ''}">${state.settings.expandAll ? 'Hide verse text' : 'Show verse text'}</button><button data-act="compare">Compare…</button><a class="va-link" href="${blbUrl(v.label)}" target="_blank" rel="noopener">Blue Letter Bible ↗</a></div>
     </div>`);
   html.push(`<textarea class="note" placeholder="Your notes on ${esc(v.label)}…" data-id="${id}">${esc(state.notes[id] || '')}</textarea></div>`);
   if (!x.groups.length) html.push('<div class="empty">No TSK entries for this verse.</div>');
@@ -544,7 +545,7 @@ function wire() {
     }
     if (act.dataset.act === 'expandAll') {
       state.settings.expandAll = !state.settings.expandAll;
-      act.classList.toggle('on', state.settings.expandAll);
+      $$('#pane-refs [data-act="expandAll"]').forEach((b) => { b.classList.toggle('on', state.settings.expandAll); if (b.closest('.va-plain')) b.textContent = state.settings.expandAll ? 'Hide verse text' : 'Show verse text'; });
       saveUser(['settings']);
       state.xref.groups.forEach((_, gi) => renderGroupBody(gi, state.settings.expandAll));
     }

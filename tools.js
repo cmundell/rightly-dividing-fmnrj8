@@ -306,7 +306,7 @@ async function chapterExtras() {
   const head = $('#readerInner .chapter-head');
   if (head && evs.length && !$('.ch-date', head)) {
     const e = evs[0];
-    ($('.tr', head) || head.lastChild).insertAdjacentHTML('beforebegin', `<button class="ch-date" data-tl="${e.eid}" title="See this on the timeline">${esc(e.date)} · ${esc(e.title)}${evs.length > 1 ? ` <span>+${evs.length - 1}</span>` : ''}</button>`);
+    ($('.tr', head) || head.lastChild).insertAdjacentHTML('beforebegin', `<button class="ch-date" data-tl="${e.eid}" title="See this on the timeline">${esc(e.date)}<span class="ch-ev"> · ${esc(e.title)}${evs.length > 1 ? ` <span>+${evs.length - 1}</span>` : ''}</span></button>`);
   }
   startDwell(book, ch);
 }
