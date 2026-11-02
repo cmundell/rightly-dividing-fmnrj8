@@ -21,7 +21,8 @@
   .toolbar { padding: calc(6px + env(safe-area-inset-top)) 8px 6px; gap: 6px; }
   .brand, .group.right, #btnBack, #btnFwd, .trail, #divider { display: none !important; }
   .toolbar .group.nav { flex: 1; display: flex; align-items: center; gap: 8px; }
-  #bookSel, #chapSel, #btnPrev, #btnNext, .m-theme { display: none !important; }
+  #bookSel, #chapSel, #btnPrev, #btnNext { display: none !important; }
+  .m-theme { display: flex; align-items: center; justify-content: center; flex: none; width: 40px; height: 40px; border: 1px solid var(--rule) !important; border-radius: 50% !important; background: var(--paper) !important; color: var(--accent); font-size: 18px; line-height: 1; padding: 0 !important; min-width: 0; }
   .m-ref { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); color: var(--ink); font: 600 17px var(--ui); padding: 8px 14px; }
   .m-ref .m-ref-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .m-ref .m-ref-car { font-size: 11px; color: var(--ink-soft); }
