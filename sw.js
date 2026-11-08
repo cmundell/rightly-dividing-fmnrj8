@@ -1,16 +1,18 @@
 'use strict';
 // Keeps Rightly Dividing working offline. The cache name changes with every release.
-const CACHE = 'sts-1.5.0-b347313fa4';
-const SHELL = ["./", "CHANGELOG.html", "data/basemap.json", "data/brand-bg.jpg", "data/gospel.json", "data/journeys.json", "data/landmarks.json", "data/phrases.json", "data/relief.jpg", "data/tidwell.json", "data/votd.json", "features.js", "home.js", "icon-180.png", "icon-192.png", "icon-512.png", "index.html", "lib/cjs-shim.js", "lib/db.js", "lib/docx.js", "lib/jszip.min.js", "lib/sql-wasm-browser.js", "lib/sql-wasm-browser.wasm", "manifest.webmanifest", "maps.js", "reader.js", "refparse.js", "robots.txt", "study.js", "styles.css", "tools.js", "tsk-web.js", "walk.js", "web.css", "web.js"];
+const CACHE = 'sts-1.6.0-4bb9d26661';
+const SHELL = ["./", "CHANGELOG.html", "data/basemap.json", "data/brand-bg.jpg", "data/gospel.json", "data/journeys.json", "data/landmarks.json", "data/phrases.json", "data/relief.jpg", "data/tidwell.json", "data/votd.json", "features.js", "home.js", "icon-180.png", "icon-192.png", "icon-512.png", "index.html", "lib/cjs-shim.js", "lib/db.js", "lib/docx.js", "lib/jszip.min.js", "lib/sql-wasm-browser.js", "lib/sql-wasm-browser.wasm", "listen.js", "manifest.webmanifest", "maps.js", "reader.js", "refparse.js", "robots.txt", "study.js", "styles.css", "tools.js", "tsk-web.js", "walk.js", "web.css", "web.js"];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('sts-') && k !== CACHE && k !== 'sts-db').map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('sts-') && k !== CACHE && k !== 'sts-db' && k !== 'sts-audio').map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   const u = new URL(e.request.url);
+  // only this app's own files; the chapter audio lives on sister sites and keeps its own cache
+  if (!u.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
   // the page itself and its manifest come fresh from the site when online (so the Home Screen name and icon are
   // always the current ones), and from the phone when offline
   if (e.request.mode === 'navigate' || /\/(index\.html|manifest\.webmanifest)?$/.test(u.pathname)) {

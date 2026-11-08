@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '1.5.0';
+  const VERSION = '1.6.0';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'hlGroups', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -287,6 +287,48 @@
     phrases: () => loadJson('phrases.json', []),
     tidwell: async (id) => (await loadJson('tidwell.json', {}))[id] || null,
     votd: () => loadJson('votd.json', []),
+    // Listen (1.6): chapter audio from the audio sites, kept on the phone in its own cache once heard
+    audioGet: async (b, c) => {
+      const repo = `rightly-dividing-audio-${b <= 17 ? 1 : b <= 39 ? 2 : 3}`;
+      const base = `https://cmundell.github.io/${repo}/${b}/${c}`;
+      const cache = 'caches' in window ? await caches.open('sts-audio') : null;
+      const hit = cache && (await cache.match(`${base}.json`));
+      if (hit) {
+        const mp3 = await cache.match(`${base}.mp3`);
+        if (mp3) return { mp3: URL.createObjectURL(await mp3.blob()), timings: await hit.json(), local: true };
+      }
+      const jr = await fetch(`${base}.json`, { cache: 'no-store' });
+      if (jr.status === 404) return { missing: true };
+      if (!jr.ok) throw new Error(`HTTP ${jr.status}`);
+      const timings = await jr.clone().json();
+      const mr = await fetch(`${base}.mp3`);
+      if (mr.status === 404) return { missing: true };
+      if (!mr.ok) throw new Error(`HTTP ${mr.status}`);
+      const blob = await mr.blob();
+      if (cache) {
+        try {
+          await cache.put(`${base}.mp3`, new Response(blob, { headers: { 'content-type': 'audio/mpeg' } }));
+          await cache.put(`${base}.json`, jr);
+        } catch {}
+      }
+      return { mp3: URL.createObjectURL(blob), timings, local: false };
+    },
+    audioStats: async () => {
+      if (!('caches' in window)) return { chapters: 0, bytes: 0 };
+      const cache = await caches.open('sts-audio');
+      let chapters = 0, bytes = 0;
+      for (const k of await cache.keys()) {
+        if (!k.url.endsWith('.mp3')) continue;
+        chapters += 1;
+        const r = await cache.match(k);
+        bytes += r ? (await r.blob()).size : 0;
+      }
+      return { chapters, bytes };
+    },
+    audioClear: async () => {
+      if ('caches' in window) await caches.delete('sts-audio');
+      return { chapters: 0, bytes: 0 };
+    },
     // after an update reaches this phone, show What's New once (not on a first install)
     whatsNewPending: async () => {
       const u = (await kvGet('user')) || {};

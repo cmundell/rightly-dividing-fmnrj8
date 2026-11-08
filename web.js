@@ -524,6 +524,7 @@ function openAbout() {
       <li>People and family links: BibleData by Brady Stephenson, CC BY 4.0.</li>
       <li>Timeline: Theographic Bible Metadata by Robert Rouse, CC BY-SA 4.0 (chronology of Floyd Nolen Jones).</li>
       <li>Icon, opening screen and shared-verse background: photo by Yulia Gapeenko on Vecteezy (Free License).</li>
+      <li>Listen: the KJV read by the voice "George" from Kokoro, an open-source speech engine (Apache-2.0 licence).</li>
       <li>Bible places: OpenBible.info Bible Geocoding Data, CC BY 4.0. Base map: Natural Earth; terrain: NASA Blue Marble shaded relief (public domain).</li>
       <li>Journeys: each stop drawn from the KJV text; order of the Gospel events after A. T. Robertson's Harmony of the Gospels (1922, public domain).</li>
     </ul>`, 'm-about');

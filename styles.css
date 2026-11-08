@@ -1309,3 +1309,42 @@ body.reduce-motion .j-halo { animation: none; }
 .va-plain { display: none; }
 .toast-undo { margin-left: 10px; border: 1px solid rgba(255,255,255,.5); border-radius: 5px; background: none; color: inherit; font: 600 12px var(--ui); padding: 2px 8px; cursor: pointer; }
 .mark .t sup { font-family: var(--ui); font-size: 10px; color: var(--ink-soft); }
+
+/* ---------- Listen (1.6): chapter audio ---------- */
+.listen-btn { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; margin-right: 10px; align-self: center; background: none; border: 1px solid var(--rule); border-radius: 999px; padding: 4px 12px 4px 9px; color: var(--accent); font: 600 12.5px var(--ui); cursor: pointer; }
+.listen-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+.listen-btn.on { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.listen-btn svg { width: 16px; height: 16px; }
+.listen-btn .vi { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.listen-btn svg:not(.vi) { fill: currentColor; }
+.verse.playing { background: var(--accent-soft); box-shadow: inset 4px 0 0 var(--gold); }
+.player { position: fixed; left: 20px; bottom: 14px; width: min(600px, calc(56vw - 48px)); background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.18); z-index: 58; overflow: hidden; font-family: var(--ui); }
+.player[hidden] { display: none; }
+.pl-prog { height: 6px; background: var(--rule); cursor: pointer; }
+.pl-prog:hover { height: 8px; }
+.pl-fill { height: 100%; background: var(--gold); width: 0; }
+.pl-row { display: flex; align-items: center; gap: 6px; padding: 8px 10px 8px 8px; }
+.pl-btn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none; color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.pl-btn svg { width: 22px; height: 22px; fill: currentColor; }
+.pl-btn:hover { background: var(--accent-soft); }
+.pl-btn:disabled { opacity: .35; cursor: default; background: none; }
+.pl-play { background: var(--accent); color: var(--paper); width: 46px; height: 46px; }
+.pl-play:hover { background: var(--accent-strong); }
+.pl-play svg { width: 26px; height: 26px; }
+.pl-spin { animation: plspin 1s linear infinite; }
+@keyframes plspin { to { transform: rotate(360deg); } }
+.pl-info { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; padding-left: 4px; }
+.pl-ref { font-weight: 700; font-size: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-status { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.pl-speed { border: 1px solid var(--rule); background: none; color: var(--ink-soft); border-radius: 999px; padding: 4px 10px; font: 600 12px var(--ui); cursor: pointer; min-width: 52px; }
+.pl-speed:hover { color: var(--accent); border-color: var(--accent); }
+.pl-x { color: var(--ink-soft); font: 400 24px/1 var(--ui); }
+body.has-player #readerInner { padding-bottom: 96px; }
+.st-audio { grid-column: 1 / -1; }
+.st-audio-line { font-weight: 600; margin-bottom: 4px; }
+.st-audio .ro-hint { color: var(--ink-soft); font-size: 12.5px; margin: 0 0 8px; }
+.st-audio .ro-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.st-audio .ro-btns button { border: 1px solid var(--rule); background: none; color: var(--accent); border-radius: 6px; padding: 6px 12px; font: 600 12.5px var(--ui); cursor: pointer; }
+.st-audio .ro-btns button:hover { border-color: var(--accent); background: var(--accent-soft); }
+.st-audio-bar { height: 8px; background: var(--rule); border-radius: 4px; overflow: hidden; margin: 6px 0 10px; }
+.st-audio-bar div { height: 100%; background: var(--gold); }

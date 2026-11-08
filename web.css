@@ -195,3 +195,15 @@
 }
 @media (max-width: 760px) { .modal.m-pick .modal-back { display: none; } }
 @media (max-width: 760px) { .toast { bottom: calc(118px + env(safe-area-inset-bottom)); z-index: 70; max-width: 90vw; text-align: center; } }
+
+/* Listen (1.6) on a phone: the player sits above the bottom bar; the verse bar and toasts move up to make room */
+@media (max-width: 760px) {
+  .player { left: 8px; right: 8px; width: auto; transform: none; bottom: calc(66px + max(15px, env(safe-area-inset-bottom))); z-index: 60; border-radius: 16px; }
+  .pl-row { padding: 6px 8px 8px 6px; }
+  body.has-player .m-vbar { bottom: calc(150px + max(15px, env(safe-area-inset-bottom))); }
+  body.has-player .toast { bottom: calc(200px + env(safe-area-inset-bottom)); }
+  body.has-player #readerInner { padding-bottom: 110px; }
+  .listen-btn { padding: 6px 14px 6px 10px; font-size: 14px; }
+  .listen-btn svg { width: 18px; height: 18px; }
+  .chapter-head { align-items: center; }
+}
