@@ -289,7 +289,7 @@ async function paintAudioSettings() {
     const have = s.chapters ? `${s.chapters} of ${total} chapters kept on this ${desktop ? 'computer' : 'phone'} (${fmtBytes(s.bytes)})` : `No chapters kept on this ${desktop ? 'computer' : 'phone'} yet`;
     html = `<div class="st-audio-line">${have}</div>
       <div class="ro-hint">Every chapter you listen to is kept, so it plays again without a connection.${desktop ? '' : ' Chapters are downloaded as you listen.'}</div>
-      <div class="ro-btns">${desktop && s.chapters < total ? '<button data-au="all">Download the whole Bible (about 1.3 GB)</button>' : ''}${s.chapters ? '<button data-au="clear">Remove kept audio</button>' : ''}</div>`;
+      <div class="ro-btns">${desktop && s.chapters < total ? '<button data-au="all">Download the whole Bible (about 1.6 GB)</button>' : ''}${s.chapters ? '<button data-au="clear">Remove kept audio</button>' : ''}</div>`;
   }
   box.innerHTML = html;
 }

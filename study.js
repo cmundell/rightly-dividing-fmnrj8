@@ -1136,7 +1136,7 @@ async function exportNotes(kind) {
 TOUR.splice(2, 0, {
   el: '#btnRead',
   title: 'Settings',
-  text: 'Aa opens Settings: the font, text size, spacing and a light, sepia or dark theme; the KJV’s italic words, red letters and ¶ marks; your name; the start screen; and backing up your notes.',
+  text: 'The gear opens Settings: the font, text size, spacing and a light, sepia or dark theme; the KJV’s italic words, red letters and ¶ marks; your name; the start screen; backing up your notes; and Listening.',
 });
 {
   const refs = TOUR.find((t) => t.title === 'Related verses');
@@ -1154,7 +1154,7 @@ TOUR.splice(2, 0, {
     const qs = $('#modal .qs');
     if (!qs) return;
     qs.insertAdjacentHTML('afterbegin', `<section><h3>Reading</h3><ul>
-      <li><b>Aa</b> (<kbd>Ctrl</kbd>+<kbd>,</kbd>) — Settings: font, size, spacing, light / sepia / dark, the KJV’s <i>italic</i> words, red letters and ¶ marks, your name, the start screen and backups.</li>
+      <li><b>Settings</b> (the gear, <kbd>Ctrl</kbd>+<kbd>,</kbd>) — font, size, spacing, light / sepia / dark, the KJV’s <i>italic</i> words, red letters and ¶ marks, your name, the start screen, backups and Listening.</li>
       <li><b>Pin</b> a passage (or <kbd>Shift</kbd>-click any reference) to keep it above the text while you read elsewhere — great for parallel accounts.</li>
       <li>Search results show a chart of where the word occurs; click a book’s bar to see just that book.</li>
       <li>${dblClick()} a name for its meaning (Hitchcock’s Bible Names).</li></ul></section>`);

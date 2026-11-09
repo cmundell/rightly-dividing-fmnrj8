@@ -110,7 +110,7 @@ function askName(then) {
       <p class="nm-q nm-q2">How big should the words be?</p>
       <div class="nm-sizes">${[[19, 'Normal'], [22, 'Larger'], [26, 'Largest']].map(([fs, t]) => `<button type="button" data-nm-fs="${fs}" class="${state.settings.fs === fs ? 'on' : ''}"><span style="font-size:${fs}px">Aa</span>${t}</button>`).join('')}</div>
       <p class="nm-sample" style="font-size:${state.settings.fs}px">The LORD is my shepherd; I shall not want.</p>
-      <p class="hint">You can change this any time in Settings (Aa).</p>
+      <p class="hint">You can change this any time in Settings (the gear).</p>
       <div class="nm-btns"><button type="submit" class="primary-btn">Continue</button><button type="button" class="linkish" data-nm="skip">Skip</button></div></form>`, 'm-name');
   let pending = true;
   const done = (name) => {
