@@ -1348,3 +1348,18 @@ body.has-player #readerInner { padding-bottom: 96px; }
 .st-audio .ro-btns button:hover { border-color: var(--accent); background: var(--accent-soft); }
 .st-audio-bar { height: 8px; background: var(--rule); border-radius: 4px; overflow: hidden; margin: 6px 0 10px; }
 .st-audio-bar div { height: 100%; background: var(--gold); }
+
+/* 1.7: "no verses found" suggestions */
+.similar { padding: 4px 0 20px; font-size: 14px; }
+.similar p { margin: 0 0 10px; color: var(--ink-soft); }
+.sim-sec { font-size: 12px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-soft); margin: 16px 0 8px; }
+.sim-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.sim-word { border: 1px solid var(--rule); border-radius: 999px; background: var(--bg); padding: 5px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.sim-word span { color: var(--ink-soft); font-size: 12px; margin-left: 2px; }
+.sim-word:hover, .sim-strong:hover { border-color: var(--accent); color: var(--accent); }
+.sim-topic { font-weight: 600; }
+.sim-strong { display: block; width: 100%; text-align: left; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); padding: 8px 12px; margin: 0 0 6px; font: inherit; font-size: 14px; line-height: 1.45; cursor: pointer; }
+.sim-id, .sim-n { color: var(--ink-soft); font-size: 12px; }
+.sim-kjv { color: var(--ink-soft); }
+.sg-word .sg-q { flex: 1 1 auto; min-width: 0; }
+.sg-word .sg-n { flex: 0 0 auto; overflow: visible; }

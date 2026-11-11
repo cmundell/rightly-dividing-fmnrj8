@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '1.6.1';
+  const VERSION = '1.7.0';
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'hlGroups', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -81,8 +81,8 @@
   }
 
   // the database is kept in its own offline cache, saved once after the first download
-  const DBFILE = 'data/tsk-db-00995440ba.gz';
-  const DBPARTS = ["data/tsk-db-00995440ba.gz.1", "data/tsk-db-00995440ba.gz.2", "data/tsk-db-00995440ba.gz.3"];
+  const DBFILE = 'data/tsk-db-206f444e39.gz';
+  const DBPARTS = ["data/tsk-db-206f444e39.gz.1", "data/tsk-db-206f444e39.gz.2", "data/tsk-db-206f444e39.gz.3"];
   async function loadDbFile() {
     const cached = 'caches' in window ? await caches.match(DBFILE) : null;
     if (cached) {
@@ -262,6 +262,7 @@
     dict: D((db, w) => db.dict(w)),
     naveForVerse: D((db, id) => db.naveForVerse(id)),
     naveSearch: D((db, q) => db.naveSearch(q)),
+    similar: D((db, q) => db.similar(q)),
     naveTopic: D((db, id) => db.naveTopic(id)),
     names: D((db, w) => db.names(w)),
     placesForChapter: D((db, b, c) => db.placesForChapter(b, c)),

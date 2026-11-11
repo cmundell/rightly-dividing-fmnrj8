@@ -591,6 +591,13 @@ function wire() {
 
   $('#searchResults').addEventListener('click', (e) => {
     if (e.target.closest('.more')) return runSearch(state.search.q, true);
+    const sim = e.target.closest('[data-sim-q]');
+    if (sim) {
+      $('#searchInput').value = sim.dataset.simQ;
+      return runSearch(sim.dataset.simQ);
+    }
+    const st = e.target.closest('[data-sim-topic]');
+    if (st) return openTopic(Number(st.dataset.simTopic));
     const h = e.target.closest('.hit');
     if (h) go({ id: Number(h.dataset.id) }).then(() => switchTab('search'));
   });
@@ -1377,6 +1384,7 @@ function renderSearch() {
   }
   if (!s.results.length && !s.error) {
     box.innerHTML = '<div class="empty">No verses found.</div>';
+    renderSimilar(s.q, box);
     return;
   }
   box.innerHTML =
@@ -1389,6 +1397,28 @@ function renderSearch() {
       .join('') + (s.total > s.results.length ? '<button class="more">Load more results</button>' : '');
 }
 
+
+/* 1.7: nothing found — show what the KJV does have: words containing or spelled like it, the Hebrew/Greek
+   words whose meaning includes it (with the KJV's own renderings), and Nave's topic. "anxious" is not a KJV
+   word, but G3309 merimnaō ("take thought", "be careful") and the topic Anxiety are. */
+async function renderSimilar(q, box) {
+  const word = q.replace(/\b[HGhg]\d{1,4}[a-z]?\b/g, ' ').replace(/[-"*]/g, ' ').trim().split(/\s+/)[0] || '';
+  if (!/[a-z]{3}/i.test(word)) return;
+  const r = await tsk.similar(word).catch(() => null);
+  if (!r || state.search.q !== q || state.search.results.length) return;
+  const cap = (t) => t.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  const parts = [];
+  if (!r.exact) parts.push(`<p>“${esc(r.word)}” is not a word the King James Bible uses${r.like.length || r.strongs.length || r.topics.length ? ', but these are:' : '.'}</p>`);
+  else parts.push(`<p>Nothing has all of those words together. Words like “${esc(r.word)}” in the KJV:</p>`);
+  if (r.like.length) parts.push(`<div class="sim-sec">Words like it</div><div class="sim-words">${r.like.map((w) => `<button class="sim-word" data-sim-q="${esc(w.word)}">${esc(w.word)} <span>${w.n}</span></button>`).join('')}</div>`);
+  if (r.strongs.length)
+    parts.push(`<div class="sim-sec">What the KJV calls it — the Hebrew and Greek words that mean “${esc(r.word)}”</div>${r.strongs
+      .map((st) => `<button class="sim-strong" data-sim-q="${st.id}"><b>${esc(st.xlit)}</b> <span class="sim-id">${st.id}</span> · ${esc(st.def.length > 90 ? `${st.def.slice(0, 88)}…` : st.def)}<br><span class="sim-kjv">KJV: ${esc(st.kjv_def.length > 110 ? `${st.kjv_def.slice(0, 108)}…` : st.kjv_def)}</span> <span class="sim-n">${st.verses} verse${st.verses === 1 ? '' : 's'}</span></button>`)
+      .join('')}`);
+  if (r.topics.length) parts.push(`<div class="sim-sec">In Nave's Topical Bible</div><div class="sim-words">${r.topics.map((t) => `<button class="sim-word sim-topic" data-sim-topic="${t.id}">${esc(cap(t.subject))}</button>`).join('')}</div>`);
+  if (parts.length < 2 && r.exact) return;
+  box.innerHTML = `<div class="similar">${parts.join('')}</div>`;
+}
 
 function helpHtml() {
   return `<div class="help hint">
