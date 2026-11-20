@@ -10,7 +10,8 @@
 .ws-bar { height: 6px; background: rgba(90,70,50,.9); border-radius: 3px; overflow: hidden; }
 .ws-bar i { display: block; height: 100%; width: 2%; background: #e0be6e; transition: width .2s; }
 .ws-msg { margin-top: 10px; font-size: 13px; color: #e1d2b4; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
-.m-nav, .m-vbar, .m-theme { display: none; }
+/* the phone's own controls; on a wider screen the toolbar's book and chapter menus and search box do the same jobs */
+.m-nav, .m-vbar, .m-theme, .m-ref, .m-search-btn { display: none; }
 .wl-list li { margin: 8px 0; font-size: 15px; line-height: 1.45; }
 .wm-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
 .wm-list button { text-align: left; border: 1px solid var(--rule); background: var(--paper); border-radius: 10px; padding: 11px 13px; font-size: 15px; color: var(--ink); cursor: pointer; }
