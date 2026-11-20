@@ -654,3 +654,143 @@ window.addEventListener('resize', () => {
 
 // ---------------------------------------------------------------- the name of the app, under the bottom buttons
 $('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="true">Rightly Dividing</div>');
+
+// ---------------------------------------------------------------- Related verses on a touch screen: tap to preview
+// A phone has no hover, so tapping a reference (in the list or on the map) opens its words in a panel at the bottom
+// instead of leaving the verse. ‹ › step through the other references; "Go to this verse" does what a click does on Windows.
+{
+  const touch = () => window.matchMedia('(hover: none)').matches;
+  document.body.insertAdjacentHTML('beforeend', `<div id="refSheetBg" class="rs-bg" hidden></div>
+  <div id="refSheet" class="rs" hidden role="dialog" aria-modal="true" aria-label="Verse preview">
+    <div class="rs-grab" aria-hidden="true"></div>
+    <div class="rs-head">
+      <button class="rs-step" data-rs="prev" aria-label="Previous reference">&#8249;</button>
+      <div class="rs-title"><span class="rs-lab"></span><span class="rs-n"></span></div>
+      <button class="rs-step" data-rs="next" aria-label="Next reference">&#8250;</button>
+      <button class="rs-x" data-rs="close" aria-label="Close">&times;</button>
+    </div>
+    <div class="rs-body"></div>
+    <div class="rs-foot"><button class="rs-ctx" data-rs="context">Show context</button><button class="primary-btn" data-rs="go">Go to this verse</button></div>
+  </div>`);
+  const sheet = $('#refSheet');
+  const bg = $('#refSheetBg');
+  const rs = { list: [], i: 0, ctx: false, tok: 0 };
+
+  // the references in the view that was tapped (the map's own, or the list's), in order, each once
+  function collect(el) {
+    const els = el.closest('#xgraph')
+      ? $$('#xgraph .ref[data-s]')
+      : $$('#pane-refs .ref[data-s]').filter((x) => !x.closest('#xgraph') && x.getClientRects().length);
+    const seen = new Set();
+    const list = [];
+    els.forEach((x) => {
+      const k = `${x.dataset.s}-${x.dataset.e}`;
+      if (!seen.has(k)) { seen.add(k); list.push({ s: Number(x.dataset.s), e: Number(x.dataset.e) }); }
+    });
+    return list;
+  }
+
+  async function paint() {
+    const r = rs.list[rs.i];
+    const tok = ++rs.tok;
+    const p = await tsk.passage(r.s, r.e, dataTr());
+    let html;
+    if (rs.ctx) {
+      // three verses either side, kept within the chapter(s) of the reference itself
+      const vs = await tsk.passageVerses(r.s, r.e, 3);
+      const chs = new Set(vs.filter((v) => v.inRange).map((v) => v.ch));
+      const two = chs.size > 1;
+      html = vs.filter((v) => chs.has(v.ch))
+        .map((v) => `<span class="${v.inRange ? 'rs-in' : 'rs-out'}"><sup>${two ? `${v.ch}:` : ''}${v.vs}</sup>${esc(v.text)}</span>`).join(' ');
+    } else {
+      const multiV = p.verses.length > 1;
+      html = p.verses.map((v) => (multiV ? `<sup>${v.vs}</sup>` : '') + esc(v.text)).join(' ') + (p.truncated ? ' …' : '');
+    }
+    if (tok !== rs.tok) return; // a newer tap won
+    $('.rs-lab', sheet).textContent = p.label;
+    $('.rs-n', sheet).textContent = rs.list.length > 1 ? `${rs.i + 1} of ${rs.list.length}` : '';
+    $('.rs-body', sheet).innerHTML = html;
+    $('.rs-body', sheet).scrollTop = 0;
+    $('[data-rs="prev"]', sheet).disabled = rs.i === 0;
+    $('[data-rs="next"]', sheet).disabled = rs.i >= rs.list.length - 1;
+    $('.rs-ctx', sheet).textContent = rs.ctx ? 'Hide context' : 'Show context';
+    if (rs.ctx) {
+      const first = $('.rs-in', sheet);
+      if (first) first.scrollIntoView({ block: 'center' });
+    }
+  }
+
+  function openSheet(el) {
+    if (typeof hidePreview === 'function') hidePreview();
+    rs.list = collect(el);
+    const k = `${el.dataset.s}-${el.dataset.e}`;
+    rs.i = Math.max(0, rs.list.findIndex((r) => `${r.s}-${r.e}` === k));
+    rs.ctx = false;
+    sheet.style.transform = '';
+    sheet.hidden = false;
+    bg.hidden = false;
+    paint();
+  }
+  function closeSheet() {
+    sheet.hidden = true;
+    bg.hidden = true;
+    rs.tok++;
+  }
+  window.closeRefSheet = closeSheet;
+
+  // tapping a reference in Related verses (list or map) previews it; references whose words are already
+  // showing (the "show text" rows) still go straight to the verse
+  document.addEventListener('click', (e) => {
+    if (!touch()) return;
+    const ref = e.target.closest('#pane-refs .ref[data-s]');
+    if (!ref || ref.closest('.refrow')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openSheet(ref);
+  }, true);
+
+  sheet.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-rs]');
+    if (!b || b.disabled) return;
+    const act = b.dataset.rs;
+    if (act === 'close') return closeSheet();
+    if (act === 'prev' || act === 'next') {
+      rs.i += act === 'next' ? 1 : -1;
+      rs.ctx = false;
+      return paint();
+    }
+    if (act === 'context') {
+      rs.ctx = !rs.ctx;
+      return paint();
+    }
+    if (act === 'go') {
+      const r = rs.list[rs.i];
+      closeSheet();
+      await go({ id: r.s, endId: r.e });
+    }
+  });
+  bg.addEventListener('click', closeSheet);
+
+  // swipe the top of the panel down to close it
+  let y0 = null;
+  const top = (e) => e.target.closest('.rs-grab, .rs-head');
+  sheet.addEventListener('touchstart', (e) => { y0 = top(e) ? e.touches[0].clientY : null; }, { passive: true });
+  sheet.addEventListener('touchmove', (e) => {
+    if (y0 == null) return;
+    const dy = Math.max(0, e.touches[0].clientY - y0);
+    sheet.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  sheet.addEventListener('touchend', (e) => {
+    if (y0 == null) return;
+    const dy = e.changedTouches[0].clientY - y0;
+    y0 = null;
+    sheet.style.transform = '';
+    if (dy > 70) closeSheet();
+  });
+
+  // changing screens closes it
+  const prevSetView = setView;
+  // eslint-disable-next-line no-func-assign
+  setView = function (v) { closeSheet(); prevSetView(v); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+}

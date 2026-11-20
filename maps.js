@@ -315,7 +315,7 @@ async function renderGraph(id) {
       ${nodes2.join('')}${nodes1.join('')}
       <g class="xn n0"><circle cx="${cx}" cy="${cy}" r="${Math.max(24, g.center.label.length * 3.1 + 7)}"></circle><text x="${cx}" y="${cy + 4}" text-anchor="middle">${esc(g.center.label)}</text></g>
     </svg>
-    <div class="hint">Inner ring: this verse's ${g.ring1.length}${g.total > g.ring1.length ? ` (of ${g.total})` : ''} references, colored by key word. Outer ring: ${r2.length} verses that several of those references also point to — where the thread converges. Hover to preview; click any verse to re-center the map on it.</div>`;
+    <div class="hint">Inner ring: this verse's ${g.ring1.length}${g.total > g.ring1.length ? ` (of ${g.total})` : ''} references, colored by key word. Outer ring: ${r2.length} verses that several of those references also point to — where the thread converges. ${window.matchMedia('(hover: none)').matches ? 'Tap any verse to preview it; “Go to this verse” re-centers the map on it.' : 'Hover to preview; click any verse to re-center the map on it.'}</div>`;
 }
 
 // ===================================================================== Words › Interlinear

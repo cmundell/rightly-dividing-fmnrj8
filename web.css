@@ -207,3 +207,27 @@
   .listen-btn svg { width: 18px; height: 18px; }
   .chapter-head { align-items: center; }
 }
+
+/* Related verses on a touch screen: the verse preview panel */
+.rs-bg { position: fixed; inset: 0; z-index: 69; background: rgba(0,0,0,.28); }
+.rs-bg[hidden], .rs[hidden] { display: none; }
+.rs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; max-height: 62vh; display: flex; flex-direction: column;
+  background: var(--paper); color: var(--ink); border-top: 1px solid var(--rule); border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 30px rgba(0,0,0,.2); padding: 4px 14px max(14px, env(safe-area-inset-bottom)); animation: wcUp .2s ease-out;
+  transition: transform .15s ease-out; }
+.rs-grab { width: 42px; height: 5px; border-radius: 3px; background: var(--rule); margin: 6px auto 4px; flex: none; }
+.rs-head { display: flex; align-items: center; gap: 6px; padding: 2px 0 8px; border-bottom: 1px solid var(--rule); flex: none; }
+.rs-title { flex: 1; text-align: center; display: flex; flex-direction: column; line-height: 1.2; }
+.rs-lab { font-family: var(--ui); font-weight: 700; color: var(--link); font-size: 17px; }
+.rs-n { font-family: var(--ui); font-size: 12px; color: var(--ink-soft); }
+.rs-step, .rs-x { flex: none; width: 44px; height: 44px; border: 1px solid var(--rule); border-radius: 22px; background: var(--paper);
+  color: var(--accent); font-size: 26px; line-height: 1; cursor: pointer; padding: 0; }
+.rs-x { border: 0; color: var(--ink-soft); font-size: 28px; }
+.rs-step:disabled { opacity: .3; }
+.rs-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 2px; font-family: var(--scripture);
+  font-size: var(--fs, 18px); line-height: 1.65; }
+.rs-body sup { font-family: var(--ui); font-size: 11px; color: var(--ink-soft); margin-right: 3px; }
+.rs-body .rs-out { color: var(--ink-soft); }
+.rs-foot { display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid var(--rule); flex: none; }
+.rs-foot button { flex: 1; font-size: 16px; padding: 11px 10px; border-radius: 10px; }
+.rs-foot .rs-ctx { border: 1px solid var(--rule); background: var(--paper); color: var(--accent); }
