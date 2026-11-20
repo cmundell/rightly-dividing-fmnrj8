@@ -1363,3 +1363,10 @@ body.has-player #readerInner { padding-bottom: 96px; }
 .sim-kjv { color: var(--ink-soft); }
 .sg-word .sg-q { flex: 1 1 auto; min-width: 0; }
 .sg-word .sg-n { flex: 0 0 auto; overflow: visible; }
+
+/* Linking words (Settings › Linking words, off by default) */
+.lw { text-decoration: underline dotted var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 3px; color: var(--accent); }
+.ro-checks .lw { color: var(--accent); }
+/* Study this verse, step by step: Psalm 119:18 before the study begins */
+.gd-open { font-family: var(--scripture); font-style: italic; text-align: center; color: var(--ink-soft); margin: 0 0 14px; padding: 0 0 12px; border-bottom: 1px solid var(--rule); line-height: 1.55; }
+.gd-open span { font-family: var(--ui); font-style: normal; font-size: 12px; font-weight: 700; color: var(--link); white-space: nowrap; }

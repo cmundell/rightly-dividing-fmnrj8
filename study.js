@@ -685,6 +685,36 @@ window.v33Text = (v) => {
   return out;
 };
 
+// Linking words (Settings › Linking words, off unless turned on): the words that join one thought to the next,
+// grouped as reason, result, conclusion, contrast, condition, addition, comparison and time. "and", "that", "as",
+// "so" and "when" are left out: they are in nearly every verse, and marking them all would hide the rest.
+const LINK_WORDS = [
+  ['Reason', ['for', 'because', 'since']],
+  ['Result or purpose', ['so that', 'in order that', 'to the end that']],
+  ['Conclusion', ['therefore', 'wherefore', 'consequently']],
+  ['Contrast', ['but', 'yet', 'however', 'nevertheless', 'notwithstanding']],
+  ['Condition', ['if', 'except', 'unless']],
+  ['Addition', ['moreover', 'furthermore', 'also']],
+  ['Comparison', ['likewise', 'even so', 'just as']],
+  ['Time', ['until', 'till', 'after that', 'before that']],
+];
+const LINK_KIND = new Map(LINK_WORDS.flatMap(([k, ws]) => ws.map((w) => [w, k])));
+const LINK_RE = new RegExp(`\\b(${[...LINK_KIND.keys()].sort((a, b) => b.length - a.length).map((w) => w.replace(' ', '\\s+')).join('|')})\\b`, 'gi');
+function markLinkWords(html) {
+  // only the text between tags, never inside one
+  return html.split(/(<[^>]+>)/).map((part, i) => (i % 2 ? part : part.replace(LINK_RE, (m) => {
+    const kind = LINK_KIND.get(m.toLowerCase().replace(/\s+/g, ' ')) || '';
+    return `<span class="lw" title="${kind}">${m}</span>`;
+  }))).join('');
+}
+{
+  const plain = window.v33Text;
+  window.v33Text = (v) => {
+    const html = plain(v);
+    return state.settings.links === true ? markLinkWords(html) : html;
+  };
+}
+
 // ===================================================================== reading options
 {
   const prevApply = window.applySettings;
@@ -728,6 +758,7 @@ function openReadingOptions() {
         <label><input type="checkbox" data-ro="italics" ${s.italics !== false ? 'checked' : ''}/> <span><i>Italic</i> words — added by the translators for sense</span></label>
         <label><input type="checkbox" data-ro="red" ${s.red !== false ? 'checked' : ''}/> <span>Words of Christ in <span class="wj-sample">red</span></span></label>
         <label><input type="checkbox" data-ro="paras" ${s.paras !== false ? 'checked' : ''}/> <span>¶ Paragraph marks</span></label>
+        <label><input type="checkbox" data-ro="links" ${s.links === true ? 'checked' : ''}/> <span>Linking words marked (<span class="lw">for</span>, <span class="lw">therefore</span>, <span class="lw">but</span>, <span class="lw">if</span>…) to follow the writer's reasoning</span></label>
       </div>
       <label>Grammar</label><div class="ro-seg"><button data-gt="0" class="${s.grammarTerms ? '' : 'on'}">Plain words</button><button data-gt="1" class="${s.grammarTerms ? 'on' : ''}">Grammar terms</button></div>
       <label class="st-desk">Interface size</label><div class="ro-seg st-desk">${UI_STEPS.map((v) => `<button data-ui="${v}" class="${Math.abs(v - ui) < 0.01 ? 'on' : ''}">${Math.round(v * 100)}%</button>`).join('')}</div>
@@ -750,10 +781,18 @@ function applyReadingOption(el) {
   const k = el.dataset.ro;
   if (k === 'size') {
     s.fs = Math.min(30, Math.max(14, s.fs + Number(el.dataset.v)));
-  } else if (k === 'italics' || k === 'red' || k === 'paras') s[k] = el.checked;
+  } else if (k === 'italics' || k === 'red' || k === 'paras' || k === 'links') s[k] = el.checked;
   else s[k] = el.dataset.v;
   applySettings();
   saveUser(['settings']);
+  if (k === 'links' && state.chapter) {
+    // linking words are marked as the chapter is drawn, so draw it again (keeping your place)
+    const y = $('#reader').scrollTop;
+    renderChapter().then(() => {
+      if (state.cur.sel) markSelection();
+      $('#reader').scrollTop = y;
+    });
+  }
   const y = $('.modal-card').scrollTop;
   openReadingOptions();
   $('.modal-card').scrollTop = y;

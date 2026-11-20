@@ -578,7 +578,11 @@ async function linkify(text) {
 const TEMPLATES = {
   soap: (label) => `S — Scripture: ${label}\nO — Observation: \nA — Application: \nP — Prayer: `,
   prayer: (label) => `Prayer — ${new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}\nRequest: \nPraying this verse: ${label}\nAnswered: `,
+  observe: (label) => `Observe — ${label}\nEmphasized: \nRepeated: \nAlike: \nRelated: \nUnlike: `,
+  paraphrase: (label) => `Paraphrase — ${label}\nKey words: \nHow the parts connect: \nIn my own words: \nIn one sentence: `,
 };
+// where the cursor goes after each template, and the tag it adds
+const TEMPLATE_FIRST = { soap: 'O — Observation: ', prayer: 'Request: ', observe: 'Emphasized: ', paraphrase: 'Key words: ' };
 
 function decorateNote(id) {
   const note = $('#pane-refs textarea.note');
@@ -587,6 +591,8 @@ function decorateNote(id) {
       <span class="lbl">Templates</span>
       <button data-tpl="soap" title="Scripture, Observation, Application, Prayer">SOAP study</button>
       <button data-tpl="prayer" title="A prayer entry with today's date; mark it answered later">Prayer journal</button>
+      <button data-tpl="observe" title="What is emphasized, repeated, alike, related and unlike">Observe</button>
+      <button data-tpl="paraphrase" title="Key words, how the parts connect, your paraphrase and a one-sentence summary">Paraphrase</button>
       <button data-act="answered" class="ans" hidden>Mark prayer answered</button>
       <span class="note-links"></span></div>
     <div class="note-back"></div>`);
@@ -638,12 +644,13 @@ function applyTemplate(kind) {
   ta.dispatchEvent(new Event('input', { bubbles: true }));
   growNote(ta);
   // put the cursor on the first line to fill in
-  const pos = ta.value.indexOf(kind === 'soap' ? 'O — Observation: ' : 'Request: ', ta.value.length - tpl.length);
+  const first = TEMPLATE_FIRST[kind];
+  const pos = ta.value.indexOf(first, ta.value.length - tpl.length);
   ta.focus();
-  const at = pos + (kind === 'soap' ? 'O — Observation: '.length : 'Request: '.length);
+  const at = pos + first.length;
   ta.setSelectionRange(at, at);
   const tags = new Set(state.tags[v.id] || []);
-  tags.add(kind === 'soap' ? 'soap' : 'prayer');
+  tags.add(kind);
   setTags(v.id, [...tags].join(', '));
   const tin = $('#pane-refs .tagin');
   if (tin) tin.value = [...tags].join(', ');

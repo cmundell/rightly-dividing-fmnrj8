@@ -444,6 +444,8 @@ async function startGuide(id) {
   const [x, words] = await Promise.all([tsk.xrefs(id, 'kjv'), tsk.words(id).catch(() => [])]);
   const v = x.verse;
   const around = await tsk.versesByIds([id - 1, id + 1]).catch(() => []);
+  // Psalm 119:18, shown before the study begins, word for word from the KJV
+  if (!guide.opener) guide.opener = await tsk.verseId(19, 119, 18).then((pid) => tsk.versesByIds([pid])).then((r) => r[0]).catch(() => null);
   // a few related verses, with their text
   const picks = [];
   for (const g of x.groups.slice(0, 4)) for (const r of g.refs.slice(0, 2)) if (picks.length < 6) picks.push({ ...r, anchor: g.anchor });
@@ -467,7 +469,8 @@ function renderGuide() {
   if (s.key === 'read') {
     const before = around.find((a) => a.id === v.id - 1);
     const after = around.find((a) => a.id === v.id + 1);
-    body = `${before ? `<p class="gd-ctx"><span>${esc(before.label)}</span> ${esc(before.text)}</p>` : ''}
+    const op = guide.opener;
+    body = `${op ? `<p class="gd-open">“${esc(op.text)}” <span>${esc(op.label)}</span></p>` : ''}${before ? `<p class="gd-ctx"><span>${esc(before.label)}</span> ${esc(before.text)}</p>` : ''}
       <blockquote class="gd-verse">${esc(v.text)} <span>${esc(v.label)}</span></blockquote>
       ${after ? `<p class="gd-ctx"><span>${esc(after.label)}</span> ${esc(after.text)}</p>` : ''}
       <p class="gd-ask">Ask yourself: Who is speaking? To whom? What does it say about God?</p>`;
