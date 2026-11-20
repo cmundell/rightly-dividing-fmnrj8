@@ -759,6 +759,8 @@ function openReadingOptions() {
         <label><input type="checkbox" data-ro="red" ${s.red !== false ? 'checked' : ''}/> <span>Words of Christ in <span class="wj-sample">red</span></span></label>
         <label><input type="checkbox" data-ro="paras" ${s.paras !== false ? 'checked' : ''}/> <span>¶ Paragraph marks</span></label>
         <label><input type="checkbox" data-ro="links" ${s.links === true ? 'checked' : ''}/> <span>Linking words marked (<span class="lw">for</span>, <span class="lw">therefore</span>, <span class="lw">but</span>, <span class="lw">if</span>…) to follow the writer's reasoning</span></label>
+        ${s.links === true ? `<div class="lw-key">${LINK_WORDS.map(([k, ws]) => `<div><b>${esc(k)}</b><span>${ws.map((w) => `<span class="lw">${esc(w)}</span>`).join(', ')}</span></div>`).join('')}
+          <div class="hint">Some uses are not linking words (“for ever”, “not yet”); read each one in its sentence.</div></div>` : ''}
       </div>
       <label>Grammar</label><div class="ro-seg"><button data-gt="0" class="${s.grammarTerms ? '' : 'on'}">Plain words</button><button data-gt="1" class="${s.grammarTerms ? 'on' : ''}">Grammar terms</button></div>
       <label class="st-desk">Interface size</label><div class="ro-seg st-desk">${UI_STEPS.map((v) => `<button data-ui="${v}" class="${Math.abs(v - ui) < 0.01 ? 'on' : ''}">${Math.round(v * 100)}%</button>`).join('')}</div>

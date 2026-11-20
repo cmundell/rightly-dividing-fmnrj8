@@ -1370,3 +1370,7 @@ body.has-player #readerInner { padding-bottom: 96px; }
 /* Study this verse, step by step: Psalm 119:18 before the study begins */
 .gd-open { font-family: var(--scripture); font-style: italic; text-align: center; color: var(--ink-soft); margin: 0 0 14px; padding: 0 0 12px; border-bottom: 1px solid var(--rule); line-height: 1.55; }
 .gd-open span { font-family: var(--ui); font-style: normal; font-size: 12px; font-weight: 700; color: var(--link); white-space: nowrap; }
+.lw-key { margin: 2px 0 6px 34px; font-size: 13px; line-height: 1.5; }
+.lw-key > div:not(.hint) { display: grid; grid-template-columns: 8.5em 1fr; gap: 8px; padding: 3px 0; }
+.lw-key b { font-weight: 600; color: var(--ink-soft); }
+.lw-key .hint { margin-top: 4px; }
