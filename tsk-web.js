@@ -6,6 +6,21 @@
 
 (() => {
   const VERSION = '1.7.3';
+  // the Windows app (windows/ folder) adds rdDesktop: your notes are also copied to a real file in a folder you choose
+  const desk = window.rdDesktop || null;
+  let deskTimer = null;
+  const deskBackup = async (now) => {
+    if (!desk) return null;
+    const u = (await kvGet('user')) || {};
+    const out = { app: 'Rightly Dividing', exported: new Date().toISOString() };
+    for (const k of USER_KEYS) if (u[k] !== undefined) out[k] = u[k];
+    return desk.writeBackup(JSON.stringify(out, null, 1), !!now);
+  };
+  const deskSoon = () => {
+    if (!desk) return;
+    clearTimeout(deskTimer);
+    deskTimer = setTimeout(() => deskBackup(false).catch(() => {}), 3000);
+  };
   const USER_KEYS = ['bookmarks', 'notes', 'settings', 'last', 'highlights', 'hlGroups', 'tags', 'trail', 'lessons', 'plan', 'memory', 'pins', 'readlog', 'journal', 'prayers', 'walk'];
 
   // ---------------------------------------------------------------- loading screen
@@ -246,6 +261,7 @@
   const D = (fn) => async (...a) => fn(await ready, ...a);
   window.tsk = {
     web: true,
+    desktop: !!desk,
     version: VERSION,
     books: D((db) => db.books),
     chapter: D((db, b, c) => db.chapter(b, c)),
@@ -350,6 +366,7 @@
       for (const k of USER_KEYS) if (patch && k in patch) u[k] = patch[k];
       u.savedAt = new Date().toISOString();
       await kvSet('user', u);
+      deskSoon();
       return true;
     },
     // printing: the phone's own print sheet (which can also save a PDF)
@@ -381,8 +398,18 @@
       }
       if (!n) throw new Error('This file has no notes in it.');
       await kvSet('user', u);
+      deskSoon();
       return n;
     },
+    // Windows app only: the backup folder
+    backupInfo: async () => (desk ? desk.info() : {}),
+    backupChoose: async () => {
+      if (!desk) return null;
+      const r = await desk.chooseFolder();
+      if (r && r.dir) await deskBackup(true);
+      return r;
+    },
+    backupNow: async () => deskBackup(true),
   };
 
   // offline: a service worker keeps every file on the phone after the first visit

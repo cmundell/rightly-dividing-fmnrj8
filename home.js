@@ -305,14 +305,14 @@ window.openBookIntro = openBookIntro;
 async function paintNotesSection() {
   const box = $('#stNotes');
   if (!box) return;
-  if (tsk.web) {
+  if (tsk.web && !tsk.desktop) {
     box.innerHTML = `<p class="hint">Your notes are kept on this device. Save a backup file now and then, somewhere safe.</p>
       <div class="st-btns"><button data-st="backup">Back up my notes</button><button data-st="restore">Restore from a backup…</button></div>`;
     return;
   }
   const b = await tsk.backupInfo().catch(() => ({}));
   box.innerHTML = `<p class="hint">${b.dir ? `Backed up automatically to <b>${esc(b.dir)}</b>${b.last ? ` · last ${esc(new Date(b.last).toLocaleString())}` : ''}.` : 'No backup folder is set. Choose one (for example inside OneDrive) and your notes are copied there automatically.'}</p>
-    <div class="st-btns"><button data-st="choose">${b.dir ? 'Change backup folder…' : 'Choose a backup folder…'}</button>${b.dir ? '<button data-st="now">Back up now</button>' : ''}</div>`;
+    <div class="st-btns"><button data-st="choose">${b.dir ? 'Change backup folder…' : 'Choose a backup folder…'}</button>${b.dir ? '<button data-st="now">Back up now</button>' : ''}${tsk.desktop ? '<button data-st="restore">Restore from a backup…</button>' : ''}</div>`;
 }
 {
   const saveName = (v) => {
@@ -953,7 +953,7 @@ async function nextNudge() {
   }
   // notes worth keeping, and no backup in the last month: remind, at most once a month
   if (marksCount() < 3 || since(s.backupNudged) < 30 * DAY) return;
-  if (tsk.web) {
+  if (tsk.web && !tsk.desktop) {
     if (since(s.lastBackup) < 30 * DAY) return;
     s.backupNudged = new Date().toISOString();
     saveUser(['settings']);

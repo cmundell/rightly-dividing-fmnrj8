@@ -1,0 +1,41 @@
+{
+  "name": "rightly-dividing",
+  "productName": "Rightly Dividing",
+  "version": "1.7.3",
+  "description": "Rightly Dividing: KJV Bible study for Windows",
+  "author": "Mundell",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win dir --x64 && node set-icon.mjs && node make-installer.mjs"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.0.0",
+    "pe-library": "^2.0.3",
+    "resedit": "^2.0.3"
+  },
+  "build": {
+    "appId": "io.github.cmundell.rightlydividing",
+    "productName": "Rightly Dividing",
+    "copyright": "Rightly Dividing",
+    "files": [
+      "main.js",
+      "preload.js",
+      "offline.html",
+      "build/icon.png",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": "dir",
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    }
+  }
+}
