@@ -306,7 +306,7 @@ function openQuickStart() {
       <li><kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> go back and forward. The <b>trail</b> under the toolbar lists every verse you've studied — click one to return.</li>
       <li>Highlighted verses keep their color; marks in the left margin show verses you've noted (✎) or tagged (#).</li></ul></section>
     <section><h3>Studying a verse</h3><ul>
-      <li>New to Bible study? Select a verse and choose <b>Study this verse, step by step</b>: read it, related verses, one word up close, and what God is saying to you.</li>
+      <li>New to Bible study? Select a verse and choose <b>Study this verse, step by step</b>: read it in its place, observe, interpret, correlate and apply. Every step is a suggestion; skip any that does not fit.</li>
       <li><b>Related verses</b> — the Treasury of Scripture Knowledge cross-references, grouped by key word. Hover to preview, click to go.</li>
       <li><b>Original words</b> — every Hebrew/Greek word with Strong's number and grammar. Click a number for its full entry and every verse that uses it.</li>
       <li><b>Topics</b> — Nave's topics that cite the verse. To read commentaries, the verse's <b>More</b> menu (or right-click) opens it at Blue Letter Bible, online.</li>

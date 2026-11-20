@@ -678,9 +678,11 @@ $('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="tr
 
   // the references in the view that was tapped (the map's own, or the list's), in order, each once
   function collect(el) {
-    const els = el.closest('#xgraph')
-      ? $$('#xgraph .ref[data-s]')
-      : $$('#pane-refs .ref[data-s]').filter((x) => !x.closest('#xgraph') && x.getClientRects().length);
+    const els = el.closest('#modal')
+      ? $$('#modal .gd-refs .ref[data-s]')
+      : el.closest('#xgraph')
+        ? $$('#xgraph .ref[data-s]')
+        : $$('#pane-refs .ref[data-s]').filter((x) => !x.closest('#xgraph') && x.getClientRects().length);
     const seen = new Set();
     const list = [];
     els.forEach((x) => {
@@ -726,6 +728,8 @@ $('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="tr
     const k = `${el.dataset.s}-${el.dataset.e}`;
     rs.i = Math.max(0, rs.list.findIndex((r) => `${r.s}-${r.e}` === k));
     rs.ctx = false;
+    // from inside the step-by-step study, the panel only previews: going to the verse would leave the study
+    $('[data-rs="go"]', sheet).hidden = !!el.closest('#modal');
     sheet.style.transform = '';
     sheet.hidden = false;
     bg.hidden = false;
@@ -742,7 +746,7 @@ $('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="tr
   // showing (the "show text" rows) still go straight to the verse
   document.addEventListener('click', (e) => {
     if (!touch()) return;
-    const ref = e.target.closest('#pane-refs .ref[data-s]');
+    const ref = e.target.closest('#pane-refs .ref[data-s], #modal.m-guide .gd-refs .ref[data-s]');
     if (!ref || ref.closest('.refrow')) return;
     e.preventDefault();
     e.stopPropagation();

@@ -131,6 +131,8 @@
   :root[data-theme='dark'] .vb-guide { color: var(--ink); }
   .vb-head .vb-x { margin-left: 4px; }
   .modal.m-guide .gd-foot { position: sticky; bottom: 0; background: var(--paper); padding: 10px 0 calc(6px + env(safe-area-inset-bottom)); }
+  /* the card's own bottom padding would show text below the sticky buttons, so the buttons cover it */
+  .modal.m-guide .modal-card { padding-bottom: 0; }
 }
 @media (max-width: 760px) {
   .tabs .t-long { display: none; }
@@ -209,9 +211,9 @@
 }
 
 /* Related verses on a touch screen: the verse preview panel */
-.rs-bg { position: fixed; inset: 0; z-index: 69; background: rgba(0,0,0,.28); }
+.rs-bg { position: fixed; inset: 0; z-index: 79; background: rgba(0,0,0,.28); }
 .rs-bg[hidden], .rs[hidden] { display: none; }
-.rs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; max-height: 62vh; display: flex; flex-direction: column;
+.rs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; max-height: 62vh; display: flex; flex-direction: column;
   background: var(--paper); color: var(--ink); border-top: 1px solid var(--rule); border-radius: 18px 18px 0 0;
   box-shadow: 0 -8px 30px rgba(0,0,0,.2); padding: 4px 14px max(14px, env(safe-area-inset-bottom)); animation: wcUp .2s ease-out;
   transition: transform .15s ease-out; }
