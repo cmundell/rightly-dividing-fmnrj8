@@ -287,6 +287,7 @@
     devotional: D((db, day) => db.devotional(day)),
     personVerses: D((db, pid, limit) => db.personVerses(pid, limit)),
     parallels: D((db, id) => db.parallels(id)),
+    quotations: D((db) => db.quotations()),
     parallelsInChapter: D((db, b, c) => db.parallelsInChapter(b, c)),
     passageVerses: D((db, s, e, pad) => db.passageVerses(s, e, pad)),
     peopleInVerse: D((db, id) => db.peopleInVerse(id)),

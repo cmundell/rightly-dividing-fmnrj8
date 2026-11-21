@@ -1220,9 +1220,50 @@ async function openTopic(id) {
   switchTab('topics');
 }
 
+// 1.7.5 Trace a theme: the same topic's references in Bible order, Genesis to Revelation, each with its verse
+// and Nave's own label; a strip shows where the topic appears and jumps there. No explanations: the reader traces it.
+const NT_FIRST = 23146; // Matthew 1:1
+const LAST_VERSE = 31102; // Revelation 22:21
+async function renderTopicTrace() {
+  const t = v3.topic;
+  const seen = new Map();
+  let parent = '';
+  for (const l of t.lines) {
+    if (l.depth === 0) parent = l.text;
+    const tag = l.depth > 0 && parent && !/^see /i.test(l.text) ? `${parent}: ${l.text}` : l.text;
+    for (const r of l.refs) if (!seen.has(r.start)) seen.set(r.start, { ...r, tag });
+  }
+  const refs = [...seen.values()].sort((a, b) => a.start - b.start);
+  const texts = new Map((await tsk.versesByIds(refs.map((r) => r.start))).map((v) => [v.id, v.text]));
+  if (v3.topic !== t) return; // moved on
+  const item = (r, i) => `<div class="tr-it" id="tr-${i}">${chip(r)}${r.tag ? `<span class="tr-tag">${esc(r.tag)}</span>` : ''}
+      <div class="tr-text">${esc(texts.get(r.start) || '')}${r.end > r.start ? ' …' : ''}</div></div>`;
+  const ot = refs.map((r, i) => [r, i]).filter(([r]) => r.start < NT_FIRST);
+  const nt = refs.map((r, i) => [r, i]).filter(([r]) => r.start >= NT_FIRST);
+  const marks = refs.map((r, i) => `<button class="tr-mark" data-trjump="${i}" style="left:${((r.start - 1) / LAST_VERSE) * 100}%" title="${esc(r.label)}" aria-label="${esc(r.label)}"></button>`).join('');
+  return `<div class="tr-strip">${marks}<span class="tr-nt" style="left:${(NT_FIRST / LAST_VERSE) * 100}%"></span></div>
+    <div class="tr-axis"><span>Genesis</span><span style="left:${(NT_FIRST / LAST_VERSE) * 100}%">Matthew</span><span>Revelation</span></div>
+    <p class="hint tr-hint">${refs.length.toLocaleString()} reference${refs.length === 1 ? '' : 's'} in Bible order. ${window.matchMedia('(max-width: 760px)').matches ? 'Tap' : 'Click'} the strip to jump there.</p>
+    ${ot.length ? `<div class="section-title">Old Testament</div>${ot.map(([r, i]) => item(r, i)).join('')}` : ''}
+    ${nt.length ? `<div class="section-title">New Testament</div>${nt.map(([r, i]) => item(r, i)).join('')}` : ''}`;
+}
+
 // A topic's references as chips, or (Show verse text) each with the words of its first verse.
 async function renderTopic() {
   const t = v3.topic;
+  const trace = !!state.settings.topicTrace;
+  const seg = `<div class="tr-seg" role="tablist"><button class="${trace ? '' : 'on'}" data-act="topicBySubject">By subject</button><button class="${trace ? 'on' : ''}" data-act="topicTrace">Through the Bible</button></div>`;
+  if (trace) {
+    const body = await renderTopicTrace();
+    if (v3.topic !== t || body == null) return;
+    $('#pane-topics').innerHTML = `
+    <button class="backlink" data-act="topicBack">&#8592; Back to topics</button>
+    <div class="kicker">Nave’s Topical Bible</div>
+    <h2 class="topic-title">${esc(t.subject)}</h2>
+    ${seg}
+    <div class="tr-body">${body}</div>`;
+    return;
+  }
   const showText = !!state.settings.topicText;
   let texts = new Map();
   if (showText) {
@@ -1244,6 +1285,7 @@ async function renderTopic() {
     <button class="backlink" data-act="topicBack">&#8592; Back to topics</button>
     <div class="kicker">Nave’s Topical Bible</div>
     <h2 class="topic-title">${esc(t.subject)}</h2>
+    ${seg}
     <div class="sub">${t.refs.toLocaleString()} references · <span class="t-hint">${window.matchMedia('(max-width: 760px)').matches ? 'tap one to read it' : 'hover to preview, click to read'}</span>
       <button class="exp t-exp" data-act="topicText">${showText ? 'hide text' : 'show text'}</button></div>
     <div class="tlines">${lines}</div>`;
@@ -1702,6 +1744,22 @@ function wireV3() {
     const t = e.target.closest('[data-topic]');
     if (t) return openTopic(Number(t.dataset.topic));
     if (e.target.closest('[data-act="topicBack"]')) return renderTopicList();
+    const tv = e.target.closest('[data-act="topicTrace"], [data-act="topicBySubject"]');
+    if (tv) {
+      state.settings.topicTrace = tv.dataset.act === 'topicTrace';
+      saveUser(['settings']);
+      return renderTopic().then(() => ($('#pane-topics').scrollTop = 0));
+    }
+    const jump = e.target.closest('[data-trjump]');
+    if (jump) {
+      const it = $(`#tr-${jump.dataset.trjump}`);
+      if (it) {
+        it.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        it.classList.add('flash');
+        setTimeout(() => it.classList.remove('flash'), 1200);
+      }
+      return;
+    }
     if (e.target.closest('[data-act="topicText"]')) {
       state.settings.topicText = !state.settings.topicText;
       saveUser(['settings']);

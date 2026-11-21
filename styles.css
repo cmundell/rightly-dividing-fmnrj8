@@ -1400,3 +1400,45 @@ body.has-player #readerInner { padding-bottom: 96px; }
 .gd-verse span.lw { display: inline; font: inherit; margin: 0; color: var(--accent); }
 /* hover previews show above windows too (Study this verse › Correlate) */
 .preview { z-index: 90; }
+
+/* 1.7.5 Topics › Through the Bible (trace a theme) */
+.tr-seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 9px; overflow: hidden; margin: 4px 0 10px; }
+.tr-seg button { border: 0; background: var(--paper); color: var(--ink-soft); font: 600 13px var(--ui); padding: 6px 14px; cursor: pointer; }
+.tr-seg button.on { background: var(--accent); color: var(--paper); }
+.tr-strip { position: relative; height: 26px; border-radius: 6px; background: color-mix(in srgb, var(--rule) 55%, transparent); margin: 6px 0 2px; }
+.tr-mark { position: absolute; top: 5px; width: 5px; height: 16px; margin-left: -2px; border-radius: 2px; border: 0; padding: 0; background: var(--accent); cursor: pointer; }
+.tr-mark::after { content: ''; position: absolute; inset: -6px -4px; }
+.tr-mark:hover { background: var(--link); }
+.tr-nt { position: absolute; top: 0; bottom: 0; border-left: 1.5px dashed var(--ink-soft); opacity: .6; }
+.tr-axis { position: relative; height: 16px; font: 11.5px var(--ui); color: var(--ink-soft); }
+.tr-axis span { position: absolute; top: 0; }
+.tr-axis span:first-child { left: 0; }
+.tr-axis span:nth-child(2) { transform: translateX(-50%); }
+.tr-axis span:last-child { right: 0; }
+.tr-hint { margin: 6px 0 4px; }
+.tr-it { border-left: 2px solid var(--rule); padding: 4px 0 6px 12px; margin: 2px 0 4px 2px; scroll-margin-top: 12px; transition: background .4s; }
+.tr-it.flash { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.tr-it .ref { font-weight: 700; }
+.tr-tag { font: 12px var(--ui); color: var(--ink-soft); margin-left: 8px; }
+.tr-text { font-family: var(--scripture); line-height: 1.55; margin-top: 2px; }
+
+/* 1.7.5 Fulfilled in Scripture */
+.fl-seg { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 6px; }
+.fl-seg button { border: 1px solid var(--rule); border-radius: 16px; background: var(--paper); color: var(--ink-soft); font: 600 13px var(--ui); padding: 5px 12px; cursor: pointer; }
+.fl-seg button.on { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.fl-list .section-title { margin-top: 14px; }
+.fl-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; width: 100%; text-align: left; align-items: start;
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); padding: 9px 11px; margin: 0 0 8px; cursor: pointer; }
+.fl-card:hover { border-color: var(--accent); }
+.fl-side b { display: block; font: 700 13px var(--ui); color: var(--link); margin-bottom: 2px; }
+.fl-side > span { font-family: var(--scripture); font-size: 14.5px; line-height: 1.45; }
+.fl-arr { color: var(--ink-soft); font-size: 18px; padding-top: 12px; }
+.fl-badge { font: 600 11px var(--ui); font-style: normal; border-radius: 6px; padding: 1px 6px; margin-left: 4px; white-space: nowrap;
+  background: color-mix(in srgb, #3a8a3a 18%, transparent); color: #2e7a2e; }
+[data-theme="dark"] .fl-badge { color: #8fd18f; }
+.fl-badge.q { background: color-mix(in srgb, var(--rule) 60%, transparent); color: var(--ink-soft); }
+.fl-back { display: block; margin-bottom: 8px; }
+@media (max-width: 760px) {
+  .fl-card { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .fl-arr { padding: 0; transform: rotate(90deg); justify-self: start; margin-left: 6px; }
+}
