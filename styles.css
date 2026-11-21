@@ -1422,10 +1422,7 @@ body.has-player #readerInner { padding-bottom: 96px; }
 .tr-tag { font: 12px var(--ui); color: var(--ink-soft); margin-left: 8px; }
 .tr-text { font-family: var(--scripture); line-height: 1.55; margin-top: 2px; }
 
-/* 1.7.5 Fulfilled in Scripture */
-.fl-seg { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 6px; }
-.fl-seg button { border: 1px solid var(--rule); border-radius: 16px; background: var(--paper); color: var(--ink-soft); font: 600 13px var(--ui); padding: 5px 12px; cursor: pointer; }
-.fl-seg button.on { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+/* 1.7.5 Old Testament in the New */
 .fl-list .section-title { margin-top: 14px; }
 .fl-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; width: 100%; text-align: left; align-items: start;
   border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); padding: 9px 11px; margin: 0 0 8px; cursor: pointer; }
@@ -1433,10 +1430,6 @@ body.has-player #readerInner { padding-bottom: 96px; }
 .fl-side b { display: block; font: 700 13px var(--ui); color: var(--link); margin-bottom: 2px; }
 .fl-side > span { font-family: var(--scripture); font-size: 14.5px; line-height: 1.45; }
 .fl-arr { color: var(--ink-soft); font-size: 18px; padding-top: 12px; }
-.fl-badge { font: 600 11px var(--ui); font-style: normal; border-radius: 6px; padding: 1px 6px; margin-left: 4px; white-space: nowrap;
-  background: color-mix(in srgb, #3a8a3a 18%, transparent); color: #2e7a2e; }
-[data-theme="dark"] .fl-badge { color: #8fd18f; }
-.fl-badge.q { background: color-mix(in srgb, var(--rule) 60%, transparent); color: var(--ink-soft); }
 .fl-back { display: block; margin-bottom: 8px; }
 @media (max-width: 760px) {
   .fl-card { grid-template-columns: minmax(0, 1fr); gap: 4px; }

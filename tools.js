@@ -176,38 +176,14 @@ async function openSideBySide(gids, focusId) {
     <div class="hint">Highlighted verses are the parallel; the faded verses around them give the context. Click a reference to open it.</div>`, 'm-sbs');
 }
 
-// ===================================================================== 1.7.5 Fulfilled in Scripture
-// Every Old Testament passage the New Testament quotes (UBS Parallel Passage Database). "Fulfilled" is shown only
-// where the New Testament's own words say so ("that it might be fulfilled …", "this day is this scripture fulfilled"),
-// a list checked by hand verse by verse; "fulfil the law" (Romans 13:8-10, Galatians 5:14, James 2:8) is a different
-// sense and is not marked.
-const FULFILLED = new Set([
-  'Matthew 1:23', 'Matthew 2:15', 'Matthew 2:18', 'Matthew 4:15', 'Matthew 4:16', 'Matthew 8:17', 'Matthew 12:18',
-  'Matthew 12:19', 'Matthew 12:20', 'Matthew 12:21', 'Matthew 13:14-15', 'Matthew 13:35', 'Matthew 21:5',
-  'Matthew 27:9-10', 'Matthew 27:35', 'Mark 15:28', 'Luke 4:18', 'Luke 4:19', 'John 12:38', 'John 13:18', 'John 15:25',
-  'John 19:24', 'John 19:36', 'John 19:37', 'Acts 1:20', 'Acts 13:33', 'James 2:23',
-]);
-// two the KJV says were fulfilled that the UBS list does not pair: [Old Testament references, New Testament reference]
-const FULFILLED_EXTRA = [
-  [[[19, 22, 18]], [40, 27, 35]], // Psalm 22:18, Matthew 27:35
-  [[[19, 35, 19], [19, 69, 4]], [43, 15, 25]], // Psalms 35:19 and 69:4, John 15:25 ("They hated me without a cause")
-];
-const ful = { list: null, all: false };
+// ===================================================================== 1.7.5 Old Testament in the New
+// Every Old Testament passage the New Testament quotes, exactly as the UBS Parallel Passage Database pairs them.
+// Nothing is added, removed or labelled by the app: the reader opens a pair and reads what Scripture says.
+const ful = { list: null };
 async function fulfilledData() {
   if (ful.list) return ful.list;
-  const groups = (await tsk.quotations()).map((g) => ({ ...g, nt: g.nt.map((n) => ({ ...n })) }));
-  for (const [ots, [b, c, v]] of FULFILLED_EXTRA) {
-    const nid = await tsk.verseId(b, c, v);
-    const [n] = await tsk.versesByIds([nid]);
-    const oids = await Promise.all(ots.map(([ob, oc, ov]) => tsk.verseId(ob, oc, ov)));
-    const ovs = await tsk.versesByIds(oids);
-    const nm = { s: nid, e: nid, label: n.label, lang: 'G', text: n.text };
-    const g = groups.find((x) => x.ot.length === ovs.length && x.ot.every((o, i) => o.s === oids[i]));
-    if (g && !g.nt.some((x) => x.s === nid)) g.nt.push(nm);
-    else if (!g) groups.push({ gid: `x${nid}`, ot: ovs.map((o) => ({ s: o.id, e: o.id, label: o.label, lang: 'H', text: o.text })), nt: [nm] });
-  }
   const pairs = [];
-  for (const g of groups) for (const n of g.nt) pairs.push({ ot: g.ot, nt: { ...n, fulfilled: FULFILLED.has(n.label) } });
+  for (const g of await tsk.quotations()) for (const n of g.nt) pairs.push({ ot: g.ot, nt: n });
   pairs.sort((a, b) => a.ot[0].s - b.ot[0].s || a.nt.s - b.nt.s);
   ful.list = pairs;
   return pairs;
@@ -215,30 +191,26 @@ async function fulfilledData() {
 const cut = (t, n = 150) => (t.length > n ? `${t.slice(0, n).replace(/\s+\S*$/, '')}…` : t);
 async function openFulfilled() {
   const pairs = await fulfilledData();
-  const show = ful.all ? pairs : pairs.filter((p) => p.nt.fulfilled);
-  const nFul = pairs.filter((p) => p.nt.fulfilled).length;
   let lastBook = '';
-  const cards = show.map((p) => {
-    const i = pairs.indexOf(p);
+  const cards = pairs.map((p, i) => {
     const book = p.ot[0].label.replace(/\s+\d+:.*$/, '');
     const head = book !== lastBook ? `<div class="section-title">${esc(book)}</div>` : '';
     lastBook = book;
     return `${head}<button class="fl-card" data-fl="${i}">
       <span class="fl-side"><b>${esc(p.ot.map((o) => o.label).join(' · '))}</b><span>${esc(cut(p.ot[0].text))}</span></span>
       <span class="fl-arr" aria-hidden="true">&#8594;</span>
-      <span class="fl-side"><b>${esc(p.nt.label)}${p.nt.fulfilled ? ' <i class="fl-badge">fulfilled</i>' : ' <i class="fl-badge q">quoted</i>'}</b><span>${esc(cut(p.nt.text))}</span></span></button>`;
+      <span class="fl-side"><b>${esc(p.nt.label)}</b><span>${esc(cut(p.nt.text))}</span></span></button>`;
   }).join('');
-  openModal(`<div class="kicker">Old Testament in the New</div><h2 class="m-title">Fulfilled in Scripture</h2>
-    <p class="hint">Old Testament passages the New Testament quotes. <b>Fulfilled</b> marks only those where the New Testament itself says so.</p>
-    <div class="fl-seg"><button class="${ful.all ? '' : 'on'}" data-flall="0">Scripture says “fulfilled” (${nFul})</button><button class="${ful.all ? 'on' : ''}" data-flall="1">All quotations (${pairs.length})</button></div>
+  openModal(`<div class="kicker">${pairs.length.toLocaleString()} quotations</div><h2 class="m-title">Old Testament in the New</h2>
+    <p class="hint">Every place the New Testament quotes the Old, in Old Testament order. ${window.matchMedia('(hover: none)').matches ? 'Tap' : 'Click'} a pair to read both in their own setting.</p>
     <div class="fl-list">${cards}</div>
-    <p class="hint">${window.matchMedia('(hover: none)').matches ? 'Tap' : 'Click'} a pair to read both in their own setting. From the UBS Parallel Passages Database.</p>`, 'm-fulfilled');
+    <p class="hint">From the UBS Parallel Passages Database (United Bible Societies).</p>`, 'm-fulfilled');
 }
 async function openFulfilledPair(i) {
   const p = ful.list[i];
   const cols = await Promise.all([...p.ot, p.nt].map(async (m) => ({ m, vs: await tsk.passageVerses(m.s, m.e, 2) })));
   openModal(`<button class="linkish fl-back" data-flback="1">‹ Back to the list</button>
-    <div class="kicker">${p.nt.fulfilled ? 'Fulfilled in Scripture' : 'Quoted in the New Testament'}</div><h2 class="m-title">Side by side</h2>
+    <div class="kicker">Old Testament in the New</div><h2 class="m-title">Side by side</h2>
     <div class="sbs" style="--cols:${Math.min(cols.length, 3)}">${cols
       .map(({ m, vs }) => `<div class="sbs-col${m === p.nt ? ' self' : ''}"><div class="sbs-h"><button class="pl-vs" data-dvgo="${m.s}">${esc(m.label)}</button><span class="sbs-tag">${m.lang === 'H' ? 'Old Testament' : 'New Testament'}</span></div>
         <div class="sbs-t">${vs.map((v) => `<p class="${v.inRange ? 'in' : 'ctx'}"><sup>${v.ch}:${v.vs}</sup> ${esc(v.text)}</p>`).join('')}</div></div>`)
@@ -247,11 +219,6 @@ async function openFulfilledPair(i) {
 }
 $('#modal').addEventListener('click', (e) => {
   if (!$('#modal').classList.contains('m-fulfilled')) return;
-  const all = e.target.closest('[data-flall]');
-  if (all) {
-    ful.all = all.dataset.flall === '1';
-    return openFulfilled();
-  }
   const c = e.target.closest('[data-fl]');
   if (c) return openFulfilledPair(Number(c.dataset.fl));
   if (e.target.closest('[data-flback]')) return openFulfilled();
@@ -769,7 +736,7 @@ const COMMANDS = [
   ['Reading progress', 'chapters read heat map stats', () => openProgress()],
   ['Reading plan', 'schedule today', () => openPlan()],
   ['Compare passages side by side', 'compare parallel side by side two three four passages', () => openCompare()],
-  ['Fulfilled in Scripture', 'fulfilled prophecy prophecies quoted old testament in the new quotation', () => openFulfilled()],
+  ['Old Testament in the New', 'quoted quotations old testament in the new fulfilled prophecy', () => openFulfilled()],
   ['Cross-references tab', 'refs tsk', () => switchTab('refs')],
   ['Word study tab', 'hebrew greek strongs interlinear', () => switchTab('words')],
   ['Commentary at Blue Letter Bible', 'commentary blue letter bible online', () => state.xref && window.open(blbUrl(state.xref.verse.label), '_blank')],

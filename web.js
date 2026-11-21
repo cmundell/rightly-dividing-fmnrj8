@@ -470,7 +470,7 @@ const MENU = [
     ...(FEATURES.today === false ? [['Memory verses', () => showMarksView('memory')]] : []),
     ['The Gospel', () => openGospel()],
     ['Compare passages', () => openCompare()],
-    ['Fulfilled in Scripture', () => openFulfilled()],
+    ['Old Testament in the New', () => openFulfilled()],
     ...(ABOUT_ON ? [['About this book', () => openBookIntro(state.cur.book)]] : []),
     ['Study methods', () => openStudyChooser()],
     ['Journal', () => showMarksView('journal')],
