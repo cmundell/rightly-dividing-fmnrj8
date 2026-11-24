@@ -16,7 +16,7 @@ document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria
   <button data-mn="notes"><span class="mi">&#9998;</span>Notes</button>
   <button data-mn="menu"><span class="mi">&#9776;</span>Menu</button></nav>
   <div id="mStudyPill" class="m-vbar" hidden role="toolbar" aria-label="This verse">
-    <div class="vb-head"><span class="vb-ref"></span><button class="vb-guide" data-va="guide">Study it step by step ›</button><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
+    <div class="vb-head"><span class="vb-ref"></span><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
     <div class="vb-share" hidden><button data-va="shareText">Share the words</button><button data-va="shareImage">Share as a picture</button><button data-va="copy">Copy</button></div>
     <div class="vb-hl" hidden>${HL_COLORS.map((c) => `<button class="dot hl-${c}" data-va="hl" data-c="${c}" aria-label="${c}"><span class="dot-n"></span></button>`).join('')}<button class="dot none" data-va="hl" data-c="" aria-label="No highlight">&times;</button></div>
     <div class="vb-row">
@@ -363,9 +363,6 @@ vbar.addEventListener('click', async (e) => {
     case 'close':
       if (multi.ids.size) clearMulti();
       return hideVerseBar();
-    case 'guide':
-      hideVerseBar();
-      return startGuide(v.id);
     case 'highlight': $('.vb-hl', vbar).hidden = !$('.vb-hl', vbar).hidden; return;
     case 'hl': {
       const n = highlightSelected(v.id, b.dataset.c);
@@ -536,7 +533,7 @@ function openAbout() {
 const PHONE_TOUR = [
   { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the app — about a minute. Tap Next, or Skip. You can take it again any time from Menu › Tutorial.', before: () => setView('read') },
   { el: '#readerInner .verse', title: 'Read', text: 'Tap any verse to select it. Double-tap any word to see what it means, with the original Hebrew or Greek. Swipe left or right on the text to go to the next or previous chapter.', before: () => setView('read') },
-  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, share or copy it, add it to your memory verses, or Study it in depth. Keep tapping to choose several verses: one colour highlights them all, and Memorize keeps them together as one passage. Tap a verse again to let it go. New to Bible study? “Study it step by step” walks you through.', before: () => {
+  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, share or copy it, add it to your memory verses, or Study it in depth. Keep tapping to choose several verses: one colour highlights them all, and Memorize keeps them together as one passage. Tap a verse again to let it go.', before: () => {
     paintVerseBar();
     vbar.hidden = false;
   } },
@@ -679,9 +676,7 @@ $('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="tr
 
   // the references in the view that was tapped (the map's own, or the list's), in order, each once
   function collect(el) {
-    const els = el.closest('#modal')
-      ? $$('#modal .gd-refs .ref[data-s]')
-      : el.closest('#xgraph')
+    const els = el.closest('#xgraph')
         ? $$('#xgraph .ref[data-s]')
         : $$('#pane-refs .ref[data-s]').filter((x) => !x.closest('#xgraph') && x.getClientRects().length);
     const seen = new Set();
@@ -729,8 +724,6 @@ $('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="tr
     const k = `${el.dataset.s}-${el.dataset.e}`;
     rs.i = Math.max(0, rs.list.findIndex((r) => `${r.s}-${r.e}` === k));
     rs.ctx = false;
-    // from inside the step-by-step study, the panel only previews: going to the verse would leave the study
-    $('[data-rs="go"]', sheet).hidden = !!el.closest('#modal');
     sheet.style.transform = '';
     sheet.hidden = false;
     bg.hidden = false;
@@ -747,7 +740,7 @@ $('#mNav').insertAdjacentHTML('beforeend', '<div class="m-brand" aria-hidden="tr
   // showing (the "show text" rows) still go straight to the verse
   document.addEventListener('click', (e) => {
     if (!touch()) return;
-    const ref = e.target.closest('#pane-refs .ref[data-s], #modal.m-guide .gd-refs .ref[data-s]');
+    const ref = e.target.closest('#pane-refs .ref[data-s]');
     if (!ref || ref.closest('.refrow')) return;
     e.preventDefault();
     e.stopPropagation();

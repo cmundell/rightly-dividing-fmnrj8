@@ -128,12 +128,8 @@
 
 @keyframes wcUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (max-width: 760px) {
-  .vb-guide { margin-left: auto; border: 0; background: color-mix(in srgb, var(--accent) 10%, var(--paper)); color: var(--accent); font: 600 12.5px var(--ui); border-radius: 14px; padding: 5px 10px; }
-  :root[data-theme='dark'] .vb-guide { color: var(--ink); }
   .vb-head .vb-x { margin-left: 4px; }
-  .modal.m-guide .gd-foot { position: sticky; bottom: 0; background: var(--paper); padding: 10px 0 calc(6px + env(safe-area-inset-bottom)); }
   /* the card's own bottom padding would show text below the sticky buttons, so the buttons cover it */
-  .modal.m-guide .modal-card { padding-bottom: 0; }
 }
 @media (max-width: 760px) {
   .tabs .t-long { display: none; }
@@ -165,7 +161,6 @@
 @media (max-width: 760px) { #nudge { left: 16px; right: 16px; width: auto; bottom: calc(92px + env(safe-area-inset-bottom)); } }
 
 /* several verses tapped: Study goes with the last one tapped, so step-by-step is put away */
-.m-vbar.vb-multi .vb-guide { display: none; }
 
 /* Back: a slim bar under the toolbar, and a Back at the top of every window */
 .m-back { display: none; }

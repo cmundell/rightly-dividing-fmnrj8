@@ -306,7 +306,6 @@ function openQuickStart() {
       <li><kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> go back and forward. The <b>trail</b> under the toolbar lists every verse you've studied — click one to return.</li>
       <li>Highlighted verses keep their color; marks in the left margin show verses you've noted (✎) or tagged (#).</li></ul></section>
     <section><h3>Studying a verse</h3><ul>
-      <li>New to Bible study? Select a verse and choose <b>Study this verse, step by step</b>: read it in its place, observe, interpret, correlate and apply. Every step is a suggestion; skip any that does not fit.</li>
       <li><b>Related verses</b> — the Treasury of Scripture Knowledge cross-references, grouped by key word. Hover to preview, click to go.</li>
       <li><b>Original words</b> — every Hebrew/Greek word with Strong's number and grammar. Click a number for its full entry and every verse that uses it.</li>
       <li><b>Topics</b> — Nave's topics that cite the verse. To read commentaries, the verse's <b>More</b> menu (or right-click) opens it at Blue Letter Bible, online.</li>
@@ -335,7 +334,7 @@ const TOUR = [
   { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Ctrl+click to choose several verses at once — one colour then highlights them all, and Memorize keeps them together as one passage. Small marks in the left margin show your notes (✎) and tags (#).' },
   ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: who wrote the book and to whom, in the book\'s own words where it says; then the relationship, occasion and purpose, with an outline and questions for study, from J. B. Tidwell (1916).' },
   { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
-  { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
+  { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
   { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
   { el: '[data-tab="topics"]', tab: 'topics', title: 'Topics', text: 'Nave\'s topics that cite the verse, and any topic to browse; “show text” lists the words of every reference. This app keeps to the Bible itself: to read commentaries, the verse\'s More menu (or right-click) opens it at Blue Letter Bible, online.' },
   { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. Click any one to go back to it. After you follow a related verse, “‹ Back to …” at the top of the Study pane returns you one step at a time.' },
@@ -685,20 +684,22 @@ window.v33Text = (v) => {
   return out;
 };
 
-// Linking words (Settings › Linking words, off unless turned on): the words that join one thought to the next,
-// grouped as reason, result, conclusion, contrast, condition, addition, comparison and time. "and", "that", "as",
-// "so" and "when" are left out: they are in nearly every verse, and marking them all would hide the rest.
+// Linking words (Settings › Linking words, off unless turned on): exactly the list on the Beyond the Surface
+// Week 6 handout ("Understand Linking Words and Propositions"), shown as it is printed there. The paired words
+// ("if…then", "as…so") are each marked where they appear.
 const LINK_WORDS = [
   ['Reason', ['for', 'because', 'since']],
-  ['Result or purpose', ['so that', 'in order that', 'to the end that']],
+  ['Result or purpose', ['so that', 'in order that', 'that']],
   ['Conclusion', ['therefore', 'wherefore', 'consequently']],
-  ['Contrast', ['but', 'yet', 'however', 'nevertheless', 'notwithstanding']],
-  ['Condition', ['if', 'except', 'unless']],
-  ['Addition', ['moreover', 'furthermore', 'also']],
-  ['Comparison', ['likewise', 'even so', 'just as']],
-  ['Time', ['until', 'till', 'after that', 'before that']],
+  ['Contrast', ['but', 'yet', 'however', 'nevertheless']],
+  ['Condition', ['if…then', 'except']],
+  ['Addition', ['and', 'also', 'moreover']],
+  ['Comparison', ['as…so', 'likewise', 'just as']],
+  ['Time', ['when', 'after', 'before', 'until']],
 ];
-const LINK_KIND = new Map(LINK_WORDS.flatMap(([k, ws]) => ws.map((w) => [w, k])));
+// each word to mark, with its kind; a phrase ("so that", "just as") is matched before its single words
+const LINK_KIND = new Map();
+for (const [k, ws] of LINK_WORDS) for (const w of ws) for (const part of w.split('…')) if (!LINK_KIND.has(part)) LINK_KIND.set(part, k);
 const LINK_RE = new RegExp(`\\b(${[...LINK_KIND.keys()].sort((a, b) => b.length - a.length).map((w) => w.replace(' ', '\\s+')).join('|')})\\b`, 'gi');
 function markLinkWords(html) {
   // only the text between tags, never inside one
@@ -760,7 +761,7 @@ function openReadingOptions() {
         <label><input type="checkbox" data-ro="paras" ${s.paras !== false ? 'checked' : ''}/> <span>¶ Paragraph marks</span></label>
         <label><input type="checkbox" data-ro="links" ${s.links === true ? 'checked' : ''}/> <span>Linking words marked (<span class="lw">for</span>, <span class="lw">therefore</span>, <span class="lw">but</span>, <span class="lw">if</span>…) to follow the writer's reasoning</span></label>
         ${s.links === true ? `<div class="lw-key">${LINK_WORDS.map(([k, ws]) => `<div><b>${esc(k)}</b><span>${ws.map((w) => `<span class="lw">${esc(w)}</span>`).join(', ')}</span></div>`).join('')}
-          <div class="hint">Some uses are not linking words (“for ever”, “not yet”); read each one in its sentence.</div></div>` : ''}
+          <div class="hint">From the Beyond the Surface Week 6 handout.</div></div>` : ''}
       </div>
       <label>Grammar</label><div class="ro-seg"><button data-gt="0" class="${s.grammarTerms ? '' : 'on'}">Plain words</button><button data-gt="1" class="${s.grammarTerms ? 'on' : ''}">Grammar terms</button></div>
       <label class="st-desk">Interface size</label><div class="ro-seg st-desk">${UI_STEPS.map((v) => `<button data-ui="${v}" class="${Math.abs(v - ui) < 0.01 ? 'on' : ''}">${Math.round(v * 100)}%</button>`).join('')}</div>
@@ -1181,7 +1182,7 @@ TOUR.splice(2, 0, {
 });
 {
   const refs = TOUR.find((t) => t.title === 'Related verses');
-  if (refs) refs.text = 'New to Bible study? Choose “Study this verse, step by step” at the top. Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has “Compare with other passages” — any two to four passages side by side.';
+  if (refs) refs.text = 'Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has “Compare with other passages” — any two to four passages side by side.';
   const notes = TOUR.find((t) => t.title === 'Notes');
   if (notes) {
     notes.title = 'Notes, lessons and memory';

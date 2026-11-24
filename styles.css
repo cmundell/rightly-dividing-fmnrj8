@@ -1145,40 +1145,6 @@ body.reduce-motion .j-halo { animation: none; }
 .verse-menu .vm-sep { height: 1px; background: var(--rule); margin: 4px 6px; }
 
 /* 3.16: Study this verse, step by step */
-.gd-start { display: block; width: 100%; text-align: left; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--rule)); background: color-mix(in srgb, var(--accent) 6%, var(--paper));
-  color: var(--accent); border-radius: 10px; padding: 9px 12px; margin: 0 0 10px; font: 600 14px var(--ui); cursor: pointer; }
-.gd-start:hover { background: var(--sel); }
-:root[data-theme='dark'] .gd-start { color: var(--ink); }
-.modal.m-guide .modal-card { width: min(640px, 100%); }
-.gd-dots { display: flex; gap: 6px; margin: 2px 0 12px; }
-.gd-dots span { width: 28px; height: 5px; border-radius: 3px; background: var(--rule); }
-.gd-dots span.done { background: color-mix(in srgb, var(--accent) 45%, var(--rule)); }
-.gd-dots span.on { background: var(--accent); }
-.gd-what { background: color-mix(in srgb, var(--gold) 12%, var(--paper)); border-left: 3px solid var(--gold); border-radius: 6px; padding: 9px 12px; margin: 0 0 14px; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
-.gd-verse { font: calc(var(--fs) * 1.1) / 1.6 var(--scripture); color: var(--ink); margin: 8px 0; padding: 12px 14px; background: var(--bg); border-radius: 10px; }
-.gd-verse span { display: block; font: 12.5px var(--ui); color: var(--ink-soft); margin-top: 4px; }
-.gd-ctx { font: 15px/1.55 var(--scripture); color: var(--ink-soft); margin: 4px 0; }
-.gd-ctx span { font: 600 11.5px var(--ui); margin-right: 4px; }
-.gd-ask { font-size: 14px; color: var(--ink); margin-top: 12px; font-style: italic; }
-.gd-refs { display: flex; flex-direction: column; gap: 8px; }
-.gd-ref { border: 1px solid var(--rule); border-radius: 10px; padding: 9px 12px; background: var(--paper); }
-.gd-ref-h { display: flex; gap: 8px; align-items: baseline; }
-.gd-ref-h b { color: var(--accent); font-size: 13.5px; }
-:root[data-theme='dark'] .gd-ref-h b { color: var(--ink); }
-.gd-ref-h span { font-size: 12px; color: var(--ink-soft); }
-.gd-ref-t { font: 15px/1.55 var(--scripture); color: var(--ink); margin-top: 3px; }
-.gd-words { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.gd-words button { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 18px; padding: 7px 14px; font: 15px var(--scripture); cursor: pointer; }
-.gd-words button.on { background: var(--accent); border-color: var(--accent); color: var(--paper); }
-.gd-word { border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; background: var(--paper); }
-.gd-word-h .og { font: 24px var(--orig); color: var(--ink); }
-.gd-word-h i { color: var(--ink-soft); margin: 0 4px; }
-.gd-word p { margin: 6px 0; line-height: 1.5; }
-.gd-note { width: 100%; box-sizing: border-box; min-height: 120px; font: 16px/1.5 var(--scripture); padding: 10px 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); }
-.gd-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
-.gd-foot button { font-size: 15px; padding: 9px 18px; border-radius: 10px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); cursor: pointer; }
-.verse-menu > button.vm-guide { font-weight: 600; color: var(--accent); }
-:root[data-theme='dark'] .verse-menu > button.vm-guide { color: var(--ink); }
 
 /* 3.16: plain names on the Study tabs, and what each is for */
 .tabs .t-short { display: none; }
@@ -1305,7 +1271,6 @@ body.reduce-motion .j-halo { animation: none; }
 /* a tap on a verse answers with a short dip in brightness, so the touch is seen to have landed */
 .verse.tap-pulse { filter: brightness(.9); transition: filter .05s; }
 .verse { transition: filter .35s ease-out; }
-.gd-start.gd-small { border: 0; background: none; padding: 0 0 6px; margin: 0; font-size: 13px; color: var(--link); text-align: left; width: auto; box-shadow: none; }
 .va-plain { display: none; }
 .toast-undo { margin-left: 10px; border: 1px solid rgba(255,255,255,.5); border-radius: 5px; background: none; color: inherit; font: 600 12px var(--ui); padding: 2px 8px; cursor: pointer; }
 .mark .t sup { font-family: var(--ui); font-size: 10px; color: var(--ink-soft); }
@@ -1367,38 +1332,11 @@ body.has-player #readerInner { padding-bottom: 96px; }
 /* Linking words (Settings › Linking words, off by default) */
 .lw { text-decoration: underline dotted var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 3px; color: var(--accent); }
 .ro-checks .lw { color: var(--accent); }
-/* Study this verse, step by step: Psalm 119:18 before the study begins */
-.gd-open { font-family: var(--scripture); font-style: italic; text-align: center; color: var(--ink-soft); margin: 0 0 14px; padding: 0 0 12px; border-bottom: 1px solid var(--rule); line-height: 1.55; }
-.gd-open span { font-family: var(--ui); font-style: normal; font-size: 12px; font-weight: 700; color: var(--link); white-space: nowrap; }
 .lw-key { margin: 2px 0 6px 34px; font-size: 13px; line-height: 1.5; }
 .lw-key > div:not(.hint) { display: grid; grid-template-columns: 8.5em 1fr; gap: 8px; padding: 3px 0; }
 .lw-key b { font-weight: 600; color: var(--ink-soft); }
 .lw-key .hint { margin-top: 4px; }
-/* 1.7.2: Study this verse, step by step, following the class */
-.gd-dots button { width: 28px; height: 5px; border-radius: 3px; background: var(--rule); border: 0; padding: 0; cursor: pointer; position: relative; }
-.gd-dots button::after { content: ''; position: absolute; inset: -10px -2px; } /* a bigger target to tap */
-.gd-dots button.done { background: color-mix(in srgb, var(--accent) 45%, var(--rule)); }
-.gd-dots button.on { background: var(--accent); }
-.gd-asks { margin: 10px 0 4px; padding: 0 0 0 12px; list-style: none; border-left: 2px solid var(--rule); color: var(--ink-soft); font-size: 14px; line-height: 1.55; }
-.gd-asks li { margin: 2px 0; }
-.gd-nlab { font: 700 11.5px var(--ui); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin: 14px 0 6px; }
-.gd-note.gd-note-s { min-height: 70px; font-size: 15px; }
-.gd-about { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; margin-top: 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); padding: 9px 12px; cursor: pointer; color: var(--ink); }
-.gd-about b { color: var(--accent); font-size: 14px; }
-.gd-about span { font-size: 13px; color: var(--ink-soft); }
-.gd-rep { display: flex; flex-wrap: wrap; gap: 6px; }
-.gd-rep span { border: 1px solid var(--rule); border-radius: 14px; padding: 3px 10px; font-size: 13.5px; background: var(--paper); }
-.gd-rep i { font-style: normal; color: var(--ink-soft); font-size: 12px; margin-left: 2px; }
-.gd-lwnote { margin: 8px 0 0; }
-.gd-ref-h .ref { font-weight: 700; color: var(--accent); font-size: 13.5px; cursor: pointer; }
-.gd-all { margin-top: 8px; }
-.gd-close { margin: 16px 0 0; padding: 12px 0 0; border-bottom: 0; border-top: 1px solid var(--rule); }
-.gd-return { display: block; margin: 0 0 8px; }
-.gd-foot { gap: 8px; }
-.gd-foot [data-gd="share"] { margin-left: auto; }
-/* the reference line under the verse is the verse's last span; linking words inside the verse stay inline */
-.gd-verse span.lw { display: inline; font: inherit; margin: 0; color: var(--accent); }
-/* hover previews show above windows too (Study this verse › Correlate) */
+/* hover previews show above windows too */
 .preview { z-index: 90; }
 
 /* 1.7.5 Topics › Through the Bible (trace a theme) */
@@ -1435,3 +1373,6 @@ body.has-player #readerInner { padding-bottom: 96px; }
   .fl-card { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .fl-arr { padding: 0; transform: rotate(90deg); justify-self: start; margin-left: 6px; }
 }
+/* 1.7.6 About this book: Tidwell's group for the book */
+.bk-group { margin: -4px 0 12px; font: 14px var(--ui); color: var(--ink); }
+.bk-group span { color: var(--ink-soft); }

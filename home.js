@@ -217,20 +217,24 @@ const toReading = () => typeof setView === 'function' && onPhone() && setView('r
 // silent, C. I. Scofield's line (1917); where neither says, "Not stated." (data: tools/build_tidwell.py)
 const BK_Q = [['author', 'Author'], ['audience', 'Audience'], ['relationship', 'Relationship'], ['occasion', 'Occasion'], ['purpose', 'Purpose']];
 const bkJoin = (xs) => (xs.length < 2 ? xs[0] : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
-// Author and Audience at a glance: the Bible's own answer with its verse; where the book does not say, the traditional
-// view from Easton's Bible Dictionary (1897). (data: tools/build_glance.py)
+// Author and Audience at a glance: the Bible's own answer with its verse; where the book does not say, "Not named in
+// the book." (1.7.6: Easton's traditional view removed, so this box is the Bible's own words only)
 const bkRefs = (rs) => (rs.length ? ` <span class="bk-grefs">${rs.map((r) => `<span class="ref" data-s="${r.s}" data-e="${r.e}">${esc(r.label)}</span>`).join('')}</span>` : '');
 function bkGlance(g) {
   if (!g) return '';
-  const line = (label, said, refs, trad) => {
-    const tr = (t) => (/^(Uncertain|Unknown)/.test(t) ? `${esc(t)}.` : `Traditionally ${esc(t)}.`);
+  const line = (label, said, refs) => {
     const ans = said
-      ? `${esc(said)}${bkRefs(refs)}${trad ? `<div class="bk-trad">${tr(trad)} <span class="bk-by">(Easton)</span></div>` : ''}`
-      : `<span class="bk-none">Not named in the book.</span>${trad ? ` ${tr(trad)} <span class="bk-by">(Easton)</span>` : ''}${refs.length ? `<div class="bk-trad">See${bkRefs(refs)}</div>` : ''}`;
+      ? `${esc(said)}${bkRefs(refs)}`
+      : `<span class="bk-none">Not named in the book.</span>${refs.length ? `<div class="bk-trad">See${bkRefs(refs)}</div>` : ''}`;
     return `<div class="bk-gl"><div class="bk-gk">${label}</div><div class="bk-gv">${ans}</div></div>`;
   };
-  return `<div class="bk-glance">${line('Author', g.author, g.authorRefs, g.authorTrad)}${line('Audience', g.audience, g.audienceRefs, g.audienceTrad)}</div>`;
+  return `<div class="bk-glance">${line('Author', g.author, g.authorRefs)}${line('Audience', g.audience, g.audienceRefs)}</div>`;
 }
+// 1.7.6: the group each book belongs to, as J. B. Tidwell gives it in The Bible Book by Book, chapter V ("The
+// Divisions of the Scriptures", the five groups of each Testament): [last book of the group, its name]
+const TIDWELL_GROUPS = [[5, 'Pentateuch'], [17, 'Historical Books'], [22, 'Poetical Books'], [27, 'Major Prophets'],
+  [39, 'Minor Prophets'], [43, 'Gospels'], [44, 'Acts'], [58, 'Pauline Epistles'], [65, 'General Epistles'], [66, 'Revelation']];
+const tidwellGroup = (id) => (TIDWELL_GROUPS.find(([last]) => id <= last) || [])[1] || '';
 const bkSec = (s) => `<p>${s.h ? `<b class="bk-h">${esc(s.h)}${esc(s.sep || '.')}</b> ` : ''}${s.html}</p>`;
 async function openBookIntro(bookId) {
   const bk = state.books[bookId - 1];
@@ -267,14 +271,16 @@ async function openBookIntro(bookId) {
   const rest = secs.filter((s) => s.kind !== 'sec').map((s) => (s.kind === 'analysis'
     ? `<div class="section-title">${esc(s.h || 'Analysis')}</div><div class="bk-outline">${s.items.map((it) => `<div class="${it.lvl < 0 ? 'bk-onote' : `bk-o${it.lvl > 2 ? 2 : it.lvl > 0 ? 1 : 0}`}">${it.html}</div>`).join('')}</div>`
     : `<div class="bk-study">${s.html.replace(/^(For Study (and|mid) +[Dd]iscussion[.,]?)/, '<b class="bk-h">$1</b>').replace(/^/, '<p>')}</p></div>`)).join('');
+  const grp = tidwellGroup(bookId);
   openModal(`<div class="kicker">About this book</div><h2 class="m-title">${esc(bk.name)}</h2>
+    ${grp ? `<p class="bk-group"><b>${esc(grp)}</b> <span>(Tidwell's grouping of the books)</span></p>` : ''}
     <div class="bk">
       ${bkGlance(d.glance)}
       <div class="bk-qs">${qs.join('')}</div>
       ${more.length ? `<div class="section-title">More from Tidwell</div><div class="bk-more">${more.map(bkSec).join('')}</div>` : ''}
       ${rest}
     </div>
-    <p class="hint bi-note">From J. B. Tidwell, <i>The Bible Book by Book</i> (Baylor University Press, 1916), word for word. Where he does not say, the line marked Scofield is from C. I. Scofield's introduction (1917). Author and Audience at the top: the book's own words where it names them; otherwise the traditional view from M. G. Easton's <i>Illustrated Bible Dictionary</i> (1897). Tap a reference to read it.</p>`, 'm-bookintro');
+    <p class="hint bi-note">From J. B. Tidwell, <i>The Bible Book by Book</i> (Baylor University Press, 1916), word for word. Where he does not say, the line marked Scofield is from C. I. Scofield's introduction (1917). Author and Audience at the top: the book's own words where it names them. Tap a reference to read it.</p>`, 'm-bookintro');
   $('#modal').dataset.book = bookId;
 }
 $('#modal').addEventListener('click', (e) => {
@@ -372,7 +378,6 @@ async function paintNotesSection() {
     const many = hlTargets(id).length;
     vm.innerHTML = `<div class="vm-head">${many > 1 ? `${many} verses chosen` : esc(state.xref.verse.label)}</div>
       <div class="vm-hl" role="group" aria-label="Highlight">${HL_COLORS.map((c) => `<button class="dot hl-${c}${hl === c ? ' on' : ''}" data-vm="hl" data-c="${c}" title="Highlight: ${esc(hlName(c))}" aria-label="Highlight: ${esc(hlName(c))}"></button>`).join('')}<button class="dot none${hl ? '' : ' on'}" data-vm="hl" data-c="" title="No highlight" aria-label="No highlight">&times;</button></div>
-      <button role="menuitem" data-vm="guide" class="vm-guide">Study it step by step</button>
       <button role="menuitem" data-vm="note">Write a note</button>
       <button role="menuitem" data-vm="copy">Copy verse</button>
       <button role="menuitem" data-vm="memory">${memItemFor(id) !== null ? 'Remove from memory verses' : many > 1 ? `Memorize these ${many} verses` : 'Memorize'}</button>
@@ -401,7 +406,6 @@ async function paintNotesSection() {
       toast('Verse copied');
     } else if (k === 'memory') toggleMemory(v.id);
     else if (k === 'compare') openCompare(v.id);
-    else if (k === 'guide') startGuide(v.id);
     else if (k === 'blb') window.open(blbUrl(v.label), '_blank');
     else if (k === 'note') {
       switchTab('refs');
@@ -423,239 +427,6 @@ async function paintNotesSection() {
 }
 
 // =====================================================================================================
-// 3.16: Study this verse, step by step — the study tools, one plain step at a time, for anyone new to them
-// =====================================================================================================
-// 1.7.2: the five steps follow the class: read it in its place, observe, interpret, correlate, apply. The questions
-// under each step are suggestions, not tasks; every note box is optional and any step can be skipped.
-const GUIDE_STEPS = [
-  { key: 'read', title: 'Read it in its place', what: 'Read the verse slowly, with the verses around it. A verse means what it means in its setting.',
-    asks: ['Who is speaking, and to whom?', 'What comes just before and after?'] },
-  { key: 'observe', title: 'Observe', what: 'Write down what the verse says before deciding what it means. Some things to look for:',
-    asks: ['What is emphasized?', 'What is repeated?', 'What is alike?', 'What is related (for, therefore, but)?', 'What is unlike?'] },
-  { key: 'interpret', title: 'Interpret', what: 'Now ask what it means. Keep to the plain sense of the words, and do not read your own ideas into them.',
-    asks: ['What did it mean to the first readers?', 'What is different between them and us?', 'What is true for them and for us?'] },
-  { key: 'correlate', title: 'Correlate', what: 'Let Scripture explain Scripture. Read each related verse in its own setting.',
-    asks: ['How does this help me understand the verse I started with?'] },
-  { key: 'apply', title: 'Apply', what: 'The meaning does not change; how it is lived out can. Some things to ask:',
-    asks: ['What does it teach about God?', 'Does my situation match theirs, or is there a lasting principle?', 'Does it agree with the rest of Scripture?', 'How does it grow love for God and for others?'] },
-];
-const NOTE_STEPS = { observe: 'Observe', interpret: 'Interpret', correlate: 'Correlate', apply: 'Apply' };
-// Scripture shown word for word from the KJV: [book, chapter, first verse, last verse]
-const GUIDE_VERSES = { open: [19, 119, 18, 18], doers: [59, 1, 22, 22], search: [19, 139, 23, 24] };
-const FUNCTION_WORDS = /^(Function=(Conjunction|Article|Preposition|Particle|Pronoun|Adverb)|.*(Article|Conjunction|Preposition))/;
-const guide = { id: null, step: 0, data: null, word: null, notes: {}, scripture: null };
-
-async function guideScripture() {
-  if (guide.scripture) return guide.scripture;
-  const out = {};
-  for (const [k, [b, c, v1, v2]] of Object.entries(GUIDE_VERSES)) {
-    try {
-      const s = await tsk.verseId(b, c, v1);
-      const e = await tsk.verseId(b, c, v2);
-      out[k] = await tsk.passage(s, e, 'kjv');
-    } catch { /* left out if not found */ }
-  }
-  guide.scripture = out;
-  return out;
-}
-
-async function startGuide(id) {
-  if (!state.settings.guideUsed) { state.settings.guideUsed = true; saveUser(['settings']); } // from now on the button is a quiet link
-  id = id || state.cur.sel || (state.xref && state.xref.verse.id);
-  if (!id) return toast('Tap a verse first');
-  guide.id = id;
-  guide.step = 0;
-  guide.word = null;
-  guide.notes = {};
-  const [x, words, verses] = await Promise.all([tsk.xrefs(id, 'kjv'), tsk.words(id).catch(() => []), guideScripture()]);
-  const v = x.verse;
-  const around = await tsk.versesByIds([id - 1, id + 1]).catch(() => []);
-  const book = (await tsk.locate(id).catch(() => null) || {}).book || state.cur.book;
-  // a few related verses, with their text
-  const picks = [];
-  for (const g of x.groups.slice(0, 4)) for (const r of g.refs.slice(0, 2)) if (picks.length < 6) picks.push({ ...r, anchor: g.anchor });
-  const texts = new Map((await tsk.versesByIds(picks.map((p) => p.start))).map((t) => [t.id, t.text]));
-  // the words worth a closer look: naming, describing and action words, each once, the most distinctive first,
-  // shown in the verse's order
-  const seen = new Set();
-  const content = (words || [])
-    .map((w, i) => ({ ...w, i, gloss: String(w.gloss || '').replace(/\[[^\]]*\]\s*/g, '').replace(/[;,.:!?“”"]+/g, '').replace(/^(of|and)\s+/i, '').trim() }))
-    .filter((w) => w.gloss && /[a-z]{3}/i.test(w.gloss) && /^Function=(Verb|Noun|Adjective)/.test((w.grammar || '').replace(/\s+;/, ';')) && !FUNCTION_WORDS.test(w.grammar || ''))
-    .filter((w) => !seen.has(w.strongs) && seen.add(w.strongs));
-  const keyWords = content.sort((a, b) => (a.uses || 0) - (b.uses || 0)).slice(0, 8).sort((a, b) => a.i - b.i);
-  // words repeated in the chapter (for Observe)
-  let repeated = [];
-  try {
-    const l = await tsk.locate(id);
-    const ch = await tsk.chapter(l.book, l.ch, 'kjv');
-    const STOP = new Set('and the of to that in he for unto i his a they shall is be not with them him it all ye as which but my me was thou thy thee their were from have hath by are this there upon when so then what or an at said you we her she will no also out up if your our us into one even who on'.split(' '));
-    const count = new Map();
-    for (const cv of ch.verses) for (const w of cv.text.toLowerCase().match(/[a-z']+/g) || []) if (!STOP.has(w) && w.length > 2) count.set(w, (count.get(w) || 0) + 1);
-    repeated = [...count].filter(([, n]) => n > 1).sort((p, q) => q[1] - p[1]).slice(0, 12);
-  } catch { /* none */ }
-  guide.data = { v, book, around, verses, repeated, picks: picks.map((p) => ({ ...p, text: texts.get(p.start) || '' })), total: x.groups.reduce((n, g) => n + g.refs.length, 0), keyWords };
-  renderGuide();
-}
-
-const gdScripture = (p, cls = 'gd-open') => (p ? `<p class="${cls}">“${p.verses.map((x) => esc(x.text)).join(' ')}” <span>${esc(p.label)}</span></p>` : '');
-
-function renderGuide() {
-  const { v, book, around, verses, repeated, picks, total, keyWords } = guide.data;
-  const s = GUIDE_STEPS[guide.step];
-  const asks = `<ul class="gd-asks">${s.asks.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>`;
-  const noteBox = (label) => `<div class="gd-nlab">${label}</div><textarea class="gd-note gd-note-s" data-gd-note="${s.key}" placeholder="Optional">${esc(guide.notes[s.key] || '')}</textarea>`;
-  let body = '';
-  if (s.key === 'read') {
-    const before = around.find((a) => a.id === v.id - 1);
-    const after = around.find((a) => a.id === v.id + 1);
-    const bk = state.books[(book || 1) - 1];
-    body = `${gdScripture(verses.open)}
-      ${before ? `<p class="gd-ctx"><span>${esc(before.label)}</span> ${esc(before.text)}</p>` : ''}
-      <blockquote class="gd-verse">${esc(v.text)} <span>${esc(v.label)}</span></blockquote>
-      ${after ? `<p class="gd-ctx"><span>${esc(after.label)}</span> ${esc(after.text)}</p>` : ''}
-      ${asks}
-      ${ABOUT_ON && bk ? `<button class="gd-about" data-gd-about="${bk.id}"><b>About ${esc(bk.name)}</b><span>Who wrote it, to whom, and why ›</span></button>` : ''}`;
-  } else if (s.key === 'observe') {
-    body = `<blockquote class="gd-verse">${markLinkWords(esc(v.text))} <span>${esc(v.label)}</span></blockquote>
-      ${asks}
-      <p class="hint gd-lwnote">Linking words are marked: <span class="lw">for</span>, <span class="lw">therefore</span>, <span class="lw">but</span>, <span class="lw">if</span>…</p>
-      ${repeated.length ? `<div class="gd-nlab">Repeated in this chapter</div><div class="gd-rep">${repeated.map(([w, n]) => `<span>${esc(w)} <i>${n}</i></span>`).join('')}</div>` : ''}
-      ${noteBox('Your notes')}`;
-  } else if (s.key === 'interpret') {
-    const w = guide.word != null ? keyWords[guide.word] : null;
-    body = `${asks}
-      <div class="gd-nlab">One word up close</div>
-      ${keyWords.length
-    ? `<div class="gd-words">${keyWords.map((k, i) => `<button class="${guide.word === i ? 'on' : ''}" data-gd-word="${i}">${esc(k.gloss)}</button>`).join('')}</div>
-        ${w ? `<div class="gd-word">
-          <div class="gd-word-h"><span class="og">${esc(w.word)}</span> <i>${esc(w.translit)}</i> <span class="hint">${w.lang === 'H' ? 'Hebrew' : 'Greek'} · ${esc(w.strongs)}</span></div>
-          <p><b>${esc(w.gloss)}</b> — ${esc(w.def || '')}</p>
-          ${w.grammar ? `<p class="hint">${esc(grammarLine(w.grammar))}</p>` : ''}
-          ${w.kjv_def ? `<p class="hint">In the KJV it is also translated: ${esc(w.kjv_def)}</p>` : ''}
-          <p class="hint">Used ${Number(w.uses || 0).toLocaleString()} time${w.uses === 1 ? '' : 's'} in the Bible.</p>
-          <button class="linkish" data-gd-strong="${esc(w.strongs)}">See every verse that uses it</button></div>` : '<p class="hint">Tap a word to see the Hebrew or Greek behind it.</p>'}`
-    : '<p class="hint">No original-language words for this verse.</p>'}
-      ${noteBox('Your notes')}`;
-  } else if (s.key === 'correlate') {
-    body = `${picks.length
-      ? `<div class="gd-refs">${picks.map((p) => `<div class="gd-ref"><div class="gd-ref-h"><span class="ref" data-s="${p.start}" data-e="${p.end}">${esc(p.label)}</span>${p.anchor ? `<span>on “${esc(p.anchor)}”</span>` : ''}</div><div class="gd-ref-t">${esc(p.text)}${p.end > p.start ? ' …' : ''}</div></div>`).join('')}</div>
-        ${total > picks.length ? `<button class="linkish gd-all" data-gd-all="1">All ${total.toLocaleString()} related verses ›</button>` : ''}`
-      : '<p class="hint">This verse has no cross-references in the Treasury of Scripture Knowledge.</p>'}
-      ${asks}
-      ${noteBox('Your notes')}`;
-  } else {
-    body = `${gdScripture(verses.doers)}
-      ${asks}
-      ${noteBox('What I will do')}
-      ${gdScripture(verses.search, 'gd-open gd-close')}`;
-  }
-  const last = guide.step === GUIDE_STEPS.length - 1;
-  openModal(`<div class="kicker">Study this verse · step ${guide.step + 1} of ${GUIDE_STEPS.length} · ${esc(v.label)}</div>
-    <h2 class="m-title">${esc(s.title)}</h2>
-    <div class="gd-dots" role="tablist">${GUIDE_STEPS.map((g, i) => `<button class="${i === guide.step ? 'on' : i < guide.step ? 'done' : ''}" data-gd-go="${i}" aria-label="${esc(g.title)}" title="${esc(g.title)}"></button>`).join('')}</div>
-    <p class="gd-what">${esc(s.what)}</p>
-    <div class="gd-body">${body}</div>
-    <div class="gd-foot">${guide.step ? '<button data-gd="back">‹ Back</button>' : '<span></span>'}
-      ${last ? '<button data-gd="share">Share</button>' : ''}
-      <button class="primary-btn" data-gd="${last ? 'done' : 'next'}">${last ? 'Save and finish' : 'Next ›'}</button></div>`, 'm-guide');
-}
-
-function guideNoteText() {
-  return Object.entries(NOTE_STEPS).map(([k, h]) => [h, (guide.notes[k] || '').trim()]).filter(([, t]) => t).map(([h, t]) => `${h}: ${t}`).join('\n');
-}
-
-function finishGuide() {
-  const v = guide.data.v;
-  const text = guideNoteText();
-  if (text) {
-    const prev = state.notes[v.id] ? `${state.notes[v.id].trim()}\n\n` : '';
-    state.notes[v.id] = `${prev}${text}`;
-    saveUser(['notes']);
-    if (typeof refreshMarkIcons === 'function') refreshMarkIcons(v.id);
-    if (state.xref && state.xref.verse.id === v.id) {
-      const n = $('#pane-refs textarea.note');
-      if (n) n.value = state.notes[v.id];
-    }
-  }
-  guide.notes = {};
-  closeModal();
-  toast(text ? 'Saved in your notes. Well done!' : 'Well done!');
-}
-
-async function shareGuide() {
-  const v = guide.data.v;
-  const text = `${v.label} — “${v.text}”${guideNoteText() ? `\n\n${guideNoteText()}` : ''}`;
-  if (navigator.share) {
-    try { await navigator.share({ text }); } catch { /* cancelled */ }
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    toast('Copied — paste it into a message');
-  } catch {
-    toast('Could not copy');
-  }
-}
-
-$('#modal').addEventListener('input', (e) => {
-  const n = e.target.closest('[data-gd-note]');
-  if (n && $('#modal').classList.contains('m-guide')) guide.notes[n.dataset.gdNote] = n.value;
-});
-$('#modal').addEventListener('click', (e) => {
-  // back from "About this book" to the study
-  if (e.target.closest('[data-gd-return]')) return renderGuide();
-  if (!$('#modal').classList.contains('m-guide')) return;
-  const b = e.target.closest('[data-gd]');
-  if (b) {
-    if (b.dataset.gd === 'next') guide.step += 1;
-    else if (b.dataset.gd === 'back') guide.step -= 1;
-    else if (b.dataset.gd === 'share') return shareGuide();
-    else return finishGuide();
-    return renderGuide();
-  }
-  const g = e.target.closest('[data-gd-go]');
-  if (g) {
-    guide.step = Number(g.dataset.gdGo);
-    return renderGuide();
-  }
-  const w = e.target.closest('[data-gd-word]');
-  if (w) {
-    guide.word = Number(w.dataset.gdWord);
-    return renderGuide();
-  }
-  const ab = e.target.closest('[data-gd-about]');
-  if (ab) {
-    return openBookIntro(Number(ab.dataset.gdAbout)).then(() => {
-      if ($('#modal').classList.contains('m-bookintro')) $('#modalBody').insertAdjacentHTML('afterbegin', '<button class="linkish gd-return" data-gd-return="1">‹ Back to your study</button>');
-    });
-  }
-  if (e.target.closest('[data-gd-all]')) {
-    closeModal();
-    if (typeof setView === 'function' && onPhone()) setView('study');
-    return switchTab('refs');
-  }
-  const st = e.target.closest('[data-gd-strong]');
-  if (st) {
-    closeModal();
-    if (typeof setView === 'function' && onPhone()) setView('study');
-    return openStrong(st.dataset.gdStrong);
-  }
-});
-// where to start it: under the verse (Related verses), the right-click menu, the phone's verse bar, and Today
-{
-  const prevOnVerse = window.v3OnVerse;
-  window.v3OnVerse = (id, x) => {
-    prevOnVerse(id, x);
-    const head = $('#pane-refs .xhead');
-    if (head && !$('.gd-start', head)) head.insertAdjacentHTML('afterbegin', `<button class="gd-start${state.settings.guideUsed ? ' gd-small' : ''}" data-gd-start="1">Study this verse, step by step ›</button>`);
-  };
-  $('#pane-refs').addEventListener('click', (e) => {
-    if (e.target.closest('[data-gd-start]')) startGuide(state.xref && state.xref.verse.id);
-  });
-  COMMANDS.push(['Study this verse, step by step', 'guide help learn beginner how to study', () => startGuide()]);
-  window.startGuide = startGuide;
-}
-
 // =====================================================================================================
 // 3.16: what each Study tab is for — a plain line under the tabs, and a short tip the first time a tab is opened
 // (the ⓘ shows it again)
