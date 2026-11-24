@@ -218,7 +218,7 @@ function refreshMarkIcons(id) {
   ($('.kjvcol', el) || el).insertAdjacentHTML('beforeend', markIcons(id));
 }
 
-// Several verses at once: Ctrl+click on Windows, or "Select more" on a phone. A highlight then colours them all.
+// Several verses at once: click (or tap) more verses while the verse bar is open, or Ctrl+click. A highlight then colours them all.
 const multi = { ids: new Set(), mode: false };
 const hlTargets = (id) => (multi.ids.size > 1 && multi.ids.has(id) ? [...multi.ids].sort((a, b) => a - b) : [id]);
 function highlightSelected(id, color) {
@@ -1474,7 +1474,7 @@ function helpHtml() {
     <p><code>G26 -love</code> — where <i>agapē</i> is translated some other way (e.g. “charity”)</p>
     <p>Word endings are matched loosely, so <code>love</code> also finds <i>loved</i> and <i>loveth</i>.</p>
     <p><b>Go to</b> box: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</p>
-    <p><b>Keys</b>: ↑/↓ verses · Ctrl+←/→ chapter · Alt+←/→ back/forward · Ctrl+click to choose several verses · Ctrl+1–7 tabs · Ctrl+P study sheet · double-click a word for its card.</p>
+    <p><b>Keys</b>: ↑/↓ verses · Ctrl+←/→ chapter · Alt+←/→ back/forward · click more verses to add them (Esc to finish) · Ctrl+1–7 tabs · Ctrl+P study sheet · double-click a word for its card.</p>
   </div>`;
 }
 

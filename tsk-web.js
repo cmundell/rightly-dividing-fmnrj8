@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '1.7.5';
+  const VERSION = '1.7.6';
   // the Windows app (windows/ folder) adds rdDesktop: your notes are also copied to a real file in a folder you choose
   const desk = window.rdDesktop || null;
   let deskTimer = null;

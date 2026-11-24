@@ -303,6 +303,7 @@ function openQuickStart() {
     <section><h3>Getting around</h3><ul>
       <li>Type a reference in the top box and press Enter: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</li>
       <li>Click any verse to select it; <kbd>↑</kbd>/<kbd>↓</kbd> move verse by verse, <kbd>Ctrl</kbd>+<kbd>←</kbd>/<kbd>→</kbd> change chapter.</li>
+      <li>To choose several verses, click one, then click the others while the bar below the text is open; highlight, note, share or memorize them together. <kbd>Esc</kbd> finishes.</li>
       <li><kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> go back and forward. The <b>trail</b> under the toolbar lists every verse you've studied — click one to return.</li>
       <li>Highlighted verses keep their color; marks in the left margin show verses you've noted (✎) or tagged (#).</li></ul></section>
     <section><h3>Studying a verse</h3><ul>
@@ -331,7 +332,7 @@ ${ABOUT_ON ? '      <li><b>About this book</b>, under each chapter heading: the 
 // ===================================================================== guided tour
 const TOUR = [
   { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
-  { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. Ctrl+click to choose several verses at once — one colour then highlights them all, and Memorize keeps them together as one passage. Small marks in the left margin show your notes (✎) and tags (#).' },
+  { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. After a click, a bar appears below the text: click more verses to add them, and one colour then highlights them all (Esc to finish), and Memorize keeps them together as one passage. Small marks in the left margin show your notes (✎) and tags (#).' },
   ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: who wrote the book and to whom, in the book\'s own words where it says; then the relationship, occasion and purpose, with an outline and questions for study, from J. B. Tidwell (1916).' },
   { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
   { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
