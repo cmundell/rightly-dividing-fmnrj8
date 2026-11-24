@@ -279,22 +279,47 @@ function selectedPassage(v) {
   }
   return { label: v.label, text: v.text };
 }
-// a verse card to share as a picture: the words on navy, the reference in gold
+// a verse card to share as a picture (1.7.14): warm parchment with light falling from above, a small gold cross, the
+// words in navy and the reference in gold. All drawn here, so no picture is needed.
 async function shareVerseImage({ label, text }) {
-  const W = 1080, H = 1080, PAD = 96;
+  const W = 1080, H = 1080, PAD = 120;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
-  // the same softened photo as the icon and the opening screen; plain navy if it cannot be loaded
-  const bg = await new Promise((resolve) => { const im = new Image(); im.onload = () => resolve(im); im.onerror = () => resolve(null); im.src = 'data/brand-bg.jpg'; });
-  if (bg) g.drawImage(bg, 0, 0, W, H);
-  else { g.fillStyle = '#1f3a6b'; g.fillRect(0, 0, W, H); }
-  g.fillStyle = '#e0be6e'; g.fillRect(PAD, PAD, 120, 6);
-  g.shadowColor = 'rgba(20,16,10,.6)'; g.shadowBlur = 8; g.shadowOffsetY = 3;
+  let seed = 13;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; // the same picture every time
+  // parchment
+  const p = g.createRadialGradient(W / 2, H * 0.45, 60, W / 2, H / 2, W * 0.78);
+  p.addColorStop(0, '#fbf3dd'); p.addColorStop(0.65, '#f3e4bf'); p.addColorStop(1, '#e4cb92');
+  g.fillStyle = p; g.fillRect(0, 0, W, H);
+  g.globalAlpha = 0.055;
+  for (let i = 0; i < 3200; i++) { g.fillStyle = rnd() > 0.5 ? '#7a5a1c' : '#fff'; g.fillRect(rnd() * W, rnd() * H, 2, 2); }
+  g.globalAlpha = 1;
+  // rays from above
+  seed = 5;
+  g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 16; i++) {
+    const ang = Math.PI / 2 + (rnd() - 0.5) * 1.1, w = 0.02 + rnd() * 0.05, cx = W / 2, cy = -140;
+    const r = g.createRadialGradient(cx, cy, 0, cx, cy, H * 1.3);
+    r.addColorStop(0, `rgba(255,250,232,${(0.035 + rnd() * 0.05).toFixed(2)})`); r.addColorStop(1, 'rgba(255,250,232,0)');
+    g.fillStyle = r;
+    g.beginPath(); g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(ang - w) * H * 1.6, cy + Math.sin(ang - w) * H * 1.6);
+    g.lineTo(cx + Math.cos(ang + w) * H * 1.6, cy + Math.sin(ang + w) * H * 1.6);
+    g.closePath(); g.fill();
+  }
+  g.globalCompositeOperation = 'source-over';
+  // a calm patch behind the words
+  const calm = g.createRadialGradient(W / 2, H * 0.47, 40, W / 2, H * 0.47, W * 0.52);
+  calm.addColorStop(0, 'rgba(252,244,220,.45)'); calm.addColorStop(1, 'rgba(252,244,220,0)');
+  g.fillStyle = calm; g.fillRect(0, 0, W, H);
+  // the cross
+  g.fillStyle = '#b8892b'; g.fillRect(W / 2 - 3, PAD - 6, 6, 70); g.fillRect(W / 2 - 22, PAD + 12, 44, 6);
+  // the words, as large as will fit
   const words = text.split(/\s+/);
-  let size = text.length > 520 ? 38 : text.length > 360 ? 44 : text.length > 220 ? 52 : text.length > 120 ? 60 : 72;
+  let size = text.length > 520 ? 38 : text.length > 360 ? 46 : text.length > 220 ? 54 : text.length > 120 ? 62 : 72;
   let lines;
-  for (;;) { // shrink until the words fit the card
+  for (;;) {
     g.font = `${size}px Georgia, 'Times New Roman', serif`;
     lines = [];
     let line = '';
@@ -303,17 +328,20 @@ async function shareVerseImage({ label, text }) {
       if (g.measureText(t).width > W - PAD * 2 && line) { lines.push(line); line = w; } else line = t;
     }
     lines.push(line);
-    if (lines.length * size * 1.4 <= H - PAD * 2 - 200 || size <= 24) break;
+    if (lines.length * size * 1.45 <= H - PAD * 2 - 220 || size <= 24) break;
     size -= 2;
   }
-  const lh = size * 1.4;
-  let y = (H - lines.length * lh) / 2 + size * 0.35;
-  g.fillStyle = '#faf4e6'; g.textBaseline = 'alphabetic';
-  for (const ln of lines) { g.fillText(ln, PAD, y); y += lh; }
-  g.fillStyle = '#e0be6e'; g.font = `600 ${Math.max(30, size * 0.55)}px -apple-system, 'Segoe UI', Arial, sans-serif`;
-  g.fillText(`${label} (KJV)`, PAD, Math.min(H - PAD - 60, y + 10));
-  g.fillStyle = 'rgba(250,244,230,.7)'; g.font = `28px -apple-system, 'Segoe UI', Arial, sans-serif`;
-  g.fillText('RIGHTLY DIVIDING', PAD, H - PAD + 10);
+  const lh = size * 1.45;
+  let y = (H - lines.length * lh) / 2 + size * 0.4;
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  g.shadowColor = 'rgba(255,250,235,.5)'; g.shadowBlur = 14; g.shadowOffsetY = 2;
+  g.fillStyle = '#1f3a6b';
+  for (const ln of lines) { g.fillText(ln, W / 2, y); y += lh; }
+  g.fillStyle = '#8a5a12'; g.font = `600 ${Math.round(Math.max(30, size * 0.55))}px -apple-system, 'Segoe UI', Arial, sans-serif`;
+  g.fillText(`${label} (KJV)`, W / 2, Math.min(H - PAD - 30, y + 30));
+  g.shadowBlur = 6; g.fillStyle = 'rgba(31,58,107,.75)'; g.font = `26px -apple-system, 'Segoe UI', Arial, sans-serif`;
+  g.fillText('RIGHTLY DIVIDING', W / 2, H - PAD + 40);
+  g.shadowColor = 'transparent';
   const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
   const file = new File([blob], `${label.replace(/[^A-Za-z0-9]+/g, '-')}.png`, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -541,7 +569,7 @@ function openAbout() {
       <li>Parallel passages and Old Testament quotations: UBS Parallel Passage Database, © 2023 United Bible Societies, CC BY-SA 4.0.</li>
       <li>People and family links: BibleData by Brady Stephenson, CC BY 4.0.</li>
       <li>Timeline: Theographic Bible Metadata by Robert Rouse, CC BY-SA 4.0 (chronology of Floyd Nolen Jones).</li>
-      <li>Icon, opening screen and shared-verse background: photo by Yulia Gapeenko on Vecteezy (Free License).</li>
+      <li>Icon and opening screen: photo by Yulia Gapeenko on Vecteezy (Free License).</li>
       <li>Listen: the KJV read by the voice "George" from Kokoro, an open-source speech engine (Apache-2.0 licence).</li>
       <li>Bible places: OpenBible.info Bible Geocoding Data, CC BY 4.0. Base map: Natural Earth; terrain: NASA Blue Marble shaded relief (public domain).</li>
       <li>Journeys: each stop drawn from the KJV text; order of the Gospel events after A. T. Robertson's Harmony of the Gospels (1922, public domain).</li>
