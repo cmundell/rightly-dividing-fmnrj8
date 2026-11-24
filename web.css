@@ -229,3 +229,38 @@
 .rs-foot { display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid var(--rule); flex: none; }
 .rs-foot button { flex: 1; font-size: 16px; padding: 11px 10px; border-radius: 10px; }
 .rs-foot .rs-ctx { border: 1px solid var(--rule); background: var(--paper); color: var(--accent); }
+
+/* 1.7.6 the verse bar on a computer too: click a verse, then click more to add them; × or Esc to finish */
+@media (min-width: 761px) {
+  .m-vbar.pc { display: block; position: fixed; left: var(--vb-left, 20px); width: var(--vb-width, 520px); bottom: 18px; z-index: 61; background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.16); padding: 6px 6px 4px; animation: wcUp .18s ease-out; }
+  .m-vbar.pc[hidden] { display: none; }
+  .m-vbar.pc .vb-head { display: flex; align-items: center; padding: 0 6px; }
+  .m-vbar.pc .vb-ref { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .02em; }
+  .m-vbar.pc .vb-x { margin-left: auto; border: 0; background: none; font-size: 22px; line-height: 1; color: var(--ink-soft); padding: 2px 6px; }
+  .m-vbar.pc .vb-row { display: grid; grid-template-columns: repeat(5, 1fr); }
+  .m-vbar.pc .vb-hl .dot { position: relative; }
+  .m-vbar.pc .vb-hl .dot-n { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 3px; font-size: 9.5px; color: var(--ink-soft); white-space: nowrap; max-width: 54px; overflow: hidden; text-overflow: ellipsis; }
+  .m-vbar.pc .vb-hl:has(.dot-n:not(:empty)) { padding-bottom: 20px; }
+  .m-vbar.pc .vb-row button { border: 0; background: none; color: var(--ink); font-size: 11.5px; min-width: 0; overflow: hidden; white-space: nowrap; padding: 6px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; border-radius: 10px; }
+  .m-vbar.pc .vb-row .vi { width: 22px; height: 22px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .m-vbar.pc .vb-row button.on .vi { stroke: var(--gold); }
+  .m-vbar.pc .vb-row [data-va="memory"].on .vi { fill: var(--gold); }
+  .m-vbar.pc .vb-row .vb-study { background: var(--accent); color: var(--paper); }
+  .m-vbar.pc .vb-row .vb-study .vi { stroke: var(--paper); }
+  .m-vbar.pc .vb-hl { display: flex; gap: 12px; justify-content: center; padding: 6px 0 8px; }
+  .m-vbar.pc .vb-share { display: flex; gap: 8px; justify-content: center; padding: 6px 10px 8px; }
+  .m-vbar.pc .vb-share[hidden] { display: none; }
+  .m-vbar.pc .vb-share button { flex: 1; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--link); font: 600 13px var(--ui); padding: 9px 6px; }
+  .m-vbar.pc .vb-hl[hidden] { display: none; }
+  .m-vbar.pc .vb-hl .dot { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--rule); }
+  .m-vbar.pc .vb-hl .dot.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--paper) inset; }
+  .m-vbar.pc .vb-hl .dot.none { background: var(--paper); color: var(--ink-soft); font-size: 16px; }
+  .m-vbar.pc .vb-row { grid-template-columns: repeat(4, 1fr); }
+  .m-vbar.pc .vb-row .vb-study { display: none; }
+  .m-vbar.pc .vb-row button { cursor: pointer; padding: 8px 0 6px; }
+  .m-vbar.pc .vb-row button:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: 10px; }
+  .m-vbar.pc .vb-x { cursor: pointer; }
+  .m-vbar.pc .vb-hint { font: 12px var(--ui); color: var(--ink-soft); margin-left: 10px; }
+}
+.m-vbar:not(.pc) .vb-hint { display: none; }

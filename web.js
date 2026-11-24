@@ -16,7 +16,7 @@ document.body.insertAdjacentHTML('beforeend', `<nav id="mNav" class="m-nav" aria
   <button data-mn="notes"><span class="mi">&#9998;</span>Notes</button>
   <button data-mn="menu"><span class="mi">&#9776;</span>Menu</button></nav>
   <div id="mStudyPill" class="m-vbar" hidden role="toolbar" aria-label="This verse">
-    <div class="vb-head"><span class="vb-ref"></span><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
+    <div class="vb-head"><span class="vb-ref"></span><span class="vb-hint">Click more verses to add them · Esc to finish</span><button class="vb-x" data-va="close" aria-label="Close">&times;</button></div>
     <div class="vb-share" hidden><button data-va="shareText">Share the words</button><button data-va="shareImage">Share as a picture</button><button data-va="copy">Copy</button></div>
     <div class="vb-hl" hidden>${HL_COLORS.map((c) => `<button class="dot hl-${c}" data-va="hl" data-c="${c}" aria-label="${c}"><span class="dot-n"></span></button>`).join('')}<button class="dot none" data-va="hl" data-c="" aria-label="No highlight">&times;</button></div>
     <div class="vb-row">
@@ -327,9 +327,23 @@ async function shareVerseImage({ label, text }) {
   const prev = window.v3OnVerse;
   let tapped = false; // the first verse is selected by itself on opening; only offer the bar after a tap
   document.addEventListener('pointerdown', () => (tapped = true), { capture: true, once: true });
+  // on a computer: only after a click on a verse in the text (not when a reference, search or arrow key moves there)
+  let clickedVerse = 0;
+  document.addEventListener('pointerdown', (e) => { if (!isPhone() && e.button === 0 && e.target.closest('#readerInner .verse')) clickedVerse = Date.now(); }, true);
+  const placeBar = () => {
+    const r = $('#reader').getBoundingClientRect();
+    const w = Math.min(560, r.width - 32);
+    vbar.style.setProperty('--vb-left', `${Math.round(r.left + (r.width - w) / 2)}px`);
+    vbar.style.setProperty('--vb-width', `${Math.round(w)}px`);
+  };
+  window.addEventListener('resize', () => { if (!isPhone() && !vbar.hidden) placeBar(); });
   window.v3OnVerse = (id, x) => {
     if (prev) prev(id, x);
-    if (!isPhone() || !tapped || document.body.classList.contains('m-study')) return;
+    vbar.classList.toggle('pc', !isPhone());
+    if (!isPhone()) {
+      if (Date.now() - clickedVerse > 1500) return;
+      placeBar();
+    } else if (!tapped || document.body.classList.contains('m-study')) return;
     $('.vb-hl', vbar).hidden = true;
     paintVerseBar();
     vbar.hidden = false;
@@ -372,7 +386,7 @@ vbar.addEventListener('click', async (e) => {
     }
     case 'note':
       hideVerseBar();
-      setView('study');
+      if (isPhone()) setView('study');
       switchTab('refs');
       setTimeout(() => {
         const n = $('#pane-refs textarea.note');
@@ -421,6 +435,7 @@ vbar.addEventListener('click', async (e) => {
   }
 });
 document.addEventListener('multisel', () => !vbar.hidden && paintVerseBar());
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !vbar.hidden && !isPhone() && !document.querySelector('#modal:not([hidden])')) hideVerseBar(); });
 document.addEventListener('deselect', () => hideVerseBar());
 // a passage chosen in Compare opens on the reading screen
 document.addEventListener('click', (e) => {
