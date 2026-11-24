@@ -349,7 +349,7 @@ function openHowTo() {
     ...(phone ? [] : [['Shortcuts', [
       [k('Ctrl', 'K'), 'Command box: a reference, a feature, a person or words from your notes'],
       [`${k('Ctrl', 'F')} / ${k('Ctrl', 'G')}`, 'The top box'],
-      [`${k('Ctrl', '1')}…${k('Ctrl', '6')}`, 'Study tabs'],
+      [`${k('Ctrl', '1')}…${k('Ctrl', '7')}`, 'Study tabs: Related verses, Original words, Topics, Places, People, Search, Notes'],
       [k('Ctrl', '\\'), 'Focus mode'],
       [k('Ctrl', 'D'), 'Dark mode'],
       [`${k('Ctrl', '=')} / ${k('Ctrl', '-')}`, 'Text size'],

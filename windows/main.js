@@ -69,6 +69,39 @@ ipcMain.handle('rd:choose', async (e) => {
   return { dir: cfg.dir };
 });
 
+// ---------------------------------------------------------------- saving a PDF (1.7.12)
+// Study sheets, lessons, notes and The Gospel: a Save as box, then the page is made into a PDF in a hidden window
+// and written there. (The phone has only its print sheet for this.)
+const os = require('os');
+const pdfName = (s) => `${String(s || 'Rightly Dividing').replace(/(\d):(\d)/g, '$1.$2').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Rightly Dividing'}.pdf`;
+ipcMain.handle('rd:pdf', async (e, html, name) => {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  if (cfg.pdfDir && !fs.existsSync(cfg.pdfDir)) cfg.pdfDir = undefined;
+  const r = await dialog.showSaveDialog(win, {
+    title: 'Save as PDF',
+    defaultPath: path.join(cfg.pdfDir || app.getPath('documents'), pdfName(name)),
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+  });
+  if (r.canceled || !r.filePath) return { ok: false, canceled: true };
+  const tmp = path.join(os.tmpdir(), `rd-sheet-${process.pid}-${Date.now()}.html`);
+  const pdfWin = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } });
+  try {
+    fs.writeFileSync(tmp, String(html), 'utf8');
+    await pdfWin.loadFile(tmp);
+    const data = await pdfWin.webContents.printToPDF({ printBackground: true, pageSize: 'Letter', preferCSSPageSize: true });
+    fs.writeFileSync(r.filePath, data);
+    cfg.pdfDir = path.dirname(r.filePath); // next time, the same folder
+    writeCfg(cfg);
+    return { ok: true, path: r.filePath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  } finally {
+    pdfWin.destroy();
+    fs.rm(tmp, () => {});
+  }
+});
+ipcMain.handle('rd:open', (_e, p) => { if (typeof p === 'string' && p.toLowerCase().endsWith('.pdf') && fs.existsSync(p)) shell.openPath(p); });
+
 // ---------------------------------------------------------------- the window
 function createWindow() {
   const b = cfg.bounds || { width: 1400, height: 900 };

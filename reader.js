@@ -596,8 +596,6 @@ function wire() {
       $('#searchInput').value = sim.dataset.simQ;
       return runSearch(sim.dataset.simQ);
     }
-    const st = e.target.closest('[data-sim-topic]');
-    if (st) return openTopic(Number(st.dataset.simTopic));
     const h = e.target.closest('.hit');
     if (h) go({ id: Number(h.dataset.id) }).then(() => switchTab('search'));
   });
@@ -1370,7 +1368,7 @@ function renderWordsPane() {
   if (!ws.words.length) {
     html.push('<div class="empty">No original-language tagging for this verse (it is absent from the Hebrew manuscript used).</div>');
   } else {
-    html.push(`<div class="wslist-head"><span>English gloss</span><span>${lang}</span><span>Transliteration</span><span>Strong's</span></div>`);
+    html.push(`<div class="wslist-head"><span>English gloss</span><span>${lang}</span><span><span class="h-long">Transliteration</span><span class="h-short">Translit.</span></span><span>Strong's</span></div>`);
     for (const w of ws.words) {
       html.push(`<div class="wsrow${ws.selPos === w.pos ? ' on' : ''}" data-pos="${w.pos}" data-sn="${esc(w.strongs || '')}" title="${esc(w.def || '')}">
         <span class="gl">${esc(w.gloss)}</span><span class="og ${w.lang}">${esc(w.word)}</span>
@@ -1463,6 +1461,7 @@ async function renderSimilar(q, box) {
   if (r.like.length) parts.push(`<div class="sim-sec">${r.exact ? 'Words like it' : 'Words spelled like it'}</div><div class="sim-words">${r.like.map((w) => `<button class="sim-word" data-sim-q="${esc(w.word)}">${esc(w.word)} <span>${w.n}</span></button>`).join('')}</div>`);
   if (!r.exact) parts.push(`<a class="sim-online" href="${onlineSearchUrl(r.word)}" target="_blank" rel="noopener">Search online: Bible verses about “${esc(r.word)}” ›</a><div class="sim-note">Opens your web browser (needs the internet). Bring what you find back here to study it in the KJV.</div>`);
   box.innerHTML = `<div class="similar">${parts.join('')}</div>`;
+  if (!r.exact) $('#searchStatus').textContent = `“${r.word}” is not in the King James Bible`;
 }
 
 function helpHtml() {
@@ -1477,7 +1476,7 @@ function helpHtml() {
     <p><code>G26 -love</code> — where <i>agapē</i> is translated some other way (e.g. “charity”)</p>
     <p>Word endings are matched loosely, so <code>love</code> also finds <i>loved</i> and <i>loveth</i>.</p>
     <p><b>Go to</b> box: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</p>
-    <p><b>Keys</b>: ↑/↓ verses · Ctrl+←/→ chapter · Alt+←/→ back/forward · click more verses to add them (Esc to finish) · Ctrl+1–7 tabs · Ctrl+P study sheet · double-click a word for its card.</p>
+    <p>Everything else you can do: Menu › How to…</p>
   </div>`;
 }
 

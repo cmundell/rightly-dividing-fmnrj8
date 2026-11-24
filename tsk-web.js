@@ -16,6 +16,16 @@
     for (const k of USER_KEYS) if (u[k] !== undefined) out[k] = u[k];
     return desk.writeBackup(JSON.stringify(out, null, 1), !!now);
   };
+  // "Saved: John 3.16 study sheet.pdf · Open"
+  const deskPdfToast = (p) => {
+    const t = document.createElement('div');
+    t.className = 'pdf-toast';
+    t.innerHTML = '<span></span><button type="button">Open</button>';
+    t.firstChild.textContent = `Saved: ${String(p).split(/[\\/]/).pop()}`;
+    t.lastChild.onclick = () => { desk.openFile && desk.openFile(p); t.remove(); };
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 7000);
+  };
   const deskSoon = () => {
     if (!desk) return;
     clearTimeout(deskTimer);
@@ -372,7 +382,17 @@
     },
     // printing: the phone's own print sheet (which can also save a PDF)
     printSheet: (html) => printHtml(html),
-    exportSheet: (html) => printHtml(html),
+    // on Windows: a Save as box and the PDF written straight to the file (1.7.12); elsewhere the print sheet
+    exportSheet: async (html, name) => {
+      if (!desk || !desk.savePdf) return printHtml(html);
+      const r = await desk.savePdf(html, name);
+      if (r && r.ok) {
+        deskPdfToast(r.path);
+        return false; // the toast here says where it went
+      }
+      if (r && r.error && typeof toast === 'function') toast(`Could not save the PDF: ${r.error}`);
+      return false;
+    },
     saveHtml: async (html, name) => download(new Blob([html], { type: 'text/html' }), `${safeName(name, 'Page')}.html`),
     exportNotesDocx: (doc) => exportNotesDocx(doc),
     uiZoom: async (f) => {

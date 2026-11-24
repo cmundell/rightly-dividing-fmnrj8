@@ -426,13 +426,6 @@ button.danger:hover { border-color: #9b2c2c !important; color: #9b2c2c !importan
 .ht code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; font-weight: 400; }
 .ht td.ht-do code { font-weight: 700; }
 .ht kbd { font-weight: 600; }
-.qs { columns: 2 320px; column-gap: 28px; }
-.qs section { break-inside: avoid; margin-bottom: 14px; }
-.qs h3 { margin: 0 0 6px; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
-.qs ul { margin: 0; padding-left: 18px; line-height: 1.55; }
-.qs li { margin-bottom: 4px; }
-.qs code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
-.qs .keys { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
 kbd { font-family: var(--ui); font-size: 11.5px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--paper); }
 
 /* lessons */
@@ -1179,6 +1172,8 @@ body.reduce-motion .j-halo { animation: none; }
 .nm-sample { font-family: var(--scripture); line-height: 1.5; margin: 4px 0 2px; padding: 8px 12px; background: var(--bg); border-radius: 8px; color: var(--ink); }
 /* plain-words grammar lines wrap */
 .wsrow .gr { white-space: normal; }
+.wslist-head .h-short { display: none; }
+@media (max-width: 760px) { .wslist-head .h-long { display: none; } .wslist-head .h-short { display: inline; } }
 
 /* 3.16: suggestions under the search box */
 #searchForm { position: relative; }
@@ -1327,12 +1322,6 @@ body.has-player #readerInner { padding-bottom: 96px; }
 .similar { padding: 4px 0 20px; font-size: 14px; }
 .similar p { margin: 0 0 10px; color: var(--ink-soft); }
 .similar p.sim-lead { color: var(--ink); font-size: 15px; }
-.sim-group { margin: 18px 0 6px; }
-.sim-kjv { font-size: 15px; color: var(--ink); }
-.sim-kjv b { color: var(--accent); }
-.sim-src { font-size: 12.5px; color: var(--ink-soft); margin: 2px 0 6px; }
-.sim-all { border: 0; background: none; padding: 6px 0; color: var(--link); font: inherit; font-size: 14px; cursor: pointer; }
-.sim-all:hover { text-decoration: underline; }
 .sim-web { display: block; width: 100%; text-align: left; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); padding: 8px 12px; margin: 0 0 6px; font: inherit; font-size: 14.5px; line-height: 1.45; color: var(--ink); cursor: pointer; }
 .sim-web b { color: var(--accent); font-size: 15.5px; }
 .sim-web:hover { border-color: var(--accent); }
@@ -1344,11 +1333,8 @@ body.has-player #readerInner { padding-bottom: 96px; }
 .sim-words { display: flex; flex-wrap: wrap; gap: 6px; }
 .sim-word { border: 1px solid var(--rule); border-radius: 999px; background: var(--bg); padding: 5px 12px; font: inherit; font-size: 14px; cursor: pointer; }
 .sim-word span { color: var(--ink-soft); font-size: 12px; margin-left: 2px; }
-.sim-word:hover, .sim-strong:hover { border-color: var(--accent); color: var(--accent); }
-.sim-topic { font-weight: 600; }
-.sim-strong { display: block; width: 100%; text-align: left; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); padding: 8px 12px; margin: 0 0 6px; font: inherit; font-size: 14px; line-height: 1.45; cursor: pointer; }
-.sim-id, .sim-n { color: var(--ink-soft); font-size: 12px; }
-.sim-kjv { color: var(--ink-soft); }
+.sim-word:hover { border-color: var(--accent); color: var(--accent); }
+.sim-n { color: var(--ink-soft); font-size: 12px; }
 .sg-word .sg-q { flex: 1 1 auto; min-width: 0; }
 .sg-word .sg-n { flex: 0 0 auto; overflow: visible; }
 
@@ -1399,3 +1385,8 @@ body.has-player #readerInner { padding-bottom: 96px; }
 /* 1.7.6 About this book: Tidwell's group for the book */
 .bk-group { margin: -4px 0 12px; font: 14px var(--ui); color: var(--ink); }
 .bk-group span { color: var(--ink-soft); }
+
+/* Windows: where a saved PDF went (1.7.12) */
+.pdf-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 95; display: flex; align-items: center; gap: 14px; background: var(--ink); color: var(--paper); padding: 10px 12px 10px 16px; border-radius: 10px; box-shadow: var(--shadow); font: 14px var(--ui); max-width: calc(100vw - 32px); }
+.pdf-toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-toast button { border: 1px solid currentColor; background: none; color: inherit; border-radius: 7px; padding: 4px 12px; font: 600 13px var(--ui); cursor: pointer; }
