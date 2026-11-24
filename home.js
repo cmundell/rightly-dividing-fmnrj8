@@ -571,17 +571,17 @@ $('#modal').addEventListener('click', (e) => {
         }
       }
     }
-    // 1.7: one word that is not in the KJV (anxious, worry, sheperd): say so here, before Enter, with what to search instead
+    // 1.7: one word that is not in the KJV (anxious, worry, sheperd): say so here, before Enter, with what to search
+    // instead. 1.7.11: the KJV words Webster's 1828 defines with it, and words spelled like it
     if (!chapter && !books.length && /^[a-z']{4,}$/i.test(q) && !html.some((h) => h.includes('sg-ph'))) {
       const r = await tsk.similar(q).catch(() => null);
       if (my !== seq) return;
-      if (r && !r.exact && (r.like.length || r.strongs.length || r.topics.length)) {
+      if (r && !r.exact && (r.like.length || r.webster.length)) {
         const chips = [
+          ...r.webster.slice(0, 4).map((d) => `<button type="button" class="sg-item sg-word" data-sg-word="${esc(d.word)}"><span class="sg-kind">1828</span><span class="sg-q"><b>${esc(d.word)}</b> — “${esc(d.sense.length > 60 ? `${d.sense.slice(0, 58)}…` : d.sense)}”</span><span class="sg-n">${d.n}</span></button>`),
           ...r.like.slice(0, 6).map((w) => `<button type="button" class="sg-item sg-word" data-sg-word="${esc(w.word)}"><span class="sg-q">${esc(w.word)}</span><span class="sg-n">${w.n}</span></button>`),
-          ...r.strongs.slice(0, 3).map((st) => `<button type="button" class="sg-item sg-word" data-sg-word="${st.id}"><span class="sg-kind">${st.id}</span><span class="sg-q"><i>${esc(st.xlit)}</i> — ${esc(st.kjv_def.length > 48 ? `${st.kjv_def.slice(0, 46)}…` : st.kjv_def)}</span><span class="sg-n">${st.verses}</span></button>`),
-          ...r.topics.map((t) => `<button type="button" class="sg-item sg-tp" data-sg-topic="${t.id}"><span class="sg-kind">Topic</span><span class="sg-q">${esc(t.subject.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()))}</span></button>`),
         ];
-        html.push(`<div class="sg-sec">“${esc(q)}” is not a KJV word — ${r.strongs.length ? 'the KJV says it as' : 'words like it'}</div>${chips.join('')}`);
+        html.push(`<div class="sg-sec">“${esc(q)}” is not a KJV word — ${r.webster.length ? "Webster's 1828 gives it for" : 'words like it'}</div>${chips.join('')}`);
       }
     }
     if (my !== seq || input.value !== raw || document.activeElement !== input) return; // only while typing
