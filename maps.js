@@ -356,15 +356,6 @@ function decorateWordsPane() {
   if (words) words.text = 'The Hebrew or Greek behind each English word: every word with its Strong\'s number and its grammar in plain words — as a list, or switch to Interlinear to see each word stacked with its meaning. Click a Strong\'s number for every verse that uses it. Double-click any word in the text for Webster\'s 1828 definition.';
 }
 {
-  const prevQS = window.openQuickStart;
-  window.openQuickStart = () => {
-    prevQS();
-    const first = $('#modal .qs section');
-    if (first) first.insertAdjacentHTML('afterend', `<section><h3>Maps and views</h3><ul>
-      <li><b>Places</b> tab: a map of every place named in the chapter; click a place for all the verses that name it.</li>
-      <li><b>Related verses › Map</b>: the cross-references as a web around the verse, plus the verses where they converge. Click any verse to re-center.</li>
-      <li><b>Original words › Interlinear</b>: each Hebrew or Greek word stacked with transliteration, meaning, Strong's number and grammar.</li></ul></section>`);
-  };
 }
 
 // ===================================================================== events
@@ -951,12 +942,6 @@ function wireV35() {
 {
   const step = TOUR.find((t) => t.title === 'Bible maps');
   if (step) step.text += ' Switch to Journeys to follow Paul, Jesus, Abraham, the Exodus and more — press Play to watch the route unfold, with the verse for every stop.';
-  const prevQS = window.openQuickStart;
-  window.openQuickStart = () => {
-    prevQS();
-    const sec = [...$$('#modal .qs section')].find((s) => /Maps and views/.test(s.textContent));
-    if (sec) $('ul', sec).insertAdjacentHTML('beforeend', `<li><b>Places › Journeys</b>: 25 journeys — Paul, Jesus, Abraham, Jacob, Joseph, the Exodus, Joshua, Ruth, the ark, David, Elijah, Jonah, Philip, Peter, and the exile and return. Press Play, use ← →, or click any stop; every stop shows the verse that names it. With <i>Follow my reading</i> on, the map keeps pace as you read.</li>`);
-  };
 }
 
 wireV35();
@@ -1139,10 +1124,4 @@ $('#pane-places').addEventListener('click', (e) => {
 
 // ===================================================================== quick start
 {
-  const prevQS = window.openQuickStart;
-  window.openQuickStart = () => {
-    prevQS();
-    const sec = [...$$('#modal .qs section')].find((s) => /Maps and views/.test(s.textContent));
-    if (sec) $('ul', sec).insertAdjacentHTML('beforeend', '<li><b>Map detail</b>: every map shows the land itself (mountains, valleys and deserts; <i>Terrain</i> turns it off) and keeps key places marked — Jerusalem always, more cities, mountains, regions, seas and rivers as you zoom in. Click a marked city for every verse that names it.</li>');
-  };
 }

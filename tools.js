@@ -754,7 +754,7 @@ const COMMANDS = [
   ['Larger interface', 'zoom accessibility bigger', () => stepUi(1)],
   ['Smaller interface', 'zoom accessibility', () => stepUi(-1)],
   ['Focus mode', 'just the text', () => typeof setFocus === 'function' && setFocus(!document.body.classList.contains('focus'))],
-  ['Quick start guide', 'help', () => openQuickStart()],
+  ['How to…', 'help quick start guide', () => openHowTo()],
   ['Take the tour', 'help', () => typeof startTour === 'function' && startTour()],
 ];
 
@@ -871,18 +871,6 @@ function labelControls() {
   TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0,
     { el: '[data-tab="people"]', tab: 'people', title: 'People', text: 'Everyone named in the verse, with their family: parents, husband or wife, children, brothers and sisters — each link with the verse that states it. Follow any line back to Adam.' },
     { el: '#btnTimeline', title: 'Timeline', text: 'Timeline shows Bible history in order, with the chapter you are reading marked. Spurgeon\'s Morning and Evening is on Today and in the Go menu. Press Ctrl+K anywhere to jump to any feature, person, journey or note.' });
-  const prevQS = window.openQuickStart;
-  window.openQuickStart = () => {
-    prevQS();
-    const first = $('#modal .qs section');
-    if (first) first.insertAdjacentHTML('afterend', `<section><h3>Study tools</h3><ul>
-      <li><b>Ctrl+K</b> opens the command box: type a reference, a feature, a person, a journey or words from your notes.</li>
-      <li><b>Devotional</b> (Today, or ${tsk.web ? 'Menu' : 'Go menu'}): Spurgeon's <i>Morning and Evening</i> for today. <b>Timeline</b>: Bible history in order; the chapter you are reading is marked.</li>
-      <li><b>‖</b> beside a verse number means the same event is told elsewhere; <b>“</b> means the New Testament quotes it or it quotes the Old. See Related verses, and <i>Side by side</i>.</li>
-      <li><b>People</b> tab: the family of anyone named in the verse, with the verse for every link.</li>
-      <li>Notes: <i>SOAP study</i> and <i>Prayer journal</i> templates; references you type (e.g. Rom 8:28) become links, and a verse shows which of your notes mention it.</li>
-      <li><b>Plan › Reading progress</b>: every chapter you have read, as a map of the Bible.</li></ul></section>`);
-  };
 }
 
 // ===================================================================== events

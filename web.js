@@ -3,7 +3,7 @@
    a Menu for the things the Windows menu bar does, and backing up notes. Loaded after every other script. */
 /* global tsk, state, go, dataTr, multi, clearMulti, highlightSelected, markSelection, hlName, $, $$, esc, openModal, closeModal, switchTab, toast, openToday, openDaily, openTimeline, openPlan,
    openProgress, openStudyChooser, openGospel, showMarksView, openReadingOptions, toggleTheme,
-   openQuickStart, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES */
+   openQuickStart, openHowTo, openCmdk, setFocus, startTour, saveUser, openWhatsNew, TOUR, v32, FEATURES */
 
 const isPhone = () => window.matchMedia('(max-width: 760px)').matches;
 document.documentElement.classList.add('web');
@@ -214,6 +214,9 @@ $('#mNav').addEventListener('click', (e) => {
   if (k === 'menu') return openMenu();
 });
 $('#btnMenu').addEventListener('click', () => openMenu());
+document.addEventListener('keydown', (e) => { // F1: the How to… page
+  if (e.key === 'F1') { e.preventDefault(); openHowTo(); }
+});
 {
   const prev = window.switchTab;
   window.switchTab = function (name) {
@@ -490,6 +493,7 @@ const MENU = [
   ]],
   ['Settings and help', [
     ['Settings', () => openReadingOptions()],
+    ['How to…', () => openHowTo()],
     ...(navigator.standalone === true || matchMedia('(display-mode: standalone)').matches ? [] : [['Add to Home Screen', () => openHomeScreenHelp()]]),
     ['About', () => openAbout()],
   ]],
@@ -548,8 +552,8 @@ function openAbout() {
 // the guided tour: on a phone, the same tour with steps for the phone's own buttons
 const PHONE_TOUR = [
   { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the app — about a minute. Tap Next, or Skip. You can take it again any time from Menu › Tutorial.', before: () => setView('read') },
-  { el: '#readerInner .verse', title: 'Read', text: 'Tap any verse to select it. Double-tap any word to see what it means, with the original Hebrew or Greek. Swipe left or right on the text to go to the next or previous chapter.', before: () => setView('read') },
-  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, share or copy it, add it to your memory verses, or Study it in depth. Keep tapping to choose several verses: one colour highlights them all, and Memorize keeps them together as one passage. Tap a verse again to let it go.', before: () => {
+  { el: '#readerInner .verse', title: 'Read', text: '**Tap any verse** to select it. **Double-tap any word** to see what it means, with the original Hebrew or Greek. **Swipe left or right** on the text to go to the next or previous chapter.', before: () => setView('read') },
+  { el: '#mStudyPill', title: 'This verse', text: 'After you tap a verse, this bar appears: highlight it, write a note, share or copy it, add it to your memory verses, or Study it in depth. **Keep tapping** to choose several verses: one colour highlights them all, and Memorize keeps them together as one passage. **Tap a verse again** to let it go.', before: () => {
     paintVerseBar();
     vbar.hidden = false;
   } },
@@ -580,7 +584,7 @@ if (isPhone()) {
     setTimeout(() => { nav.cur = navSnapshot(); navPaint(); }, 400);
   };
 }
-MENU[1][1].splice(1, 0, ['Tutorial', () => startTour()]);
+MENU[1][1].splice(2, 0, ['Tutorial', () => startTour()]);
 // on a phone the reader's toolbar buttons live in the Menu
 window.addEventListener('resize', () => {
   if (!isPhone()) {

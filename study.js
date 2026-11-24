@@ -295,54 +295,90 @@ function openPlan() {
     <div class="plan-foot"><button data-act="planReset" class="danger">Change or restart plan</button></div>`, 'm-plan');
 }
 
-// ===================================================================== Quick Start guide
+// ===================================================================== How to… (the help page; it was Quick Start)
+// One table: what to do, in bold, and what it does. The words follow the device (tap on a phone, click on a computer).
 const dblClick = () => (typeof isPhone === 'function' && isPhone() ? 'Double-tap' : 'Double-click'); // a phone has no double-click
-function openQuickStart() {
-  openModal(`<div class="kicker">Rightly Dividing</div><h2 class="m-title">Quick start</h2>
-  <div class="qs">
-    <section><h3>Getting around</h3><ul>
-      <li>Type a reference in the top box and press Enter: <code>John 3:16</code>, <code>jn 3 16</code>, <code>1 cor 13:4-7</code>, <code>Ps 23</code>.</li>
-      <li>Click any verse to select it; <kbd>↑</kbd>/<kbd>↓</kbd> move verse by verse, <kbd>Ctrl</kbd>+<kbd>←</kbd>/<kbd>→</kbd> change chapter.</li>
-      <li>To choose several verses, click one, then click the others while the bar below the text is open; highlight, note, share or memorize them together. <kbd>Esc</kbd> finishes.</li>
-      <li><kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> go back and forward. The <b>trail</b> under the toolbar lists every verse you've studied — click one to return.</li>
-      <li>Highlighted verses keep their color; marks in the left margin show verses you've noted (✎) or tagged (#).</li></ul></section>
-    <section><h3>Studying a verse</h3><ul>
-      <li><b>Related verses</b> — the Treasury of Scripture Knowledge cross-references, grouped by key word. Hover to preview, click to go.</li>
-      <li><b>Original words</b> — every Hebrew/Greek word with Strong's number and grammar. Click a number for its full entry and every verse that uses it.</li>
-      <li><b>Topics</b> — Nave's topics that cite the verse. To read commentaries, the verse's <b>More</b> menu (or right-click) opens it at Blue Letter Bible, online.</li>
-      <li>${dblClick()} any word in the text for its Webster's 1828 definition and the original word.</li>
-${ABOUT_ON ? '      <li><b>About this book</b>, under each chapter heading: the author, audience, relationship, occasion and purpose of the book, its outline and questions for study, from J. B. Tidwell (1916).</li>' : ''}</ul></section>
-    <section><h3>Searching</h3><ul>
-      <li><code>faith hope</code> all words · <code>"living water"</code> exact phrase · <code>shepherd OR sheep</code> either</li>
-      <li><code>grace -law</code> leave a word out · <code>redeem*</code> word beginnings</li>
-      <li><code>G25</code> every verse using Greek <i>agapaō</i> · <code>H2617 mercy</code> Hebrew <i>hesed</i> where the KJV says “mercy”</li></ul></section>
-    <section><h3>Your notes</h3><ul>
-      <li>On the Related verses tab: write a note, pick a highlight color, <b>Memorize</b> it, or open <b>More</b> for tags, <b>Add to lesson</b>, <b>Pin</b> and copying the references.</li>
-      <li><b>Notes</b> tab: everything you've marked, filterable by tag; switch to <b>Lessons</b> to build ordered collections you can export as PDF.</li>
-      <li><b>Study sheet</b> (<kbd>Ctrl</kbd>+<kbd>P</kbd>) saves one verse with all its study material as a PDF.</li>
-      <li>File › Set backup folder… keeps automatic copies of your notes (e.g. in OneDrive).</li></ul></section>
-    <section><h3>Shortcuts</h3><ul class="keys">
-      <li><kbd>Ctrl</kbd>+<kbd>F</kbd> / <kbd>Ctrl</kbd>+<kbd>G</kbd> top box</li><li><kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>6</kbd> study tabs</li>
-      <li><kbd>Ctrl</kbd>+<kbd>\\</kbd> focus mode</li><li><kbd>Ctrl</kbd>+<kbd>D</kbd> dark mode</li>
-      <li><kbd>Ctrl</kbd>+<kbd>=</kbd>/<kbd>-</kbd> text size</li><li><kbd>F1</kbd> this guide</li></ul></section>
-  </div>
+function openHowTo() {
+  const phone = typeof isPhone === 'function' && isPhone();
+  const tap = phone ? 'Tap' : 'Click';
+  const k = (...keys) => keys.map((x) => `<kbd>${x}</kbd>`).join('+');
+  const F = typeof FEATURES === 'object' && FEATURES ? FEATURES : {};
+  const groups = [
+    ['Reading', [
+      [`${tap} a verse`, 'Select it; the bar below the text opens'],
+      [`${tap} more verses`, 'Choose several together while the bar is open'],
+      [phone ? 'The × on the bar' : k('Esc'), 'Finish choosing verses'],
+      [`${dblClick()} a word`, "Webster's 1828 definition and the original Hebrew or Greek word"],
+      [`${dblClick()} a name`, "Its meaning (Hitchcock's Bible Names)"],
+      [phone ? 'Tap a reference' : 'Point at a reference', phone ? 'Preview the verse without leaving' : 'Preview the verse; click it to go there'],
+      [phone ? 'Swipe left or right' : `${k('Ctrl', '←')} / ${k('Ctrl', '→')}`, 'Previous or next chapter'],
+      ...(phone ? [] : [[`${k('↑')} / ${k('↓')}`, 'Move verse by verse']]),
+      [phone ? '‹ Back, bottom left' : `${k('Alt', '←')} / ${k('Alt', '→')}`, 'Go back to where you were'],
+      ['Type a reference in the top box', 'Go there: <code>John 3:16</code>, <code>jn 3 16</code>, <code>Ps 23</code>'],
+    ]],
+    ['Marking a verse', [
+      ['Highlight', 'Pick a color; one color marks all the verses you chose'],
+      ['Note', 'Write a note on the verse'],
+      ['Share', 'Share the words or a picture, or copy them'],
+      ['Memorize', 'Add it to your memory verses'],
+      [phone ? 'More, on Related verses' : 'Right-click a verse', 'Tags, Add to lesson, Pin, and commentaries at Blue Letter Bible (online)'],
+      ...(phone ? [] : [[`${k('Shift')}-click a reference`, 'Pin it above the text while you read elsewhere']]),
+    ]],
+    ['Studying', [
+      [phone ? 'Study, on the bar' : 'The Study pane', 'Related verses, Words, Topics, Places and People for the verse'],
+      ['Related verses', 'The Treasury of Scripture Knowledge cross-references, grouped by key word'],
+      [`${tap} a Strong's number`, 'Its full entry and every verse that uses it'],
+      ['Topics', "Nave's topics that cite the verse"],
+      ['Places', 'A map of every place in the chapter; Journeys traces 25 journeys'],
+      ...(typeof ABOUT_ON !== 'undefined' && ABOUT_ON ? [['About this book', "Under each chapter heading: the book's author, audience, occasion, outline and questions, from J. B. Tidwell (1916)"]] : []),
+    ]],
+    ['Searching', [
+      ['<code>faith hope</code>', 'Verses with all the words'],
+      ['<code>"living water"</code>', 'The exact phrase'],
+      ['<code>shepherd OR sheep</code>', 'Either word'],
+      ['<code>grace -law</code>', 'Leave a word out'],
+      ['<code>redeem*</code>', 'Every word beginning that way'],
+      ['<code>G25</code> or <code>H2617</code>', "Every verse with that Greek or Hebrew word (Strong's number)"],
+    ]],
+    ['Your notes', [
+      ['Notes', 'Everything you have marked, with a filter for each kind; Lessons for ordered collections'],
+      ...(F.today === false ? [] : [['Today', `Where you left off, the devotional, memory verses${F.prayer === false ? '' : ', your prayer list'} and the reading plan`]]),
+      ...(phone ? [] : [[`Study sheet (${k('Ctrl', 'P')})`, 'Save a verse with all its study material as a PDF']]),
+      ['Menu › Settings', tsk.desktop ? 'Your backup folder; your notes are copied there automatically' : 'Back up your notes, or restore a backup'],
+    ]],
+    ...(phone ? [] : [['Shortcuts', [
+      [k('Ctrl', 'K'), 'Command box: a reference, a feature, a person or words from your notes'],
+      [`${k('Ctrl', 'F')} / ${k('Ctrl', 'G')}`, 'The top box'],
+      [`${k('Ctrl', '1')}…${k('Ctrl', '6')}`, 'Study tabs'],
+      [k('Ctrl', '\\'), 'Focus mode'],
+      [k('Ctrl', 'D'), 'Dark mode'],
+      [`${k('Ctrl', '=')} / ${k('Ctrl', '-')}`, 'Text size'],
+      [k('F1'), 'This page'],
+    ]]]),
+  ];
+  openModal(`<div class="kicker">Rightly Dividing</div><h2 class="m-title">How to…</h2>
+  <table class="ht"><colgroup><col class="ht-a"><col></colgroup>
+    <thead><tr><th>Do this</th><th>To</th></tr></thead>
+    ${groups.map(([h, rows]) => `<tbody><tr class="ht-g"><td colspan="2">${h}</td></tr>${rows.map(([a, r]) => `<tr><td class="ht-do">${a}</td><td>${r}</td></tr>`).join('')}</tbody>`).join('')}
+  </table>
   <div class="plan-foot"><button data-act="startTour">Take the guided tour</button></div>`, 'm-qs');
 }
+function openQuickStart() { openHowTo(); } // the old name, still used by the command box and the Windows menu
 
 // ===================================================================== guided tour
 const TOUR = [
-  { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can replay it any time from Help › Take the tour.' },
-  { el: '#reader', title: 'Read and select', text: 'Click any verse to study it. Verse numbers in navy have cross-references. Use ↑/↓ to move verse by verse. After a click, a bar appears below the text: click more verses to add them, and one colour then highlights them all (Esc to finish), and Memorize keeps them together as one passage. Small marks in the left margin show your notes (✎) and tags (#).' },
+  { title: 'Welcome to Rightly Dividing', text: 'A quick tour of the main features — about a minute. Use Next, the arrow keys, or press Esc to skip. You can take it again any time from Menu › Tutorial.' },
+  { el: '#reader', title: 'Read and select', text: '**Click any verse** to study it. Verse numbers in navy have cross-references. Use **↑/↓** to move verse by verse. After a click, a bar appears below the text: **click more verses** to add them, and one colour then highlights them all (**Esc** to finish), and Memorize keeps them together as one passage. Small marks in the left margin show your notes (✎) and tags (#).' },
   ABOUT_ON && { el: '#readerInner .bi-link', title: 'About this book', text: 'Under every chapter heading: who wrote the book and to whom, in the book\'s own words where it says; then the relationship, occasion and purpose, with an outline and questions for study, from J. B. Tidwell (1916).' },
-  { el: '#searchForm', title: 'One box for everything', text: 'Type a reference like John 3:16 to go there, or words to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
-  { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
-  { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. Click an English word to find the original behind it, or a Strong\'s number for every verse that uses it. Tip: double-click any word in the text for Webster\'s 1828 definition.' },
+  { el: '#searchForm', title: 'One box for everything', text: '**Type a reference** like John 3:16 to go there, or **words** to search: faith hope, "living water", grace -law. Strong\'s numbers work too — G25 finds every verse with Greek agapaō.' },
+  { el: '#pane-refs', tab: 'refs', title: 'Related verses', text: 'Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. **Point at a reference** to preview it, **click** to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has tags, lessons and pins.' },
+  { el: '#pane-words', tab: 'words', title: 'Original words', text: 'Every Hebrew or Greek word with its Strong\'s number and grammar. **Click an English word** to find the original behind it, or **a Strong\'s number** for every verse that uses it. Tip: **double-click any word** in the text for Webster\'s 1828 definition.' },
   { el: '[data-tab="topics"]', tab: 'topics', title: 'Topics', text: 'Nave\'s topics that cite the verse, and any topic to browse; “show text” lists the words of every reference. This app keeps to the Bible itself: to read commentaries, the verse\'s More menu (or right-click) opens it at Blue Letter Bible, online.' },
-  { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. Click any one to go back to it. After you follow a related verse, “‹ Back to …” at the top of the Study pane returns you one step at a time.' },
+  { el: '#trail', title: 'Your trail', text: 'Every verse you study is added here in order, so you can retrace a chain of cross-references. **Click any one** to go back to it. After you follow a related verse, “‹ Back to …” at the top of the Study pane returns you one step at a time.' },
   { el: '[data-tab="marks"]', tab: 'marks', title: 'Notes', text: 'Everything you have marked, in one list: notes, highlights and memory verses, with a filter for each. Export it all to Word or PDF.' },
   { el: '#btnPlan', title: 'Reading plans', text: 'Choose a plan — the whole Bible in a year, the New Testament in 90 days, and more. A gold dot means today\'s reading is waiting.' },
   { el: '#btnSheet', title: 'Study sheets', text: 'Save the selected verse with its cross-references, word study, topics and your notes as a PDF (Ctrl+P).' },
-  { el: '#btnFocus', title: 'Focus mode', text: 'Hide everything but the text for plain reading (Ctrl+\\). Press it again or Esc to come back. That\'s the tour — F1 opens the Quick Start guide any time.' },
+  { el: '#btnFocus', title: 'Focus mode', text: 'Hide everything but the text for plain reading (Ctrl+\\). Press it again or Esc to come back. That\'s the tour. Menu › How to… (or F1) lists everything you can do, any time.' },
 ];
 for (let i = TOUR.length - 1; i >= 0; i--) if (!TOUR[i]) TOUR.splice(i, 1); // steps for features that are switched off
 
@@ -358,8 +394,11 @@ function endTour() {
   $('#tour').hidden = true;
   v32.tour = null;
   state.settings.tourDone = true;
+  const first = !state.settings.howToSeen; // once, after the first tour: the How to… page, to keep for reference
+  state.settings.howToSeen = true;
   saveUser(['settings']);
   switchTab('refs');
+  if (first) setTimeout(() => openHowTo(), 600);
 }
 
 function showTourStep() {
@@ -368,7 +407,7 @@ function showTourStep() {
   if (step.tab) switchTab(step.tab);
   const spot = $('#tour .tour-spot');
   const card = $('#tour .tour-card');
-  card.innerHTML = `<div class="tc-step">${i + 1} / ${TOUR.length}</div><h3>${esc(step.title)}</h3><p>${esc(step.text)}</p>
+  card.innerHTML = `<div class="tc-step">${i + 1} / ${TOUR.length}</div><h3>${esc(step.title)}</h3><p>${esc(step.text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</p>
     <div class="tc-btns"><button data-t="skip" class="ghost">${i === TOUR.length - 1 ? 'Close' : 'Skip tour'}</button>
     <span>${i ? '<button data-t="back">Back</button>' : ''}<button data-t="next" class="primary">${i === TOUR.length - 1 ? 'Done' : 'Next'}</button></span></div>`;
   const target = step.el && $(step.el);
@@ -1183,7 +1222,7 @@ TOUR.splice(2, 0, {
 });
 {
   const refs = TOUR.find((t) => t.title === 'Related verses');
-  if (refs) refs.text = 'Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. Hover a reference to preview it, click to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has “Compare with other passages” — any two to four passages side by side.';
+  if (refs) refs.text = 'Related verses: other verses that speak about the same thing — the Treasury of Scripture Knowledge, grouped by key word. **Point at a reference** to preview it, **click** to go. Below the verse: copy it, memorize it, write a note and pick a highlight color; More has “Compare with other passages” — any two to four passages side by side.';
   const notes = TOUR.find((t) => t.title === 'Notes');
   if (notes) {
     notes.title = 'Notes, lessons and memory';
@@ -1191,17 +1230,6 @@ TOUR.splice(2, 0, {
   }
 }
 {
-  const prevQS = window.openQuickStart;
-  window.openQuickStart = () => {
-    prevQS();
-    const qs = $('#modal .qs');
-    if (!qs) return;
-    qs.insertAdjacentHTML('afterbegin', `<section><h3>Reading</h3><ul>
-      <li><b>Settings</b> (the gear, <kbd>Ctrl</kbd>+<kbd>,</kbd>) — font, size, spacing, light / sepia / dark, the KJV’s <i>italic</i> words, red letters and ¶ marks, your name, the start screen, backups and Listening.</li>
-      <li><b>Pin</b> a passage (or <kbd>Shift</kbd>-click any reference) to keep it above the text while you read elsewhere — great for parallel accounts.</li>
-      <li>Search results show a chart of where the word occurs; click a book’s bar to see just that book.</li>
-      <li>${dblClick()} a name for its meaning (Hitchcock’s Bible Names).</li></ul></section>`);
-  };
 }
 
 // ===================================================================== events

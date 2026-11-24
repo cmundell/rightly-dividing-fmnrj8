@@ -417,6 +417,15 @@ button.danger:hover { border-color: #9b2c2c !important; color: #9b2c2c !importan
 .pch:hover { border-color: var(--link); }
 
 /* Quick Start */
+.ht { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 14.5px; line-height: 1.45; }
+.ht col.ht-a { width: 40%; }
+.ht th { text-align: left; font-size: 12px; font-weight: 600; color: var(--ink-soft); padding: 2px 0 4px; }
+.ht td { padding: 7px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+.ht td.ht-do { font-weight: 700; padding-right: 10px; }
+.ht tr.ht-g td { border-top: 0; padding: 14px 0 2px; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.ht code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; font-weight: 400; }
+.ht td.ht-do code { font-weight: 700; }
+.ht kbd { font-weight: 600; }
 .qs { columns: 2 320px; column-gap: 28px; }
 .qs section { break-inside: avoid; margin-bottom: 14px; }
 .qs h3 { margin: 0 0 6px; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }

@@ -340,17 +340,6 @@ function diffWords(want, got) {
 {
   const i = TOUR.findIndex((t) => t.el === '#btnTimeline');
   TOUR.splice(i >= 0 ? i : TOUR.length - 1, 0, { el: '#btnToday', title: 'Today', text: 'Start here each day: open your Bible where you left off, today\'s devotional, your prayer list, memory verses, reading plan, journal and The Gospel.' });
-  const prevQS = window.openQuickStart;
-  window.openQuickStart = () => {
-    prevQS();
-    const first = $('#modal .qs section');
-    if (first) first.insertAdjacentHTML('afterend', `<section><h3>Your daily walk</h3><ul>
-      <li><b>Today</b> (Ctrl+Shift+W): open your Bible where you left off, today's devotional, your prayer list, memory verses and reading plan.</li>
-      <li><b>Notes › Journal</b>: write down what God is teaching you, by date.</li>
-      <li><b>Notes › Prayer</b>: your prayer list by category; mark requests answered and keep a record of God's faithfulness.</li>
-      <li><b>Memory verses</b>: practise with first letters, fill in the blanks, or type it out.</li>
-      <li><b>The Gospel</b>: how to be saved — print it or save it to share.</li></ul></section>`);
-  };
   COMMANDS.unshift(
     ['Today', 'devotional prayer memory plan', () => openToday()],
     ['Prayer list', 'requests answered', () => showMarksView('prayer')],
@@ -835,12 +824,6 @@ async function printStudy() {
   );
   const i = TOUR.findIndex((t) => t.el === '#btnToday');
   if (i >= 0) TOUR[i] = { ...TOUR[i], text: `${TOUR[i].text}${' Study methods start here too.'}` };
-  const prevQS = window.openQuickStart;
-  window.openQuickStart = () => {
-    prevQS();
-    const walk = $$('#modal .qs section').find((s) => /Your daily walk/.test(s.textContent));
-    if (walk) $('ul', walk).insertAdjacentHTML('beforeend', `<li><b>Study methods</b> (Today, or Ctrl+K): Observe–Interpret–Apply, SOAP, word study, character study, topical study, verse mapping and book overview, with study aids filled in for you. Saved in Notes › Journal.</li>`);
-  };
 }
 
 // ===================================================================== events
