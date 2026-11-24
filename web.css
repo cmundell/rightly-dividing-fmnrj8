@@ -151,7 +151,7 @@
   .modal-x { min-width: 44px; min-height: 44px; }
 }
 @media (max-width: 760px) {
-  .sg { position: fixed; left: 8px; right: 8px; width: auto; top: auto; max-height: 62vh; }
+  #searchSuggest.sg { position: fixed; left: 8px; right: 8px; width: auto; top: auto; max-height: 62vh; }
   .sg-ch { height: 42px; font-size: 15px; }
   .sg-chs { grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; }
   .sg-item { padding: 11px 10px; font-size: 15.5px; }

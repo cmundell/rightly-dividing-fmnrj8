@@ -1182,9 +1182,9 @@ body.reduce-motion .j-halo { animation: none; }
 
 /* 3.16: suggestions under the search box */
 #searchForm { position: relative; }
-.sg { position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; width: min(470px, calc(100vw - 24px)); max-height: min(70vh, 560px); overflow-y: auto;
+#searchSuggest.sg { position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; width: min(470px, calc(100vw - 24px)); max-height: min(70vh, 560px); overflow-y: auto;
   background: var(--paper); border: 1px solid var(--rule); border-top: 3px solid var(--accent); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.18); padding: 8px 8px 6px; text-align: left; }
-.sg[hidden] { display: none; }
+#searchSuggest.sg[hidden] { display: none; }
 .sg-sec { font: 700 10.5px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); padding: 8px 8px 4px; }
 .sg-book { padding: 6px 8px 8px; border-left: 3px solid var(--gold); margin: 2px 0 4px; }
 .sg-book-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
