@@ -494,7 +494,7 @@ const MENU = [
   ['Settings and help', [
     ['Settings', () => openReadingOptions()],
     ['How to…', () => openHowTo()],
-    ...(navigator.standalone === true || matchMedia('(display-mode: standalone)').matches ? [] : [['Add to Home Screen', () => openHomeScreenHelp()]]),
+    ...(tsk.desktop || navigator.standalone === true || matchMedia('(display-mode: standalone)').matches ? [] : [[isPhone() ? 'Add to Home Screen' : 'Install as an app', () => openHomeScreenHelp()]]),
     ['About', () => openAbout()],
   ]],
 ];
@@ -525,7 +525,7 @@ $('#restoreFile').addEventListener('change', async (e) => {
 });
 function openAbout() {
   openModal(`<div class="kicker">About</div><h2 class="m-title">Rightly Dividing</h2>
-    <p>Version ${esc(tsk.version)} ${tsk.desktop ? 'for Windows' : 'for iPhone and the web'}. The King James Bible with the Treasury of Scripture Knowledge and study tools, kept on this device and usable offline after the first visit.</p>
+    <p>Version ${esc(tsk.version)} ${tsk.desktop ? 'for Windows' : 'for phones, tablets and computers'}. The King James Bible with the Treasury of Scripture Knowledge and study tools, kept on this device and usable offline after the first visit.</p>
     <p class="hint">${tsk.desktop ? 'Your notes are kept on this computer and copied automatically to your backup folder (Menu › Settings). A backup from the iPhone or an older Windows version can be restored there too.' : 'Your notes are kept only on this device. Use Menu › Settings › Back up my notes now and then, and keep the file somewhere safe. A backup from the Windows app (study-data.json) can be restored here too.'}</p>
     <p class="hint"><b>Private:</b> nothing you write or read is collected or sent anywhere. The app only goes online for its first download and its own updates, and when you open a link to another website (Blue Letter Bible, The Gospel Film).</p>
     <div class="section-title">Sources and credits</div>

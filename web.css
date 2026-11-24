@@ -119,12 +119,6 @@
   .mswitch-side { justify-content: flex-end; }
 }
 
-#webGate { position: fixed; inset: 0; z-index: 210; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; }
-.wg-card { max-width: 340px; width: 100%; text-align: center; display: flex; flex-direction: column; gap: 12px; }
-.wg-card input { height: 44px; font-size: 18px !important; text-align: center; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); }
-.wg-card .primary-btn { height: 44px; font-size: 16px; }
-.wg-msg { color: #b3261e; min-height: 1.2em; font-size: 14px; }
-.wg-note { font-size: 13.5px; line-height: 1.45; opacity: .8; margin: 4px 0 10px; }
 
 @keyframes wcUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (max-width: 760px) {

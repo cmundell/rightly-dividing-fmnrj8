@@ -134,51 +134,7 @@
     return gz;
   }
 
-  // a simple passcode, asked once per device, to keep casual visitors out (not real security)
-  const PASS_HASH = '6b1039644e70dc26498de7989cd9cfaaf0baae7cd2c78916c34cc75cb3b8e9b4';
-  const sha = async (t) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map((b) => b.toString(16).padStart(2, '0')).join('');
-  const passed = (() => {
-    try {
-      return localStorage.getItem('sts-pass') === PASS_HASH;
-    } catch {
-      return false;
-    }
-  })();
-  const gate = !PASS_HASH || passed ? Promise.resolve() : new Promise((resolve) => {
-    const show = () => {
-      const g = document.createElement('div');
-      g.id = 'webGate';
-      g.innerHTML = `<form class="wg-card"><div class="ws-title">Rightly Dividing</div>
-        <p>Enter the passcode you were given.</p>
-        <p class="wg-note">The first time, the app downloads the Bible and its study tools (about 42 MB), so Wi‑Fi is best. After that it works without the internet.</p>
-        <input type="password" autocomplete="off" autocapitalize="off" aria-label="Passcode" placeholder="Passcode" />
-        <button class="primary-btn">Open</button><div class="wg-msg" aria-live="polite"></div></form>`;
-      document.body.appendChild(g);
-      const f = g.querySelector('form');
-      f.querySelector('input').focus();
-      f.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const v = f.querySelector('input').value.trim().toLowerCase();
-        if ((await sha(`sts:${v}`)) === PASS_HASH) {
-          try {
-            localStorage.setItem('sts-pass', PASS_HASH);
-          } catch {
-            /* asked again next time */
-          }
-          g.remove();
-          resolve();
-        } else {
-          f.querySelector('.wg-msg').textContent = 'That passcode is not right.';
-          f.querySelector('input').select();
-        }
-      });
-    };
-    if (document.body) show();
-    else document.addEventListener('DOMContentLoaded', show);
-  });
-
   const ready = (async () => {
-    await gate;
     say('Loading the Bible…', 0.02);
     const [SQL, gz] = await Promise.all([
       initSqlJs({ locateFile: (f) => `lib/${f.replace('sql-wasm.wasm', 'sql-wasm-browser.wasm')}` }),

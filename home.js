@@ -682,10 +682,14 @@ const SHARE_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden=
 function homeScreenHelpHtml() {
   return isIOS() || !tsk.web
     ? `<ol class="nd-steps"><li>In Safari, tap the Share button ${SHARE_ICON} at the bottom of the screen.</li><li>Scroll down and choose <b>Add to Home Screen</b>.</li><li>Tap <b>Add</b>. The app opens from its own icon, full screen, and works without the internet.</li></ol>`
-    : '<ol class="nd-steps"><li>Open your browser’s menu (⋮ or ☰).</li><li>Choose <b>Install app</b> or <b>Add to Home screen</b>.</li></ol>';
+    : /Macintosh/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/Chrome|Chromium|Edg\//.test(navigator.userAgent)
+      // Safari on a Mac (macOS Sonoma or later)
+      ? '<ol class="nd-steps"><li>In Safari’s menu bar, choose <b>File › Add to Dock</b>.</li><li>Click <b>Add</b>. The app opens from the Dock, in its own window.</li></ol>'
+      : '<ol class="nd-steps"><li>Open your browser’s menu (⋮ or ☰).</li><li>Choose <b>Install app</b> or <b>Add to Home screen</b>.</li></ol>';
 }
 function openHomeScreenHelp() {
-  openModal(`<div class="kicker">On your phone</div><h2 class="m-title">Put it on your Home Screen</h2>
+  const phone = isPhone();
+  openModal(`<div class="kicker">${phone ? 'On your phone' : 'On this computer'}</div><h2 class="m-title">${phone ? 'Put it on your Home Screen' : 'Install it as an app'}</h2>
     <p class="wk-lead">Then Rightly Dividing opens like any other app, with its own icon.</p>${homeScreenHelpHtml()}`, 'm-a2hs');
 }
 window.openHomeScreenHelp = openHomeScreenHelp;
