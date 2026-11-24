@@ -512,7 +512,8 @@ $('#restoreFile').addEventListener('change', async (e) => {
   if (!f) return;
   try {
     const n = await tsk.restore(await f.text());
-    toast(`Restored ${n} kinds of notes. Reloading…`);
+    toast(n ? `Combined with your notes: ${n.toLocaleString()} added. Reloading…` : 'Nothing new in that backup: everything in it is already here.');
+    if (!n) return;
     setTimeout(() => location.reload(), 1200);
   } catch (err) {
     toast(`Could not restore: ${err.message}`);

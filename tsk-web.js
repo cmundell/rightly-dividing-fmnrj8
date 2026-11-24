@@ -5,7 +5,7 @@
 /* global initSqlJs, TskDb, JSZip, wRun, wPara, HL_FILL */
 
 (() => {
-  const VERSION = '1.7.6';
+  const VERSION = '1.7.7';
   // the Windows app (windows/ folder) adds rdDesktop: your notes are also copied to a real file in a folder you choose
   const desk = window.rdDesktop || null;
   let deskTimer = null;
@@ -389,18 +389,52 @@
       for (const k of USER_KEYS) if (u[k] !== undefined) out[k] = u[k];
       return download(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }), `Rightly Dividing notes ${new Date().toISOString().slice(0, 10)}.json`);
     },
+    // 1.7.7: a backup is combined with what is already here, never written over it. Everything in the backup that
+    // this device lacks is added; where both have something for the same verse, this device's is kept, except notes,
+    // where the two texts are joined (so a note written on the phone and one written on the computer both survive).
     restore: async (text) => {
       const data = JSON.parse(text);
       const u = (await kvGet('user')) || {};
-      let n = 0;
-      for (const k of USER_KEYS) if (data[k] !== undefined) {
-        u[k] = data[k];
-        n += 1;
+      let found = 0;
+      let added = 0;
+      const keyOf = (x) => (x && typeof x === 'object' && x.id != null ? `id:${x.id}` : JSON.stringify(x));
+      const merge = (here, there, isNotes) => {
+        if (here === undefined || here === null || here === '') { if (there !== undefined && there !== null && there !== '') added += 1; return there; }
+        if (there === undefined || there === null) return here;
+        if (Array.isArray(here) && Array.isArray(there)) {
+          const have = new Set(here.map(keyOf));
+          const more = there.filter((x) => !have.has(keyOf(x)));
+          added += more.length;
+          return here.concat(more);
+        }
+        if (typeof here === 'object' && typeof there === 'object' && !Array.isArray(here) && !Array.isArray(there)) {
+          const out = { ...here };
+          for (const k of Object.keys(there)) out[k] = merge(here[k], there[k], isNotes);
+          return out;
+        }
+        if (isNotes && typeof here === 'string' && typeof there === 'string' && here.trim() !== there.trim()) {
+          if (here.includes(there.trim())) return here;
+          if (there.includes(here.trim())) { added += 1; return there; }
+          added += 1;
+          return `${here.trim()}\n\n${there.trim()}`;
+        }
+        return here; // the same thing on both, or a setting: this device's stays
+      };
+      for (const k of USER_KEYS) {
+        if (data[k] === undefined) continue;
+        found += 1;
+        // where you were reading and your settings belong to this device; they are only filled in if missing
+        if (k === 'last' || k === 'trail' || k === 'settings' || k === 'plan') {
+          if (u[k] === undefined || u[k] === null) u[k] = data[k];
+          continue;
+        }
+        u[k] = merge(u[k], data[k], k === 'notes');
       }
-      if (!n) throw new Error('This file has no notes in it.');
+      if (!found) throw new Error('This file has no notes in it.');
+      u.savedAt = new Date().toISOString();
       await kvSet('user', u);
       deskSoon();
-      return n;
+      return added;
     },
     // Windows app only: the backup folder
     backupInfo: async () => (desk ? desk.info() : {}),

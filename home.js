@@ -312,7 +312,7 @@ async function paintNotesSection() {
   const box = $('#stNotes');
   if (!box) return;
   if (tsk.web && !tsk.desktop) {
-    box.innerHTML = `<p class="hint">Your notes are kept on this device. Save a backup file now and then, somewhere safe.</p>
+    box.innerHTML = `<p class="hint">Your notes are kept on this device. Save a backup file now and then, somewhere safe. Restoring a backup adds what is in it to what is here; nothing here is lost.</p>
       <div class="st-btns"><button data-st="backup">Back up my notes</button><button data-st="restore">Restore from a backup…</button></div>`;
     return;
   }

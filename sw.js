@@ -1,6 +1,6 @@
 'use strict';
 // Keeps Rightly Dividing working offline. The cache name changes with every release.
-const CACHE = 'sts-1.7.6-2e68f59e23';
+const CACHE = 'sts-1.7.7-386c57aa4e';
 const SHELL = ["./", "CHANGELOG.html", "data/basemap.json", "data/brand-bg.jpg", "data/gospel.json", "data/journeys.json", "data/landmarks.json", "data/phrases.json", "data/relief.jpg", "data/tidwell.json", "data/votd.json", "features.js", "home.js", "icon-180.png", "icon-192.png", "icon-512.png", "index.html", "lib/cjs-shim.js", "lib/db.js", "lib/docx.js", "lib/jszip.min.js", "lib/sql-wasm-browser.js", "lib/sql-wasm-browser.wasm", "listen.js", "manifest.webmanifest", "maps.js", "reader.js", "refparse.js", "robots.txt", "study.js", "styles.css", "tools.js", "tsk-web.js", "walk.js", "web.css", "web.js"];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -15,14 +15,19 @@ self.addEventListener('fetch', (e) => {
   if (!u.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
   // the page itself and its manifest come fresh from the site when online (so the Home Screen name and icon are
   // always the current ones), and from the phone when offline
-  if (e.request.mode === 'navigate' || /\/(index\.html|manifest\.webmanifest)?$/.test(u.pathname)) {
+  // (1.7.7: only the app's own page is kept as the start page; opening another file, such as What's New, keeps it
+  // under its own name instead of in the app's place)
+  const scope = new URL(self.registration.scope).pathname;
+  const appPage = u.pathname === scope || u.pathname === `${scope}index.html`;
+  if (appPage || /\/manifest\.webmanifest$/.test(u.pathname)) {
+    const key = appPage ? './' : e.request;
     e.respondWith(fetch(e.request, { cache: 'no-store' }).then((res) => {
       if (res.ok) {
         const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request.mode === 'navigate' ? './' : e.request, copy)).catch(() => {});
+        caches.open(CACHE).then((c) => c.put(key, copy)).catch(() => {});
       }
       return res;
-    }).catch(() => caches.match(e.request.mode === 'navigate' ? './' : e.request, { ignoreSearch: true })));
+    }).catch(() => caches.match(key, { ignoreSearch: true })));
     return;
   }
   e.respondWith(caches.open(CACHE).then(async (c) => {
