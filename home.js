@@ -225,7 +225,7 @@ function bkGlance(g) {
   const line = (label, said, refs) => {
     const ans = said
       ? `${esc(said)}${bkRefs(refs)}`
-      : `<span class="bk-none">Not named in the book.</span>${refs.length ? `<div class="bk-trad">See${bkRefs(refs)}</div>` : ''}`;
+      : '<span class="bk-none">Not named in the book.</span>';
     return `<div class="bk-gl"><div class="bk-gk">${label}</div><div class="bk-gv">${ans}</div></div>`;
   };
   return `<div class="bk-glance">${line('Author', g.author, g.authorRefs)}${line('Audience', g.audience, g.audienceRefs)}</div>`;
