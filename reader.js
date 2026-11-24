@@ -1440,26 +1440,52 @@ function renderSearch() {
 }
 
 
-/* 1.7: nothing found — show what the KJV does have: words containing or spelled like it, the Hebrew/Greek
-   words whose meaning includes it (with the KJV's own renderings), and Nave's topic. "anxious" is not a KJV
-   word, but G3309 merimnaō ("take thought", "be careful") and the topic Anxiety are. */
+/* 1.7: nothing found — show what the KJV does have. 1.7.9: the verses themselves, at once, grouped under the
+   KJV's own English for each Hebrew or Greek word whose meaning includes the word you typed (Strong's "KJV"
+   renderings), with Nave's topic first. "anxious" is not a KJV word: Strong's G3309 merimnaō means "to be
+   anxious about", and the KJV says it as "(be, have) care(-ful), take thought" — Philippians 4:6, Matthew 6:25. */
 async function renderSimilar(q, box) {
   const word = q.replace(/\b[HGhg]\d{1,4}[a-z]?\b/g, ' ').replace(/[-"*]/g, ' ').trim().split(/\s+/)[0] || '';
   if (!/[a-z]{3}/i.test(word)) return;
   const r = await tsk.similar(word).catch(() => null);
   if (!r || state.search.q !== q || state.search.results.length) return;
   const cap = (t) => t.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  // a match only inside brackets is a side remark, not the word's meaning ("a mule (perhaps from his lonely habits)")
+  const re = new RegExp(`\\b${word.toLowerCase().replace(/[^a-z']/g, '')}`, 'i');
+  const means = r.strongs
+    .filter((st) => re.test(String(st.def).replace(/\([^)]*\)/g, ' ')))
+    .sort((a, b) => b.verses - a.verses); // the word the Bible uses most, first
+  const groups = [];
+  const shown = new Set();
+  for (const st of means) {
+    const PER = groups.length ? 4 : 20; // the first word in full; the rest in part, with "all … verses"
+
+    const res = await tsk.search(st.id).catch(() => null);
+    if (state.search.q !== q) return;
+    if (!res || !res.results.length) continue;
+    const hits = res.results.filter((h) => !shown.has(h.id)).slice(0, PER);
+    if (!hits.length) continue;
+    hits.forEach((h) => shown.add(h.id));
+    groups.push({ st, hits, total: res.total });
+  }
   const parts = [];
-  if (!r.exact) parts.push(`<p>“${esc(r.word)}” is not a word the King James Bible uses${r.like.length || r.strongs.length || r.topics.length ? ', but these are:' : '.'}</p>`);
+  if (!r.exact) parts.push(`<p class="sim-lead">“${esc(r.word)}” is not a word the King James Bible uses.${groups.length || r.topics.length ? ' Here is how it says it:' : ''}</p>`);
   else parts.push(`<p>Nothing has all of those words together. Words like “${esc(r.word)}” in the KJV:</p>`);
-  if (r.like.length) parts.push(`<div class="sim-sec">Words like it</div><div class="sim-words">${r.like.map((w) => `<button class="sim-word" data-sim-q="${esc(w.word)}">${esc(w.word)} <span>${w.n}</span></button>`).join('')}</div>`);
-  if (r.strongs.length)
-    parts.push(`<div class="sim-sec">What the KJV calls it — the Hebrew and Greek words that mean “${esc(r.word)}”</div>${r.strongs
-      .map((st) => `<button class="sim-strong" data-sim-q="${st.id}"><b>${esc(st.xlit)}</b> <span class="sim-id">${st.id}</span> · ${esc(st.def.length > 90 ? `${st.def.slice(0, 88)}…` : st.def)}<br><span class="sim-kjv">KJV: ${esc(st.kjv_def.length > 110 ? `${st.kjv_def.slice(0, 108)}…` : st.kjv_def)}</span> <span class="sim-n">${st.verses} verse${st.verses === 1 ? '' : 's'}</span></button>`)
-      .join('')}`);
   if (r.topics.length) parts.push(`<div class="sim-sec">In Nave's Topical Bible</div><div class="sim-words">${r.topics.map((t) => `<button class="sim-word sim-topic" data-sim-topic="${t.id}">${esc(cap(t.subject))}</button>`).join('')}</div>`);
+  for (const { st, hits, total } of groups) {
+    const kjv = String(st.kjv_def || '').replace(/[.;:,\s]+$/, '');
+    const lang = /^G/i.test(st.id) ? 'Greek' : 'Hebrew';
+    parts.push(`<div class="sim-group">
+      <div class="sim-kjv">The KJV says: <b>${esc(kjv || st.xlit)}</b></div>
+      <div class="sim-src">${lang} <i>${esc(st.xlit)}</i> · ${st.id} · “${esc(st.def.length > 80 ? `${st.def.slice(0, 78)}…` : st.def)}”</div>
+      ${hits.map((h) => `<div class="hit" data-id="${h.id}"><div class="lab">${esc(h.label)}</div><div class="t">${h.glosses ? hiliteGloss(h.text, h.glosses, '').replace(/<b>/g, '<b class="sg">') : h.text}</div></div>`).join('')}
+      ${total > hits.length ? `<button class="sim-all" data-sim-q="${st.id}">All ${total.toLocaleString()} verses with ${esc(st.xlit)} ›</button>` : ''}
+    </div>`);
+  }
+  if (r.like.length) parts.push(`<div class="sim-sec">Words spelled like it</div><div class="sim-words">${r.like.map((w) => `<button class="sim-word" data-sim-q="${esc(w.word)}">${esc(w.word)} <span>${w.n}</span></button>`).join('')}</div>`);
   if (parts.length < 2 && r.exact) return;
   box.innerHTML = `<div class="similar">${parts.join('')}</div>`;
+  if (!r.exact && groups.length) $('#searchStatus').textContent = `“${r.word}” is not in the KJV · ${shown.size} verse${shown.size === 1 ? '' : 's'} that say it another way`;
 }
 
 function helpHtml() {
